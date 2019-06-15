@@ -8,14 +8,14 @@ Currently, it provides two functions, "Add Lens" and "Add Mirror", which can be 
 
 All elements created with this addon should normally have an edge-split modifier and smooth shading applied.
 
-##Add Lens
+## Add Lens
 
 Creates an optical lens mesh with two spherical surfaces.
 Planned to be updated in future with additional features such as aspheric surfaces.
 
 The component origin is set at the on-axis intersection with surface 1.
 
-####Properties
+#### Properties
 
 Surface 1 Radius: Radius of first optical surface, can be 
 
@@ -29,7 +29,7 @@ Lens Radius: Outer radius of the lens
 
 Center Thickness: Distance between the on-axis intersection points between the two surfaces
 
-##Add Mirror
+## Add Mirror
 
 Creates an optical mirror mesh with a spherical surface and a flat back.
 
