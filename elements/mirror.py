@@ -1,7 +1,9 @@
 import bpy
+import numpy as np
 
 from .. import surface as sfc
 from .. import object_data_add
+from .. import utils
 
 def add_mirror(self, context):
     edges = []
@@ -12,6 +14,9 @@ def add_mirror(self, context):
     mrad = self.mirrorradius
     CT = self.centerthickness
     
+    #check surface radius for consistency
+    if not utils.check_surface(np.abs(srad), mrad): srad=0
+
     #compute mirror surface
     if srad == 0: #flat surface case
         verts, faces = sfc.add_flat_surface(mrad,N1,N2)

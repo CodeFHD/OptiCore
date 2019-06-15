@@ -1,7 +1,9 @@
 import bpy
+import numpy as np
 
 from .. import surface as sfc
 from .. import object_data_add
+from .. import utils
 
 def add_lens(self, context):
     edges = []
@@ -13,6 +15,10 @@ def add_lens(self, context):
     lrad = self.lensradius
     CT = self.centerthickness
     
+    #check surface raddi for consistency
+    if not utils.check_surface(np.abs(srad1), lrad): srad1=0
+    if not utils.check_surface(np.abs(srad2), lrad): srad2=0
+
     #add surface1
     if srad1 == 0: #flat surface case
         verts, faces = sfc.add_flat_surface(lrad,N1,N2)
