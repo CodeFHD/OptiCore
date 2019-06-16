@@ -13,7 +13,7 @@ bl_info = {
 import bpy
 import numpy as np
 from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty
+from bpy.props import FloatProperty, IntProperty, EnumProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from . import elements as ele
 
@@ -66,6 +66,20 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
     bl_label = "Add Mesh Object"
     bl_options = {'REGISTER', 'UNDO'}
     
+    mtype = EnumProperty(
+           name="Surface Shape",
+           items = {("parabolic","Parabolic",""),
+                    ("spherical","Spherical","")},
+           default = "parabolic",
+           description="Radius of Curvature of Mirror Surface",
+           )
+    opos = EnumProperty(
+           name="Origin position",
+           items = {("FP","Focal Point",""),
+                    ("MC","Mirror Center","")},
+           default = "FP",
+           description="Position of the Mesh Origin w.r.t. optical properties",
+           )
     rad = FloatProperty(
            name="Surface 1 Radius",
            default = 12.,
@@ -90,6 +104,11 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            name="Thickness",
            default = 1.,
            description="Thickness at thinnest point",
+           )
+    theta = FloatProperty(
+           name="Offset Angle",
+           default = 0.,
+           description="Offset angle for off-axis mirror",
            )
 
     def execute(self, context):

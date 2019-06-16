@@ -13,15 +13,28 @@ def add_mirror(self, context):
     N2 = self.num2
     mrad = self.mirrorradius
     CT = self.centerthickness
+    surftype = self.mtype
+    theta = self.theta
+    opos = self.opos
     
     #check surface radius for consistency
-    if not utils.check_surface(np.abs(srad), mrad): srad=0
+    if surftype == 'spherical':
+        if not utils.check_surface(np.abs(srad), mrad): srad=0
 
     #compute mirror surface
     if srad == 0: #flat surface case
         verts, faces = sfc.add_flat_surface(mrad,N1,N2)
+        yadd = 0
+        xOA = 0
     else:
-        verts, faces = sfc.add_spherical_surface(-1.*srad, mrad, N1, N2)
+        if surftype == 'spherical':
+            verts, faces = sfc.add_spherical_surface(-srad, mrad, N1, N2)
+            yadd = 0
+            xOA = 0
+            if srad < 0:
+                xOA = -np.abs(srad)+np.sqrt(srad**2-mrad**2)
+        elif surftype == 'parabolic':
+            verts, faces, yadd, xOA = sfc.add_parabolic_surface(-srad, mrad, N1, N2, theta, orig=opos)
     nVerts = len(verts)
     
     #add side
@@ -34,7 +47,7 @@ def add_mirror(self, context):
     nVerts = len(verts)
     
     #add rear surface
-    dvert, dfac = sfc.add_flat_surface(mrad,N1,N2,-1,CT,nVerts)
+    dvert, dfac = sfc.add_flat_surface(mrad,N1,N2,-1,CT-xOA,yadd,nVerts=nVerts)
     dvert = dvert[::-1]
     
     verts = verts+dvert

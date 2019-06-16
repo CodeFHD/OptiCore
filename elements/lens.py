@@ -38,10 +38,10 @@ def add_lens(self, context):
     #add surface2
     if srad2 == 0:
         #flat surface case
-        dvert, dfac = sfc.add_flat_surface(lrad,N1,N2,-1,CT,nVerts)
+        dvert, dfac = sfc.add_flat_surface(lrad,N1,N2,-1,CT,nVerts=nVerts)
         dvert = dvert[::-1]
     else:
-        dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts)
+        dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts=nVerts)
         dvert, dfac = dvert[::-1], dfac[::-1]
         
     verts = verts+dvert

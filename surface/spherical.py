@@ -10,13 +10,13 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0):
     xadd has to be set for second surface (only)
     """
 
-    surfadd=0
-    if nsurf == -1:
-        surfadd = N2*N1
-    
     verts = []
     faces = []
     
+    surfadd=0
+    if nsurf == -1:
+        surfadd = N2*N1
+
     sig = 1
     if rad < 0:
         sig = -1
