@@ -14,10 +14,25 @@ def add_lens(self, context):
     N2 = self.num2
     lrad = self.lensradius
     CT = self.centerthickness
+    ssig1 = 1
+    if srad1 < 0:
+        ssig1 = -1
+    ssig2 = 1
+    if srad2 < 0:
+        ssig2 = -1
     
-    #check surface raddi for consistency
+    #check surface radii for consistency
+    ##check radius overflow
     if not utils.check_surface(np.abs(srad1), lrad): srad1=0
     if not utils.check_surface(np.abs(srad2), lrad): srad2=0
+    ##check center thickness
+    lsurf1, lsurf2 = 0, 0
+    if not srad1 == 0:
+        lsurf1 = srad1-ssig1*np.sqrt(srad1**2-lrad**2)
+    if not srad2 == 0:
+        lsurf2 = srad2-ssig2*np.sqrt(srad2**2-lrad**2)
+    if (lsurf1 + lsurf2) > CT:
+        CT = lsurf1 + lsurf2
 
     #add surface1
     if srad1 == 0: #flat surface case
