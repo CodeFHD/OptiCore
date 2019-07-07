@@ -93,7 +93,7 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            description="Position of the Mesh Origin w.r.t. optical properties",
            )
     rad = FloatProperty(
-           name="Surface 1 Radius",
+           name="Surface Radius",
            default = 12.,
            description="Radius of Curvature of Mirror Surface",
            )
@@ -108,12 +108,12 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            description="Nubmer of angular vertices",
            )
     mirrorradius = FloatProperty(
-           name="Lens Radius",
+           name="Mirror Radius",
            default = 3.,
            description="Mirror outer radius",
            )
     centerthickness = FloatProperty(
-           name="Thickness",
+           name="Back Thickness",
            default = 1.,
            description="Thickness at thinnest point",
            )
@@ -121,6 +121,18 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            name="Offset Angle",
            default = 0.,
            description="Offset angle for off-axis mirror",
+           )
+    material_name = StringProperty(
+            name="Material",
+            default="",
+           )
+    shade_smooth = BoolProperty(
+            name="Smooth Shading",
+            default=True,
+           )
+    split_edge = BoolProperty(
+            name="Edge Split",
+            default=True,
            )
 
     def execute(self, context):

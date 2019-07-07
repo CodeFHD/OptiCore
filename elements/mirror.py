@@ -60,4 +60,12 @@ def add_mirror(self, context):
     mesh.from_pydata(verts, edges, faces)
     # useful for development when the mesh may be invalid.
     #mesh.validate(verbose=True)
-    object_data_add(context, mesh, operator=self)
+    obj_base = object_data_add(context, mesh, operator=self)
+    obj = obj_base.object
+    if self.material_name in bpy.data.materials:
+        mat = bpy.data.materials[self.material_name]
+        obj.data.materials.append(mat)
+    if self.shade_smooth:
+        bpy.ops.object.shade_smooth()
+    if self.split_edge:
+        bpy.ops.object.modifier_add(type='EDGE_SPLIT')
