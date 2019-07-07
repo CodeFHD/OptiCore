@@ -13,7 +13,7 @@ bl_info = {
 import bpy
 import numpy as np
 from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty, EnumProperty
+from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from . import elements as ele
 
@@ -52,6 +52,18 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
            name="Center Thickness",
            default = 1.,
            description="Center thickness of lens",
+           )
+    material_name = StringProperty(
+            name="Material",
+            default="",
+           )
+    shade_smooth = BoolProperty(
+            name="Smooth Shading",
+            default=True,
+           )
+    split_edge = BoolProperty(
+            name="Edge Split",
+            default=True,
            )
 
     def execute(self, context):
