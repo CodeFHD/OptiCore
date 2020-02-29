@@ -69,8 +69,7 @@ def add_lens(self, context):
     mesh.from_pydata(verts, edges, faces)
     # useful for development when the mesh may be invalid.
     #mesh.validate(verbose=True)
-    obj_base = object_data_add(context, mesh, operator=self)
-    obj = obj_base.object
+    obj = object_data_add(context, mesh, operator=self)
     if self.material_name in bpy.data.materials:
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
