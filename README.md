@@ -68,8 +68,8 @@ Edge Split: Activate edge split
 - check for nonsense-geometries
 - If faces touch, don't generate outer rim to avoid duplicate vertices and split-normals
 - Units
-- test split-normals vs. edge-plit artefacts
-- 
+- test split-normals vs. edge-split artefacts
+- Cross-section models (D-shaped), perhaps with variable cut width
 
 ### Optical Components to add
 - aspheric surfaces for lenses and mirrors
