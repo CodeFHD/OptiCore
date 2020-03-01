@@ -61,3 +61,25 @@ Material: Assign pre-defined Blender Material to allow live-view rendering while
 Smooth Shading: Activate smooth shading
 
 Edge Split: Activate edge split
+
+## ToDo-List
+
+### general programming
+- check for nonsense-geometries
+- If faces touch, don't generate outer rim to avoid duplicate vertices and split-normals
+- Units
+- test split-normals vs. edge-plit artefacts
+- 
+
+### Optical Components to add
+- aspheric surfaces for lenses and mirrors
+-- Schmidt corrector plate
+-- free-form with input formula if possible
+- cylindrical lenses/mirrors
+- Fresnel lens
+- mirror with central hole
+- wedged window (application without interference?)
+- Prisms (right-angle, triangle, dove, roof, CC-RR, cats-eye-RR, penta, wedge[?])
+- Axicons/laser line generators
+- Microlens array (test first if usable)
+- doublets/triplets with well-defined interior surface
