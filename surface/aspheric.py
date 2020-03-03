@@ -2,7 +2,12 @@ import numpy as np
 
 from mathutils import Vector
 
-def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad=0):
+def getz(rad, r,k,A):
+    f1 = (r**2/rad)/(1+np.sqrt(1-(1+k)*(r**2/rad**2)))
+    f2 = sum([A[i]*r**(2*(i+2)) for i in range(len(A))])
+    return f1+f2
+
+def add_aspheric_surface(rad, k, A, lrad, N1, N2,nsurf=1,xadd=0, nVerts=0):
     """
     nsurf=1 for first surface,
     nsurf=-1 for second surface
@@ -21,34 +26,24 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
     sig = 1
     if rad < 0:
         sig = -1
-    nhole = not hole
     rad = np.abs(rad)
-    ang = np.arcsin(lrad/rad)
+    #ang = np.arcsin(lrad/rad)
 
-    if not hole:
-        verts.append(Vector((-xadd,0,0)))
-        splitverts.append(0)
-        a = ang/N1
-        r = rad*np.sin(a)
-        hang = 0
-    else:
-        hang = np.arcsin(hrad/rad)
-        r = hrad
-
-    x = rad-np.sqrt(rad**2-r**2)
+    verts.append(Vector((-xadd,0,0)))
+    splitverts.append(0)
+    r = lrad/N1
+    x = getz(rad,r,k,A)
     for j in range(N2)[::nsurf]:
         b = 2*np.pi*j/N2
         verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b),r*np.cos(b))))
         splitverts.append(0)
-        if not hole:
-            fi1 = nVerts+surfadd
-            fi2 = fi1+nsurf*((j+1)%N2+1)
-            fi3 = fi1+nsurf*(j+1)
-            faces.append([fi1,fi2,fi3])
+        fi1 = nVerts+surfadd
+        fi2 = fi1+nsurf*((j+1)%N2+1)
+        fi3 = fi1+nsurf*(j+1)
+        faces.append([fi1,fi2,fi3])
     for i in range(1,N1):
-        a = hang + (ang-hang)/(N1-1)*(i)
-        r = rad*np.sin(a)
-        x = rad-np.sqrt(rad**2-r**2)
+        r = lrad/N1*(i+1)
+        x = getz(rad,r,k,A)
         for j in range(N2)[::nsurf]:
             b = 2*np.pi*j/N2
             verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b),r*np.cos(b))))
@@ -56,8 +51,8 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
                 splitverts.append(1)
             else:
                splitverts.append(0)
-            fi1 = nVerts+surfadd+nsurf*(j+nhole+i*N2)
-            fi2 = nVerts+surfadd+nsurf*((j+1)%N2+nhole+i*N2)
+            fi1 = nVerts+surfadd+nsurf*(j+1+i*N2)
+            fi2 = nVerts+surfadd+nsurf*((j+1)%N2+1+i*N2)
             fi3 = fi2-nsurf*N2
             fi4 = fi1-nsurf*N2
             faces.append([fi4,fi3,fi2,fi1])

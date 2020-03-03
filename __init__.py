@@ -13,7 +13,7 @@ bl_info = {
 import bpy
 import numpy as np
 from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty
+from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from . import elements as ele
 
@@ -23,6 +23,22 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
     bl_label = "OptiCore Lens"
     bl_options = {'REGISTER', 'UNDO'}
     
+    ltype1 : EnumProperty(
+           name="Surface 1 Type",
+           items = {("spherical","Spherical",""),
+                    ("aspheric","Aspheric","")},
+           default = "spherical",
+           description="Shape of Surface 1",
+           #options={'HIDDEN'},
+           )
+    ltype2 : EnumProperty(
+           name="Surface 2 Type",
+           items = {("spherical","Spherical",""),
+                    ("aspheric","Aspheric","")},
+           default = "spherical",
+           description="Shape of Surface 2",
+           #options={'HIDDEN'},
+           )
     rad1 : FloatProperty(
            name="Surface 1 Radius",
            default = 12.,
@@ -37,11 +53,13 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
            name="N1",
            default = 32,
            description="Number of radial vertices",
+           min=3,
            )
     num2 : IntProperty(
            name="N2",
            default = 64,
            description="Number of angular vertices",
+           min=3,
            )
     lensradius : FloatProperty(
            name="Lens Radius",
@@ -53,6 +71,26 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
            default = 1.,
            description="Center thickness of lens",
            )
+    k : FloatProperty(
+           name="k",
+           default = 0.,
+           description="Aspheric conical constant",
+           )
+    A : FloatVectorProperty(
+           name="A",
+           default = (0.,0.,0.),
+           description="Aspheric correction coefficients",
+           )
+    k2 : FloatProperty(
+           name="k2",
+           default = 0.,
+           description="Aspheric conical constant",
+           )
+    A2 : FloatVectorProperty(
+           name="A2",
+           default = (0.,0.,0.),
+           description="Aspheric correction coefficients",
+           )
     material_name : StringProperty(
             name="Material",
             default="",
@@ -63,13 +101,32 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
            )
     split_edge : BoolProperty(
             name="Edge Split",
-            default=True,
+            default=False,
            )
 
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.prop(self, 'ltype1')
+        layout.prop(self, 'rad1')
+        layout.prop(self, 'ltype2')
+        layout.prop(self, 'rad2')
+        layout.prop(self, 'lensradius')
+        layout.prop(self, 'centerthickness')
+        layout.prop(self, 'num1')
+        layout.prop(self, 'num2')
+        if self.ltype1=='aspheric':
+            layout.prop(self, 'k')
+            layout.prop(self, 'A')
+        if self.ltype2=='aspheric':
+            layout.prop(self, 'k2')
+            layout.prop(self, 'A2')
+        layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
+        layout.prop(self, 'shade_smooth')
+        #layout.prop(self, 'split_edge')
+
     def execute(self, context):
-
         ele.add_lens(self, context)
-
         return {'FINISHED'}
 
 class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
@@ -83,7 +140,7 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            items = {("parabolic","Parabolic",""),
                     ("spherical","Spherical","")},
            default = "parabolic",
-           description="Radius of Curvature of Mirror Surface",
+           description="Shape of Mirror Surface",
            )
     opos : EnumProperty(
            name="Origin position",
@@ -101,11 +158,13 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            name="N1",
            default = 32,
            description="Number of radial vertices",
+           min=3,
            )
     num2 : IntProperty(
            name="N2",
            default = 64,
            description="Nubmer of angular vertices",
+           min=3,
            )
     mirrorradius : FloatProperty(
            name="Mirror Radius",
@@ -134,6 +193,37 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
             name="Edge Split",
             default=True,
            )
+    cent_hole : BoolProperty(
+            name="Central Hole",
+            default=False,
+           )
+    hole_rad : FloatProperty(
+           name="HoleRadius",
+           default = 0.1,
+           description="Radius of Curvature of Mirror Surface",
+           min = 0.01,
+           )
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.prop(self, 'mtype')
+        if self.mtype == 'parabolic':
+            layout.prop(self, 'opos')
+        layout.prop(self, 'rad')
+        layout.prop(self, 'mirrorradius')
+        layout.prop(self, 'centerthickness')
+        if self.mtype == 'parabolic':
+            layout.prop(self, 'theta')
+        layout.prop(self, 'num1')
+        layout.prop(self, 'num2')
+        layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
+        #layout.prop(self, 'material_name')
+        layout.prop(self, 'shade_smooth')
+        #layout.prop(self, 'split_edge')
+        layout.prop(self, 'cent_hole')
+        if self.cent_hole:
+            layout.prop(self, 'hole_rad')
 
     def execute(self, context):
 

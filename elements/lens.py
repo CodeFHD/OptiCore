@@ -14,6 +14,13 @@ def add_lens(self, context):
     N2 = self.num2
     lrad = self.lensradius
     CT = self.centerthickness
+    if self.ltype1 == 'aspheric':
+        k = self.k
+        A = self.A
+    if self.ltype2 == 'aspheric':
+        k2 = self.k2
+        A2 = self.A2
+
     ssig1 = 1
     if srad1 < 0:
         ssig1 = -1
@@ -36,12 +43,15 @@ def add_lens(self, context):
 
     #add surface1
     if srad1 == 0: #flat surface case
-        verts, faces = sfc.add_flat_surface(lrad,N1,N2)
+        verts, faces, splitverts = sfc.add_flat_surface(lrad,N1,N2)
     else:
-        verts, faces = sfc.add_spherical_surface(srad1, lrad, N1, N2)
-    nVerts = len(verts)
+        if self.ltype1 == 'spherical':
+            verts, faces, splitverts = sfc.add_spherical_surface(srad1, lrad, N1, N2)
+        elif self.ltype1 == 'aspheric':
+            verts, faces, splitverts = sfc.add_aspheric_surface(srad1, k, A, lrad, N1, N2)
     
     #add side
+    nVerts = len(verts)
     for j in range(N2):
         fi1 = nVerts+(j+1)%(N2)
         fi2 = nVerts+j
@@ -53,27 +63,70 @@ def add_lens(self, context):
     #add surface2
     if srad2 == 0:
         #flat surface case
-        dvert, dfac = sfc.add_flat_surface(lrad,N1,N2,-1,CT,nVerts=nVerts)
+        dvert, dfac, splitverts2 = sfc.add_flat_surface(lrad,N1,N2,-1,CT,nVerts=nVerts)
         dvert = dvert[::-1]
     else:
-        dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts=nVerts)
+        if self.ltype2 == 'spherical':
+            dvert, dfac, splitverts2 = sfc.add_spherical_surface(srad2, lrad, N1, N2, -1, CT, nVerts=nVerts)
+        elif self.ltype2 == 'aspheric':
+            dvert, dfac, splitverts2 = sfc.add_aspheric_surface(srad2, k2, A2, lrad, N1, N2, -1, CT, nVerts=nVerts)
+        #dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts=nVerts)
         dvert, dfac = dvert[::-1], dfac[::-1]
         
     verts = verts+dvert
     faces = faces+dfac
+
+    dummy1 = [0 for i in range(len(splitverts2))]
+    dummy2 = [0 for i in range(len(splitverts))]
+    splitverts = splitverts + dummy1
+    splitverts2 = dummy2 + splitverts2[::-1]
         
     del dvert
     del dfac
 
     mesh = bpy.data.meshes.new(name="New Lens")
     mesh.from_pydata(verts, edges, faces)
-    # useful for development when the mesh may be invalid.
-    #mesh.validate(verbose=True)
     obj = object_data_add(context, mesh, operator=self)
+    
+    mesh = obj.data
+    
+    #custom split normals
+    obj.select_set(True)
+    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    bpy.ops.mesh.select_all(action='DESELECT')
+    sel_mode = bpy.context.tool_settings.mesh_select_mode
+    bpy.context.tool_settings.mesh_select_mode = [True, False, False]
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
+    for i in range(len(verts)):
+        if splitverts[i] == 0:
+            mesh.vertices[i].select=False
+        else:
+            mesh.vertices[i].select=True
+    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    bpy.context.tool_settings.mesh_select_mode = sel_mode
+    bpy.ops.mesh.split_normals()
+    bpy.ops.mesh.select_all(action='DESELECT')
+
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
+    for i in range(len(verts)):
+        if splitverts2[i] == 0:
+            mesh.vertices[i].select=False
+        else:
+            mesh.vertices[i].select=True
+    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    bpy.context.tool_settings.mesh_select_mode = sel_mode
+    bpy.ops.mesh.split_normals()
+    bpy.ops.mesh.select_all(action='DESELECT')
+
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+    #end split normals
+
     if self.material_name in bpy.data.materials:
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
     if self.shade_smooth:
         bpy.ops.object.shade_smooth()
     if self.split_edge:
-        bpy.ops.object.modifier_add(type='EDGE_SPLIT')
+        obj.modifier_add(type='EDGE_SPLIT')

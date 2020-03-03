@@ -16,51 +16,68 @@ Planned to be updated in future with additional features such as aspheric surfac
 
 The component origin is currently fixed at the on-axis intersection with surface 1.
 
-#### Properties
+#### Settings
 
-Surface 1 Radius: Radius of first optical surface, can be negative
+- Surface 1 Type: Shape of first optical surface (spherical or aspheric)
 
-Surface 2 Radius: Radius of second optical surface, can be negative
+- Surface 1 Radius: Radius of first optical surface, can be negative
 
-N1: Number of vertices in radial direction
+- Surface 2 Type: Shape of second optical surface (spherical or aspheric)
 
-N2: Number of vertices in lateral direction
+- Surface 2 Radius: Radius of second optical surface, can be negative
 
-Lens Radius: Outer radius of the lens
+- Lens Radius: Outer radius of the lens
 
-Center Thickness: Distance between the on-axis intersection points between the two surfaces. Note that the thickness increases if it becomes incompatible with the surface radii and lens radius
+- Center Thickness: Distance between the on-axis intersection points between the two surfaces. Note that the thickness increases if it becomes incompatible with the surface radii and lens radius
 
-Material: Assign pre-defined Blender Material to allow live-view rendering while changing lens parameters. Note: This material must already exits on some other object in Blender, otherwise it despawns when changing any parameter
+- N1: Number of vertices in radial direction
 
-Smooth Shading: Activate smooth shading
+- N2: Number of vertices in lateral direction
 
-Edge Split: Activate edge split
+- k: conical constant for surface 1 (only if aspheric is selected)
+
+- A: Aspheric correction coefficients of orders [4,6,8] for surface 1 (only if aspheric is selected)
+
+- k2: conical constant for surface 2 (only if aspheric is selected)
+
+- A2: Aspheric correction coefficients of orders [4,6,8] for surface 2 (only if aspheric is selected)
+
+- Material: Assign pre-defined Blender Material to allow live-view rendering while changing lens parameters.
+
+- Smooth Shading: Activate smooth shading
 
 ## Add Mirror
 
-Creates a circular optical mirror mesh with a spherical surface and a flat back.
+Creates a circular optical mirror mesh with a spherical or parabolic surface and a flat back.
+Parabolic Mirrors can be constructed with component origin at the focal point or mirror centre. For spherical mirrors, only mirror centre is available.
+Parabolic mirrors can be 
+A hole along the collimated beam axis can be included. 
 
-Surface Shape: Shape of the Mirror surface. Current Choice is between spherical and parabolic.
+#### Settings
 
-Origin Position: Location of the component origin. Default is the (on-axis) focal point. Alternatively the center of the  object and on the optical surface.
+- Surface Shape: Shape of the Mirror surface. Current Choice is between spherical and parabolic.
 
-Surface Radius: Radius of the optical surface. Can be negative to create a convex mirror.
+- Origin Position: Location of the component origin (only if parabolic is selected). Default is the (on-axis) focal point. Alternatively the center of the  object and on the optical surface.
 
-N1: Number of vertices in radial direction
+- Surface Radius: Radius of the optical surface. Can be negative to create a convex mirror.
 
-N2: Number of vertices in lateral direction
+- Mirror Radius: Outer radius of the mirror
 
-Mirror Radius: Outer radius of the mirror
+- Back Thickness: Thickness at the thinnest point. Takes into account negative surface radius and offset angle
 
-Back Thickness: Thickness at the thinnest point. Takes into account negative surface radius and offset angle
+- Offset Angle: Angle for an off-axis mirror (only if parabolic is selected).
 
-Offset Angle: Angle for an off-axis mirror.
+- N1: Number of vertices in radial direction
 
-Material: Assign pre-defined Blender Material to allow live-view rendering while changing mirror parameters. Note: This material must already exits on some other object in Blender, otherwise it despawns when changing any parameter.
+- N2: Number of vertices in lateral direction
 
-Smooth Shading: Activate smooth shading
+- Material: Assign pre-defined Blender Material to allow live-view rendering while changing mirror parameters. Note: This material must already exits on some other object in Blender, otherwise it despawns when changing any parameter.
 
-Edge Split: Activate edge split
+- Smooth Shading: Activate smooth shading
+
+- Central Hole: Include a hole along the collimated beam direction.
+
+- Hole Radius: Radius of the central hole (only if central hole is selected).
 
 ## ToDo-List
 
@@ -72,14 +89,16 @@ Edge Split: Activate edge split
 - Cross-section models (D-shaped), perhaps with variable cut width
 
 ### Optical Components to add
-- aspheric surfaces for lenses and mirrors
--- Schmidt corrector plate
--- free-form with input formula if possible
+- mirror with central hole
+- elliptics (off-axis flat)
+- aspheric surfaces for lenses and mirrors ()
+- Prisms (right-angle, triangle, dove, roof, CC-RR, cats-eye-RR, penta, wedge[?])
 - cylindrical lenses/mirrors
 - Fresnel lens
-- mirror with central hole
 - wedged window (application without interference?)
-- Prisms (right-angle, triangle, dove, roof, CC-RR, cats-eye-RR, penta, wedge[?])
 - Axicons/laser line generators
+- Further types of aspheric surfaces
+-- Schmidt corrector plate
+-- free-form with input formula if possible
 - Microlens array (test first if usable)
 - doublets/triplets with well-defined interior surface
