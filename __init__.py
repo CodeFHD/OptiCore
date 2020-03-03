@@ -43,11 +43,13 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
            name="Surface 1 Radius",
            default = 12.,
            description="Radius of Curvature of Surface 1",
+           unit = "LENGTH",
            )
     rad2 : FloatProperty(
            name="Surface 2 Radius",
            default = 24.,
            description="Radius of Curvature of Surface 2",
+           unit = "LENGTH",
            )
     num1 : IntProperty(
            name="N1",
@@ -65,11 +67,13 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
            name="Lens Radius",
            default = 3.,
            description="Lens outer radius",
+           unit = "LENGTH",
            )
     centerthickness : FloatProperty(
            name="Center Thickness",
            default = 1.,
            description="Center thickness of lens",
+           unit = "LENGTH",
            )
     k : FloatProperty(
            name="k",
@@ -153,6 +157,7 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            name="Surface Radius",
            default = 12.,
            description="Radius of Curvature of Mirror Surface",
+           unit = "LENGTH",
            )
     num1 : IntProperty(
            name="N1",
@@ -170,16 +175,19 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            name="Mirror Radius",
            default = 3.,
            description="Mirror outer radius",
+           unit = "LENGTH",
            )
     centerthickness : FloatProperty(
            name="Back Thickness",
            default = 1.,
            description="Thickness at thinnest point",
+           unit = "LENGTH",
            )
     theta : FloatProperty(
            name="Offset Angle",
            default = 0.,
            description="Offset angle for off-axis mirror",
+           unit = "ROTATION",
            )
     material_name : StringProperty(
             name="Material",
@@ -202,6 +210,7 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            default = 0.1,
            description="Radius of Curvature of Mirror Surface",
            min = 0.01,
+           unit = "LENGTH",
            )
 
     def draw(self, context):

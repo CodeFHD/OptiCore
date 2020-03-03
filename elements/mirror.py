@@ -14,7 +14,7 @@ def add_mirror(self, context):
     mrad = self.mirrorradius
     CT = self.centerthickness
     surftype = self.mtype
-    theta = self.theta
+    theta = self.theta*180/np.pi
     opos = self.opos
     hrad=0
     if self.cent_hole:
