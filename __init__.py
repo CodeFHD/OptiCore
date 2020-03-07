@@ -16,6 +16,7 @@ from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from . import elements as ele
+from .elements.sqlens import OBJECT_OT_add_sqlens
 
 class OBJECT_OT_add_lens(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
@@ -110,6 +111,14 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
 
     def draw(self, context):
         layout = self.layout
+        # Location
+        col = layout.column(align=True)
+        col.label(text="Location")
+        col.prop(self, 'location', text="")
+        # Rotation
+        col = layout.column(align=True)
+        col.label(text="Rotation")
+        col.prop(self, 'rotation', text="")
         scene = context.scene
         layout.prop(self, 'ltype1')
         layout.prop(self, 'rad1')
@@ -242,6 +251,7 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
     
 def menu_func(self, context):
     self.layout.operator(OBJECT_OT_add_lens.bl_idname)
+    self.layout.operator(OBJECT_OT_add_sqlens.bl_idname)
     self.layout.operator(OBJECT_OT_add_mirror.bl_idname)
 
 # Registration
@@ -250,6 +260,11 @@ def add_lens_button(self, context):
     self.layout.operator(
         OBJECT_OT_add_lens.bl_idname,
         text="Add Lens",
+        icon='PLUGIN')
+def add_lsqens_button(self, context):
+    self.layout.operator(
+        OBJECT_OT_add_sqlens.bl_idname,
+        text="Add Square Lens",
         icon='PLUGIN')
 def add_mirror_button(self, context):
     self.layout.operator(
@@ -273,7 +288,7 @@ def add_mirror_manual_map():
     return url_manual_prefix, url_manual_mapping
 
 
-classes = (OBJECT_OT_add_lens, OBJECT_OT_add_mirror)
+classes = (OBJECT_OT_add_lens, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror)
 
 def register():
     for cla in classes:

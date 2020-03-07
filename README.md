@@ -82,16 +82,17 @@ A hole along the collimated beam axis can be included.
 ## ToDo-List
 
 ### general programming
+- Update Readme for Square Lens
+- Square lens needs triangles as surface elements. Parabolic mirror might also for off-axis, check!
 - check for nonsense-geometries
 - If faces touch, don't generate outer rim to avoid duplicate vertices and split-normals
-- Units
 - test split-normals vs. edge-split artefacts
 - Cross-section models (D-shaped), perhaps with variable cut width
 
 ### Optical Components to add
-- mirror with central hole
+- along-focus holes for OAPs
 - elliptics (off-axis flat)
-- aspheric surfaces for lenses and mirrors ()
+- aspheric surfaces for lenses and mirrors
 - Prisms (right-angle, triangle, dove, roof, CC-RR, cats-eye-RR, penta, wedge[?])
 - cylindrical lenses/mirrors
 - Fresnel lens

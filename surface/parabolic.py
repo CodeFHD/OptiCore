@@ -33,19 +33,19 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,
     xmin = 0
 
     if orig=='FP':
-        if fp < 1:
-            xmin = (np.abs(OAD)+mrad)**2*A
-        elif np.abs(OAD) > mrad:
-            xmin = (np.abs(OAD)-mrad)**2*A
+        #if fp < 1:
+        #    xmin = (np.abs(OAD)+mrad)**2*A
+        #elif np.abs(OAD) > mrad:
+        #    xmin = (np.abs(OAD)-mrad)**2*A
         xoffset = -fp
         yoffset = 0
         fxoffset = -fp+xmin
         fyoffset = OAD
     elif orig == 'MC':
-        if fp < 1:
-            xmin = (np.abs(OAD)+mrad)**2*A
-        elif np.abs(OAD) > mrad:
-            xmin = (np.abs(OAD)-mrad)**2*A
+        #if fp < 1:
+        #    xmin = (np.abs(OAD)+mrad)**2*A
+        #elif np.abs(OAD) > mrad:
+        #    xmin = (np.abs(OAD)-mrad)**2*A
         xoffset = -xOAD
         yoffset = -OAD
         fxoffset = -xOAD+xmin
@@ -96,5 +96,8 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,
             fi3 = fi2-nsurf*N2
             fi4 = fi1-nsurf*N2
             faces.append([fi4,fi3,fi2,fi1])
+
+    xs = [v.x for v in verts]
+    fxoffset = min(xs)
 
     return verts, faces, fyoffset, fxoffset, splitverts
