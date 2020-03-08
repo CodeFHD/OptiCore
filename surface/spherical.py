@@ -76,6 +76,7 @@ def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0):
     verts = []
     faces = []
     splitverts = []
+    vertquads = []
     
     surfadd=0
     #if nsurf == -1:
@@ -99,6 +100,14 @@ def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0):
                 splitverts.append(1)
             else:
                 splitverts.append(0)
+            ang = np.arctan2(z+lwidth/(2*N2-2),y+lwidth/(2*N1-2))
+            #if np.abs(ang%(np.pi/2)) < 0.01*lwidth:
+            cond1 = N1%2 == 0
+            cond2 = j==int(N2/2 - 1) or i==int(N1/2 - 1)
+            if cond1 and cond2:
+                vertquads.append(-99)
+            else:
+                vertquads.append(ang/np.pi*2)
 
     for i in range(N1-1):
         for j in range(N2-1):
@@ -106,6 +115,19 @@ def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0):
             f2 = nVerts+surfadd+j+ N2*i
             f3 = nVerts+surfadd+j + N2*(i+1)
             f4 = nVerts+surfadd+j+1 + N2*(i+1)
-            faces.append([f1,f2,f3,f4][::nsurf])
+            if vertquads[j+i*N2] >= 1:
+                faces.append([f1,f2,f4][::nsurf])
+                faces.append([f2,f3,f4][::nsurf])
+            elif vertquads[j+i*N2] >= 0:
+                faces.append([f1,f2,f3][::nsurf])
+                faces.append([f1,f3,f4][::nsurf])
+            elif vertquads[j+i*N2] >= -1:
+                faces.append([f1,f2,f4][::nsurf])
+                faces.append([f2,f3,f4][::nsurf])
+            elif vertquads[j+i*N2] >= -2:
+                faces.append([f1,f2,f3][::nsurf])
+                faces.append([f1,f3,f4][::nsurf])
+            else:
+                faces.append([f1,f2,f3,f4][::nsurf])
             
     return verts, faces, splitverts

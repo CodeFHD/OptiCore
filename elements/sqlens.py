@@ -248,6 +248,45 @@ def add_sqlens(self, context):
     bpy.ops.mesh.select_all(action='DESELECT')
 
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
+    if srad1 != 0:
+        mesh.vertices[1].select = True
+        mesh.vertices[N2].select = True
+        mesh.vertices[N2-2].select = True
+        mesh.vertices[2*N2-1].select = True
+        mesh.vertices[(N1-1)*N2-1].select = True
+        mesh.vertices[N1*N2-2].select = True
+        mesh.vertices[(N1-2)*N2].select = True
+        mesh.vertices[(N1-1)*N2+1].select = True
+    if srad2 != 0:
+        if srad1 == 0:
+            vadd = 4
+            mesh.vertices[vadd + 1].select = True
+            mesh.vertices[vadd + N2].select = True
+            mesh.vertices[vadd + N2-2].select = True
+            mesh.vertices[vadd + 2*N2-1].select = True
+            mesh.vertices[vadd + (N1-1)*N2-1].select = True
+            mesh.vertices[vadd + N1*N2-2].select = True
+            mesh.vertices[vadd + (N1-2)*N2].select = True
+            mesh.vertices[vadd + (N1-1)*N2+1].select = True
+        else:
+            vadd = N1*N2
+            mesh.vertices[vadd + 1].select = True
+            mesh.vertices[vadd + N2].select = True
+            mesh.vertices[vadd + N2-2].select = True
+            mesh.vertices[vadd + 2*N2-1].select = True
+            mesh.vertices[vadd + (N1-1)*N2-1].select = True
+            mesh.vertices[vadd + N1*N2-2].select = True
+            mesh.vertices[vadd + (N1-2)*N2].select = True
+            mesh.vertices[vadd + (N1-1)*N2+1].select = True
+
+    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    bpy.context.tool_settings.mesh_select_mode = sel_mode
+    bpy.ops.mesh.merge_normals()
+    bpy.ops.mesh.select_all(action='DESELECT')
+
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
     """
     for i in range(len(verts)):
         if splitverts2[i] == 0:
