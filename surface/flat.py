@@ -2,7 +2,7 @@ import numpy as np
 
 from mathutils import Vector
 
-def add_flat_surface(lrad,N1,N2,nsurf=1,xadd=0,yadd=0,nVerts=0,hole=False,hrad=0):
+def add_flat_surface(lrad,N1,N2,nsurf=1,xadd=0,yadd=0,nVerts=0,hole=False,hrad=0,dshape=False):
     """
     nsurf=1 for first surface,
     nsurf=-1 for second surface
@@ -10,21 +10,25 @@ def add_flat_surface(lrad,N1,N2,nsurf=1,xadd=0,yadd=0,nVerts=0,hole=False,hrad=0
     xadd has to be set for second surface (only)
     """
     
-    surfadd=0
-    if nsurf == -1:
-        surfadd = N2*(1+hole)-1
-    
     verts = []
     faces = []
     splitverts = []
     
+    surfadd=0
+    if nsurf == -1:
+        surfadd = N2*(1+hole)-1
+
+    maxb = 2*np.pi
+    if dshape:
+        maxb = np.pi*(N2+1)/N2
+    
     if hole:
         for j in range(N2)[::nsurf]:
-            b = 2*np.pi*j/N2
+            b = maxb*j/N2
             verts.append(Vector((-1.*xadd,hrad*np.sin(b)+yadd,hrad*np.cos(b))))
             splitverts.append(0)
     for j in range(N2)[::nsurf]:
-        b = 2*np.pi*j/N2
+        b = maxb*j/N2
         verts.append(Vector((-1.*xadd,lrad*np.sin(b)+yadd,lrad*np.cos(b))))
         splitverts.append(1)
     if hole:

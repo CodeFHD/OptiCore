@@ -108,6 +108,10 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
             name="Edge Split",
             default=False,
            )
+    dshape : BoolProperty(
+            name="D-Shaped Lens",
+            default=False,
+           )
 
     def draw(self, context):
         layout = self.layout
@@ -136,6 +140,7 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
             layout.prop(self, 'A2')
         layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
         layout.prop(self, 'shade_smooth')
+        layout.prop(self, 'dshape')
         #layout.prop(self, 'split_edge')
 
     def execute(self, context):
