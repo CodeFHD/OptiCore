@@ -20,7 +20,7 @@ def add_flat_surface(lrad,N1,N2,nsurf=1,xadd=0,yadd=0,nVerts=0,hole=False,hrad=0
 
     maxb = 2*np.pi
     if dshape:
-        maxb = np.pi*(N2+1)/N2
+        maxb = np.pi*N2/(N2-1)
     
     if hole:
         for j in range(N2)[::nsurf]:

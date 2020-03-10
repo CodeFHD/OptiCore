@@ -20,7 +20,7 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
 
     maxb = 2*np.pi
     if dshape:
-        maxb = np.pi*(N2+1)/N2
+        maxb = np.pi*N2/(N2-1)
 
     sig = 1
     if rad < 0:
