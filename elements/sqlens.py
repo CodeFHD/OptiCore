@@ -230,6 +230,7 @@ def add_sqlens(self, context):
     mesh = obj.data
     
     #custom split normals
+    
     obj.select_set(True)
     bpy.ops.object.mode_set(mode='EDIT', toggle=False)
     bpy.ops.mesh.select_all(action='DESELECT')
@@ -244,7 +245,7 @@ def add_sqlens(self, context):
             mesh.vertices[i].select=True
     bpy.ops.object.mode_set(mode='EDIT', toggle=False)
     bpy.context.tool_settings.mesh_select_mode = sel_mode
-    bpy.ops.mesh.split_normals()
+    #bpy.ops.mesh.split_normals()
     bpy.ops.mesh.select_all(action='DESELECT')
 
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -282,11 +283,11 @@ def add_sqlens(self, context):
 
     bpy.ops.object.mode_set(mode='EDIT', toggle=False)
     bpy.context.tool_settings.mesh_select_mode = sel_mode
-    bpy.ops.mesh.merge_normals()
+    #bpy.ops.mesh.merge_normals()
     bpy.ops.mesh.select_all(action='DESELECT')
 
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
+    
     """
     for i in range(len(verts)):
         if splitverts2[i] == 0:
@@ -306,6 +307,7 @@ def add_sqlens(self, context):
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
     if self.shade_smooth:
+        obj.data.use_auto_smooth = 1
         bpy.ops.object.shade_smooth()
     if self.split_edge:
         obj.modifier_add(type='EDGE_SPLIT')

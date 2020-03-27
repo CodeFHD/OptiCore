@@ -99,7 +99,7 @@ def add_mirror(self, context):
             mesh.vertices[i].select=True
     bpy.ops.object.mode_set(mode='EDIT', toggle=False)
     bpy.context.tool_settings.mesh_select_mode = sel_mode
-    bpy.ops.mesh.split_normals()
+    #bpy.ops.mesh.split_normals()
     bpy.ops.mesh.select_all(action='DESELECT')
 
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -112,7 +112,7 @@ def add_mirror(self, context):
             mesh.vertices[i].select=True
     bpy.ops.object.mode_set(mode='EDIT', toggle=False)
     bpy.context.tool_settings.mesh_select_mode = sel_mode
-    bpy.ops.mesh.split_normals()
+    #bpy.ops.mesh.split_normals()
     bpy.ops.mesh.select_all(action='DESELECT')
 
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -123,7 +123,7 @@ def add_mirror(self, context):
             mesh.vertices[i].select=True
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.context.tool_settings.mesh_select_mode = sel_mode
-        bpy.ops.mesh.split_normals()
+        #bpy.ops.mesh.split_normals()
         bpy.ops.mesh.select_all(action='DESELECT')
 
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -133,7 +133,7 @@ def add_mirror(self, context):
             mesh.vertices[nVerts -1 - i].select=True
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.context.tool_settings.mesh_select_mode = sel_mode
-        bpy.ops.mesh.split_normals()
+        #bpy.ops.mesh.split_normals()
         bpy.ops.mesh.select_all(action='DESELECT')
 
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -144,6 +144,7 @@ def add_mirror(self, context):
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
     if self.shade_smooth:
+        obj.data.use_auto_smooth = 1
         bpy.ops.object.shade_smooth()
     if self.split_edge:
         bpy.ops.object.modifier_add(type='EDGE_SPLIT')
