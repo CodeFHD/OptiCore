@@ -104,9 +104,9 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
             name="Smooth Shading",
             default=True,
            )
-    split_edge : BoolProperty(
-            name="Edge Split",
-            default=False,
+    smooth_type : BoolProperty(
+            name="Use Autosmooth (LuxCore v2.3)",
+            default=True,
            )
     dshape : BoolProperty(
             name="D-Shaped Lens",
@@ -140,8 +140,9 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
             layout.prop(self, 'A2')
         layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
         layout.prop(self, 'shade_smooth')
+        if self.shade_smooth:
+            layout.prop(self, 'smooth_type')
         layout.prop(self, 'dshape')
-        #layout.prop(self, 'split_edge')
 
     def execute(self, context):
         ele.add_lens(self, context)
@@ -211,8 +212,8 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
             name="Smooth Shading",
             default=True,
            )
-    split_edge : BoolProperty(
-            name="Edge Split",
+    smooth_type : BoolProperty(
+            name="Use Autosmooth (LuxCore v2.3)",
             default=True,
            )
     cent_hole : BoolProperty(
@@ -243,7 +244,8 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
         layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
         #layout.prop(self, 'material_name')
         layout.prop(self, 'shade_smooth')
-        #layout.prop(self, 'split_edge')
+        if self.shade_smooth:
+            layout.prop(self, 'smooth_type')
         layout.prop(self, 'cent_hole')
         if self.cent_hole:
             layout.prop(self, 'hole_rad')

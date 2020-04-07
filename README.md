@@ -11,8 +11,7 @@ For correct optical behaviour, all elements created with this addon should have 
 
 ## Add Lens
 
-Creates an optical lens mesh with two spherical surfaces.
-Planned to be updated in future with additional features such as aspheric surfaces.
+Creates an optical lens mesh with two flat, spherical or apsheric surfaces.
 
 The component origin is currently fixed at the on-axis intersection with surface 1.
 
@@ -42,9 +41,38 @@ The component origin is currently fixed at the on-axis intersection with surface
 
 - A2: Aspheric correction coefficients of orders [4,6,8] for surface 2 (only if aspheric is selected)
 
-- Material: Assign pre-defined Blender Material to allow live-view rendering while changing lens parameters.
+- Material: Assign pre-defined Blender Material to allow live-view rendering while changing lens parameters
 
 - Smooth Shading: Activate smooth shading
+
+- Use Autosmooth (LuxCore v2.3): If Selected, uses autosmooth on regular mesh. If not selected, uses curstom split normals (only supported in LuxCore v2.4)
+
+- D-shaped lens: Create a cross-section model of the lens
+
+## Add Square Lens
+
+Creates a optical lens mesh with a quadratic shape
+Only flat and spherical sufaces are supported at the moment.
+
+The component origin is currently fixed at the on-axis intersection with surface 1.
+
+#### Settings
+
+- Surface 1 Radius: Radius of first optical surface, can be negative
+
+- Surface 2 Radius: Radius of second optical surface, can be negative
+
+- Lens Width: Width of the lens
+
+- Center Thickness: Distance between the on-axis intersection points between the two surfaces. Note that the thickness increases if it becomes incompatible with the surface radii and lens radius
+
+- N: Number of vertices per axis
+
+- Material: Assign pre-defined Blender Material to allow live-view rendering while changing lens parameters
+
+- Smooth Shading: Activate smooth shading
+
+- Use Autosmooth (LuxCore v2.3): If Selected, uses autosmooth on regular mesh. If not selected, uses curstom split normals (only supported in LuxCore v2.4)
 
 ## Add Mirror
 
@@ -75,6 +103,8 @@ A hole along the collimated beam axis can be included.
 
 - Smooth Shading: Activate smooth shading
 
+- Use Autosmooth (LuxCore v2.3): If Selected, uses autosmooth on regular mesh. If not selected, uses curstom split normals (only supported in LuxCore v2.4)
+
 - Central Hole: Include a hole along the collimated beam direction.
 
 - Hole Radius: Radius of the central hole (only if central hole is selected).
@@ -83,13 +113,16 @@ A hole along the collimated beam axis can be included.
 
 ### general programming
 - Update Readme for Square Lens
-- Square lens needs triangles as surface elements. Parabolic mirror might also for off-axis, check!
+- Square lens needs triangles as surface elements (Done). Parabolic mirror might also for off-axis, check!
 - check for nonsense-geometries
 - If faces touch, don't generate outer rim to avoid duplicate vertices and split-normals
 - test split-normals vs. edge-split artefacts
-- Cross-section models (D-shaped), perhaps with variable cut width
+- Cross-section models (D-shaped - done for regular lens), perhaps with variable cut width
+- lens file import (seq, zmx, spd; open standards, patents, copyright?)
+- lens system designer
 
 ### Optical Components to add
+- flat annulus
 - along-focus holes for OAPs
 - elliptics (off-axis flat)
 - aspheric surfaces for lenses and mirrors

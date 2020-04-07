@@ -81,70 +81,70 @@ def add_mirror(self, context):
     # useful for development when the mesh may be invalid.
     #mesh.validate(verbose=True)
     obj = object_data_add(context, mesh, operator=self)
-    mesh = obj.data
 
     #custom split normals
-    obj.select_set(True)
-    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-    bpy.ops.mesh.select_all(action='DESELECT')
-    sel_mode = bpy.context.tool_settings.mesh_select_mode
-    bpy.context.tool_settings.mesh_select_mode = [True, False, False]
-    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+    
+    if not self.smooth_type:
+        mesh = obj.data
+        obj.select_set(True)
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.select_all(action='DESELECT')
+        sel_mode = bpy.context.tool_settings.mesh_select_mode
+        bpy.context.tool_settings.mesh_select_mode = [True, False, False]
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-    # mirror face
-    for i in range(len(verts)):
-        if splitverts[i] == 0:
-            mesh.vertices[i].select=False
-        else:
-            mesh.vertices[i].select=True
-    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-    bpy.context.tool_settings.mesh_select_mode = sel_mode
-    #bpy.ops.mesh.split_normals()
-    bpy.ops.mesh.select_all(action='DESELECT')
-
-    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-    #rear face
-    for i in range(len(verts)):
-        if splitverts2[i] == 0:
-            mesh.vertices[i].select=False
-        else:
-            mesh.vertices[i].select=True
-    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-    bpy.context.tool_settings.mesh_select_mode = sel_mode
-    #bpy.ops.mesh.split_normals()
-    bpy.ops.mesh.select_all(action='DESELECT')
-
-    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-    #hole
-    if self.cent_hole:
-        for i in range(N2):
-            mesh.vertices[i].select=True
+        # mirror face
+        for i in range(len(verts)):
+            if splitverts[i] == 0:
+                mesh.vertices[i].select=False
+            else:
+                mesh.vertices[i].select=True
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.context.tool_settings.mesh_select_mode = sel_mode
-        #bpy.ops.mesh.split_normals()
+        bpy.ops.mesh.split_normals()
         bpy.ops.mesh.select_all(action='DESELECT')
 
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        nVerts = len(verts)
-        for i in range(N2):
-            mesh.vertices[nVerts -1 - i].select=True
+        #rear face
+        for i in range(len(verts)):
+            if splitverts2[i] == 0:
+                mesh.vertices[i].select=False
+            else:
+                mesh.vertices[i].select=True
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.context.tool_settings.mesh_select_mode = sel_mode
-        #bpy.ops.mesh.split_normals()
+        bpy.ops.mesh.split_normals()
         bpy.ops.mesh.select_all(action='DESELECT')
 
-    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-    #end split normals
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
+        #hole
+        if self.cent_hole:
+            for i in range(N2):
+                mesh.vertices[i].select=True
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bpy.context.tool_settings.mesh_select_mode = sel_mode
+            bpy.ops.mesh.split_normals()
+            bpy.ops.mesh.select_all(action='DESELECT')
+
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
+            nVerts = len(verts)
+            for i in range(N2):
+                mesh.vertices[nVerts -1 - i].select=True
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bpy.context.tool_settings.mesh_select_mode = sel_mode
+            bpy.ops.mesh.split_normals()
+            bpy.ops.mesh.select_all(action='DESELECT')
+
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        #end split normal
 
     if self.material_name in bpy.data.materials:
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
     if self.shade_smooth:
-        obj.data.use_auto_smooth = 1
+        if self.smooth_type:
+            obj.data.use_auto_smooth = 1
         bpy.ops.object.shade_smooth()
-    if self.split_edge:
-        bpy.ops.object.modifier_add(type='EDGE_SPLIT')
