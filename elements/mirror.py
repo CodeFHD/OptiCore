@@ -1,9 +1,121 @@
 import bpy
 import numpy as np
 
+from bpy.types import Operator
+from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
+from bpy_extras.object_utils import AddObjectHelper, object_data_add
+
 from .. import surface as sfc
 from .. import object_data_add
 from .. import utils
+
+class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
+    """Create a new Mesh Object"""
+    bl_idname = "mesh.add_mirror"
+    bl_label = "OptiCore Mirror"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    mtype : EnumProperty(
+           name="Surface Shape",
+           items = {("parabolic","Parabolic",""),
+                    ("spherical","Spherical","")},
+           default = "parabolic",
+           description="Shape of Mirror Surface",
+           )
+    opos : EnumProperty(
+           name="Origin position",
+           items = {("FP","Focal Point",""),
+                    ("MC","Mirror Center","")},
+           default = "FP",
+           description="Position of the Mesh Origin w.r.t. optical properties",
+           )
+    rad : FloatProperty(
+           name="Surface Radius",
+           default = 12.,
+           description="Radius of Curvature of Mirror Surface",
+           unit = "LENGTH",
+           )
+    num1 : IntProperty(
+           name="N1",
+           default = 32,
+           description="Number of radial vertices",
+           min=3,
+           )
+    num2 : IntProperty(
+           name="N2",
+           default = 64,
+           description="Nubmer of angular vertices",
+           min=3,
+           )
+    mirrorradius : FloatProperty(
+           name="Mirror Radius",
+           default = 3.,
+           description="Mirror outer radius",
+           unit = "LENGTH",
+           )
+    centerthickness : FloatProperty(
+           name="Back Thickness",
+           default = 1.,
+           description="Thickness at thinnest point",
+           unit = "LENGTH",
+           )
+    theta : FloatProperty(
+           name="Offset Angle",
+           default = 0.,
+           description="Offset angle for off-axis mirror",
+           unit = "ROTATION",
+           )
+    material_name : StringProperty(
+            name="Material",
+            default="",
+           )
+    shade_smooth : BoolProperty(
+            name="Smooth Shading",
+            default=True,
+           )
+    smooth_type : BoolProperty(
+            name="Use Autosmooth (LuxCore v2.3)",
+            default=True,
+           )
+    cent_hole : BoolProperty(
+            name="Central Hole",
+            default=False,
+           )
+    hole_rad : FloatProperty(
+           name="HoleRadius",
+           default = 0.1,
+           description="Radius of Curvature of Mirror Surface",
+           min = 0.01,
+           unit = "LENGTH",
+           )
+
+    def draw(self, context):
+        layout = self.layout
+        #scene = context.scene
+        layout.prop(self, 'mtype')
+        if self.mtype == 'parabolic':
+            layout.prop(self, 'opos')
+        layout.prop(self, 'rad')
+        layout.prop(self, 'mirrorradius')
+        layout.prop(self, 'centerthickness')
+        if self.mtype == 'parabolic':
+            layout.prop(self, 'theta')
+        layout.prop(self, 'num1')
+        layout.prop(self, 'num2')
+        layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
+        #layout.prop(self, 'material_name')
+        layout.prop(self, 'shade_smooth')
+        if self.shade_smooth:
+            layout.prop(self, 'smooth_type')
+        layout.prop(self, 'cent_hole')
+        if self.cent_hole:
+            layout.prop(self, 'hole_rad')
+
+    def execute(self, context):
+
+        add_mirror(self, context)
+
+        return {'FINISHED'}
 
 def add_mirror(self, context):
     edges = []
