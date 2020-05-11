@@ -10,17 +10,14 @@ from .. import utils
 
 from mathutils import Vector
 
-brad = 0.01
-hrad = 0.003
-nph = 16
-nbev = 8
+import time
 
-if not nph%4 == 0:
-    nph = nph//4
-    nph = int(4*nph)
-nph2 = nph//2
-nph4 = nph//4
-nbev4 = 4*nbev
+#brad = 0.01
+#hrad = 0.003
+#nph = 16
+#nbev = 8
+
+
 
 class OBJECT_OT_add_table(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
@@ -42,9 +39,47 @@ class OBJECT_OT_add_table(Operator, AddObjectHelper):
            )
     thickness : FloatProperty(
            name="Thickness",
-           default = 0.01,
+           default = 0.005,
            description="Thickness",
            unit = "LENGTH",
+           )
+    hrad : FloatProperty(
+           name="Hole Radius",
+           default = 0.003,
+           description="Hole Radius",
+           unit = "LENGTH",
+           )
+    nph : IntProperty(
+           name="Verts per Hole",
+           default = 16,
+           description="Number of Vertices per hole (msut be divisible by 4)",
+           min=4
+           )
+    hspac : FloatProperty(
+           name="Hole Spacing",
+           default = 0.025,
+           description="Spacing between holes",
+           unit = "LENGTH",
+           )
+    brad : FloatProperty(
+           name="Bevel Radius",
+           default = 0.003,
+           description="Radius of edge bevel",
+           unit = "LENGTH",
+           )
+    nbev : IntProperty(
+           name="Bevel Verts",
+           default = 6,
+           description="Number of Vertices of the bevel.",
+           min=3
+           )
+    shade_smooth : BoolProperty(
+            name="Smooth Shading",
+            default=True,
+           )
+    smooth_type : BoolProperty(
+            name="Use Autosmooth (LuxCore v2.3)",
+            default=True,
            )
 
     def draw(self, context):
@@ -63,7 +98,35 @@ class OBJECT_OT_add_table(Operator, AddObjectHelper):
         layout.prop(self, 'width')
         layout.prop(self, 'thickness')
 
+        layout.prop(self, 'hrad')
+        layout.prop(self, 'nph')
+        layout.prop(self, 'hspac')
+        layout.prop(self, 'brad')
+        layout.prop(self, 'nbev')
+        
+        layout.prop(self, 'shade_smooth')
+        if self.shade_smooth:
+            layout.prop(self, 'smooth_type')
+
+    def check_props(self):
+        if self.length <= 0:
+            self.length = 1.8
+        if self.width <= 0:
+            self.width = 0.9
+        if self.thickness <= 0:
+            self.length = 0.0127
+        if self.hspac > 0.25*min(self.length, self.width):
+            self.hspac = 0.25*min(self.length, self.width)
+        if self.hrad >= self.hspac/2:
+            self.hrad = 0.9*self.hspac/2
+        if self.hrad <= 0:
+            self.hrad = 0.01*self.hspac
+        if self.brad <= 0:
+            self.brad = 1e-5*min(self.length, self.width)
+
+
     def execute(self, context):
+        self.check_props()
         add_table(self, context)
         return {'FINISHED'}
 
@@ -72,19 +135,35 @@ def add_table(self, context):
     leng = self.length
     wid = self.width
     thi = self.thickness
+    hrad = self.hrad
+    brad = self.brad
+    hspac = self.hspac
+
+    nph = self.nph
+    if not nph%4 == 0:
+        nph = nph//4
+        nph = int(4*nph)
+    nph2 = nph//2
+    nph4 = nph//4
+    nbev = self.nbev
+    nbev4 = 4*nbev
 
     #general calc: number of holes per direction
-    nx = int((leng-0.025)/0.025)
-    ny = int((wid-0.025)/0.025)
+    nx = int((leng-hspac)/hspac)
+    ny = int((wid-hspac)/hspac)
 
     #first surface
-    verts, edges, faces = add_tableface(leng, wid, 0, nx, ny)
+    verts, edges, faces, splitverts = add_tableface(leng, wid, 0, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev4, hspac)
     nVerts = len(verts)
+    nFaces = len(faces)
     
     #duplicate to bottom surface
-    verts2, edges2, faces2 = add_tableface(leng, wid, -thi, nx, ny)
+    verts2, edges2, faces2, splitverts2 = add_tableface(leng, wid, -thi, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev4, hspac)
     for i in range(len(faces2)):
         faces2[i] = [x + nVerts for x in faces2[i]]
+
+    nVerts2 = len(verts2)
+    nFaces2 = len(faces2)
 
     verts = verts + verts2
     edges = edges + edges2
@@ -101,19 +180,99 @@ def add_table(self, context):
             for k in range(nph):
                 faces.append([o+(k+1)%nph, o+k, o+k+nVerts, o+(k+1)%nph + nVerts])
 
+    nHoleFaces = nx*ny*nph
+                
     #add object
     mesh = bpy.data.meshes.new(name="New Table")
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 
-    mesh = obj.data
-    obj.select_set(True)
     bpy.ops.object.mode_set(mode='OBJECT')
 
+    #add split normals
+    if not self.smooth_type:
+        mesh = obj.data
+        obj.select_set(True)
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        sel_mode = bpy.context.tool_settings.mesh_select_mode
+        bpy.context.tool_settings.mesh_select_mode = [True, False, False]
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        #edges top
+        for i in range(nbev4):
+            mesh.vertices[i].select=True
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.context.tool_settings.mesh_select_mode = sel_mode
+        bpy.ops.mesh.split_normals()
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        #edges bottom
+        for i in range(nbev4):
+            mesh.vertices[i+nVerts].select=True
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.context.tool_settings.mesh_select_mode = sel_mode
+        bpy.ops.mesh.split_normals()
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        #half of holes
+        off1 = nbev4
+        for i in range(ny):
+            for j in range(nx):
+                if i%2==0:
+                    idx = 0
+                else:
+                    idx = 1
+                idx2 = i*nx + j
+                if idx2%2 == idx:
+                    off2 = idx2*nph
+                    for k in range(nph):
+                        mesh.vertices[k+off1+off2].select=True
+                else:
+                    off2 = nVerts + idx2*nph
+                    for k in range(nph):
+                        mesh.vertices[k+off1+off2].select=True
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.context.tool_settings.mesh_select_mode = sel_mode
+        bpy.ops.mesh.split_normals()
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        #other half
+        off1 = nbev4
+        for i in range(ny):
+            for j in range(nx):
+                if i%2==0:
+                    idx = 1
+                else:
+                    idx = 0
+                idx2 = i*nx + j
+                if idx2%2 == idx:
+                    off2 = idx2*nph
+                    for k in range(nph):
+                        mesh.vertices[k+off1+off2].select=True
+                else:
+                    off2 = nVerts + idx2*nph
+                    for k in range(nph):
+                        mesh.vertices[k+off1+off2].select=True
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.context.tool_settings.mesh_select_mode = sel_mode
+        bpy.ops.mesh.split_normals()
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
 
 
-def add_tableface(leng, wid, dz, nx, ny):
-    verts, edges, faces = [],[],[]
+    if self.shade_smooth:
+        if self.smooth_type:
+            obj.data.use_auto_smooth = 1
+        bpy.ops.object.shade_smooth()
+
+
+
+def add_tableface(leng, wid, dz, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev4, hspac):
+    verts, edges, faces, splitverts = [],[],[],[]
 
     #create outline verts
     ## four corners, spaced (L/2,W/2), 8 verts each
@@ -127,15 +286,17 @@ def add_tableface(leng, wid, dz, nx, ny):
         for j in range(nbev):
             ang = j/(nbev-1)*np.pi/2 + angoffset
             verts.append(Vector((brad*np.sin(ang)+xoff,brad*np.cos(ang)+yoff,dz)))
+            splitverts.append(1)
     
     #create hole verts
     for i in range(ny):
-        yoff = (i/(ny-1)- 0.5)*(wid-0.025) 
+        yoff = (i/(ny-1)- 0.5)*(wid-hspac) 
         for j in range(nx):
-            xoff = (j/(nx-1)- 0.5)*(leng-0.025)
+            xoff = (j/(nx-1)- 0.5)*(leng-hspac)
             for k in range(nph):
                 ang = k/nph*2*np.pi + np.pi
                 verts.append(Vector((hrad*np.sin(ang)+xoff,hrad*np.cos(ang)+yoff,dz)))
+                splitverts.append(1)
 
     #surfaces four corners
     h1 = [0, nx*(ny-1)*nph + nph4, (nx*ny -1)*nph + 2*nph4, (nx-1)*nph + 3*nph4]
@@ -189,4 +350,4 @@ def add_tableface(leng, wid, dz, nx, ny):
         fac = [x+4*nbev for x in fac]
         faces.append(fac)
 
-    return verts, edges, faces
+    return verts, edges, faces, splitverts
