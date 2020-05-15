@@ -22,7 +22,7 @@ import time
 class OBJECT_OT_add_table(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_table"
-    bl_label = "OptiCore Optical Bench"
+    bl_label = "Breadboard"
     bl_options = {'REGISTER', 'UNDO'}
     
     length : FloatProperty(
@@ -153,7 +153,7 @@ def add_table(self, context):
     ny = int((wid-hspac)/hspac)
 
     #first surface
-    verts, edges, faces, splitverts = add_tableface(leng, wid, 0, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev4, hspac)
+    verts, edges, faces, splitverts = add_tableface(leng, wid, 0, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev4, hspac, topface=True)
     nVerts = len(verts)
     nFaces = len(faces)
     
@@ -174,11 +174,12 @@ def add_table(self, context):
     for i in range(nbev4):
         faces.append([i,(i+1)%nbev4, (i+1)%nbev4 + nVerts, i + nVerts])
     ##holes
+    o2 = nx*ny*nph
     for i in range(ny):
         for j in range(nx):
             o = nbev4 + (i*nx + j)*nph
             for k in range(nph):
-                faces.append([o+(k+1)%nph, o+k, o+k+nVerts, o+(k+1)%nph + nVerts])
+                faces.append([o+o2+(k+1)%nph, o+o2+k, o+k+nVerts, o+(k+1)%nph + nVerts])
 
     nHoleFaces = nx*ny*nph
                 
@@ -263,6 +264,31 @@ def add_table(self, context):
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode='OBJECT')
 
+        #inside bevels
+        o = nbev4 + nx*ny*nph
+        for i in range(ny):
+            print(i)
+            for j in range(nx):
+                idx = (i*nx + j)*nph
+                for k in range(nph):
+                    mesh.vertices[k + o + idx].select=True
+            if i%8 == 0 or i == ny-1: #if all are computed at once blender crashes
+                bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+                bpy.context.tool_settings.mesh_select_mode = sel_mode
+                bpy.ops.mesh.split_normals()
+                bpy.ops.mesh.select_all(action='DESELECT')
+                bpy.ops.object.mode_set(mode='OBJECT')
+
+    #select hole faces for easier assignment of hole material
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='DESELECT')
+    sel_mode = bpy.context.tool_settings.mesh_select_mode
+    bpy.context.tool_settings.mesh_select_mode = [False, False, True]
+    bpy.ops.object.mode_set(mode='OBJECT')
+    nfac = len(faces)
+    for i in range(nx*ny*nph):
+        mesh.polygons[nfac-i-1].select=True
+
 
     if self.shade_smooth:
         if self.smooth_type:
@@ -271,7 +297,7 @@ def add_table(self, context):
 
 
 
-def add_tableface(leng, wid, dz, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev4, hspac):
+def add_tableface(leng, wid, dz, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev4, hspac, topface=False):
     verts, edges, faces, splitverts = [],[],[],[]
 
     #create outline verts
@@ -287,15 +313,30 @@ def add_tableface(leng, wid, dz, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev
             ang = j/(nbev-1)*np.pi/2 + angoffset
             verts.append(Vector((brad*np.sin(ang)+xoff,brad*np.cos(ang)+yoff,dz)))
             splitverts.append(1)
+
+    #create hole-bevel verts
+    if topface:
+        for i in range(ny):
+            yoff = (i/(ny-1)- 0.5)*(wid-hspac) 
+            for j in range(nx):
+                xoff = (j/(nx-1)- 0.5)*(leng-hspac)
+                for k in range(nph):
+                    ang = k/nph*2*np.pi + np.pi
+                    verts.append(Vector((hrad*1.1*np.sin(ang)+xoff,hrad*1.1*np.cos(ang)+yoff,dz)))
+                    splitverts.append(1)
     
     #create hole verts
+    if topface:
+        dz2 = -0.1*hrad
+    else:
+        dz2 = 0
     for i in range(ny):
         yoff = (i/(ny-1)- 0.5)*(wid-hspac) 
         for j in range(nx):
             xoff = (j/(nx-1)- 0.5)*(leng-hspac)
             for k in range(nph):
                 ang = k/nph*2*np.pi + np.pi
-                verts.append(Vector((hrad*np.sin(ang)+xoff,hrad*np.cos(ang)+yoff,dz)))
+                verts.append(Vector((hrad*np.sin(ang)+xoff,hrad*np.cos(ang)+yoff,dz+dz2)))
                 splitverts.append(1)
 
     #surfaces four corners
@@ -349,5 +390,19 @@ def add_tableface(leng, wid, dz, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev
         fac = [nph2 + x + (nx*(ny-1) + i)*nph for x in range(nph4+1)] + [nph4 + x + (nx*(ny-1) + i)*nph + nph for x in range(nph4+1)]
         fac = [x+4*nbev for x in fac]
         faces.append(fac)
+
+    #surfaces hole bevels
+    if topface:
+        nhVert = nx*ny*nph
+        for i in range(ny):
+            for j in range(nx):
+                idx1 = (i*nx + j)*nph + nbev4
+                idx2 = idx1 + nhVert
+                for k in range(nph):
+                    f1 = idx1 + k
+                    f2 = idx1 + (k+1)%nph
+                    f3 = idx2 + (k+1)%nph
+                    f4 = idx2 + k
+                    faces.append([f2,f1,f4,f3])
 
     return verts, edges, faces, splitverts
