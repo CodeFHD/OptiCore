@@ -1,13 +1,26 @@
 # OptiCore
 Optical Elements Addon for Blender
-Current version 2.0 for Blender 2.81
+Version 0.1 - 21.05.2020
 
-This addon was motivated by the need to create accurate optical elements. Modelling them in Blender via a boolean operation on spheres can lead to artifacts for low f-number surfaces unless very high (u,v)-numbers are used, making the computation very slow.
+OptiCore is a Blender-addon to provide accurate and well-defined models of optical elements (lenses, mirrors, ...) as well as optimechanical components (optical bench, posts, lens mounts, ...). With this addon, I want to simplify the creation of 
+
+
+The addon was motivated by the need to create accurate optical lenses. Modelling them in Blender via a boolean operation on spheres can lead to artifacts for low f-number surfaces unless very high (u,v)-numbers are used, making the computation very slow.
+The "Core" part of its name is derived from the LuxCoreRender engine, which I used for rendering.
+
 OptiCore creates surfaces with a fixed number of surface elements for all surface radii, creating accurate surfaces
 
 Currently, it provides two functions, "Add Lens" and "Add Mirror", which can be found in Blender under "Add > Mesh"
 
 For correct optical behaviour, all elements created with this addon should have smooth shading applied, together with edge-split to avoid artifacts at the lens edge. Both operators will be applied by default.
+
+## Table of Contents
+* [Optical Elements](#optical-elements)
+  * [Built With](#add-lens)
+* [Optomechanics](#optomechanics)
+* [ToDo List](#todo-list)
+
+## Optical Elements
 
 ## Add Lens
 
@@ -109,7 +122,9 @@ A hole along the collimated beam axis can be included.
 
 - Hole Radius: Radius of the central hole (only if central hole is selected).
 
-## ToDo-List
+## Optomechanics
+
+## ToDo List
 
 ### general programming
 - Update Readme for Square Lens
