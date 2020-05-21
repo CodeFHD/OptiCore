@@ -2,8 +2,11 @@
 
 
 <p align="center">
-<h3 align="center">OptiCore</h3>
+<h1 align="center">OptiCore</h1>
+</p>
+<p align="center">
 Optical Elements Addon for Blender
+<br />
 Version 0.1 - 21.05.2020
 
 OptiCore is a Blender-addon to provide accurate and well-defined models of optical elements (lenses, mirrors, ...) as well as optimechanical components (optical bench, posts, lens mounts, ...). With this addon, I want to simplify the creation of
