@@ -1,8 +1,14 @@
-# OptiCore
+
+
+
+<p align="center">
+<h3 align="center">OptiCore</h3>
 Optical Elements Addon for Blender
 Version 0.1 - 21.05.2020
 
-OptiCore is a Blender-addon to provide accurate and well-defined models of optical elements (lenses, mirrors, ...) as well as optimechanical components (optical bench, posts, lens mounts, ...). With this addon, I want to simplify the creation of 
+OptiCore is a Blender-addon to provide accurate and well-defined models of optical elements (lenses, mirrors, ...) as well as optimechanical components (optical bench, posts, lens mounts, ...). With this addon, I want to simplify the creation of
+
+</p>
 
 
 The addon was motivated by the need to create accurate optical lenses. Modelling them in Blender via a boolean operation on spheres can lead to artifacts for low f-number surfaces unless very high (u,v)-numbers are used, making the computation very slow.
@@ -16,13 +22,17 @@ For correct optical behaviour, all elements created with this addon should have 
 
 ## Table of Contents
 * [Optical Elements](#optical-elements)
-  * [Built With](#add-lens)
+  * [Lens](#lens)
+  * [Square Lens](#square-lens)
+  * [Mirror](#mirror)
 * [Optomechanics](#optomechanics)
+  * [Breadboard](#breadboard)
+  * [Post](#post)
 * [ToDo List](#todo-list)
 
 ## Optical Elements
 
-## Add Lens
+### Lens
 
 Creates an optical lens mesh with two flat, spherical or apsheric surfaces.
 
@@ -62,7 +72,7 @@ The component origin is currently fixed at the on-axis intersection with surface
 
 - D-shaped lens: Create a cross-section model of the lens
 
-## Add Square Lens
+### Square Lens
 
 Creates a optical lens mesh with a quadratic shape
 Only flat and spherical sufaces are supported at the moment.
@@ -87,7 +97,7 @@ The component origin is currently fixed at the on-axis intersection with surface
 
 - Use Autosmooth (LuxCore v2.3): If Selected, uses autosmooth on regular mesh. If not selected, uses curstom split normals (only supported in LuxCore v2.4)
 
-## Add Mirror
+### Mirror
 
 Creates a circular optical mirror mesh with a spherical or parabolic surface and a flat back.
 Parabolic Mirrors can be constructed with component origin at the focal point or mirror centre. For spherical mirrors, only mirror centre is available.
@@ -124,9 +134,13 @@ A hole along the collimated beam axis can be included.
 
 ## Optomechanics
 
+### Breadboard
+
+### Post
+
 ## ToDo List
 
-### general programming
+### General Programming
 - Update Readme for Square Lens
 - Square lens needs triangles as surface elements (Done). Parabolic mirror might also for off-axis, check!
 - check for nonsense-geometries
@@ -136,7 +150,7 @@ A hole along the collimated beam axis can be included.
 - lens file import (seq, zmx, spd; open standards, patents, copyright?)
 - lens system designer
 
-### Optical Components to add
+### Components To Add
 - flat annulus
 - along-focus holes for OAPs
 - elliptics (off-axis flat)
