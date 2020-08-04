@@ -12,7 +12,7 @@ from .. import utils
 class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_mirror"
-    bl_label = "OptiCore Mirror"
+    bl_label = "Mirror"
     bl_options = {'REGISTER', 'UNDO'}
     
     mtype : EnumProperty(

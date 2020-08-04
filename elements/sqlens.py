@@ -12,7 +12,7 @@ from .. import utils
 class OBJECT_OT_add_sqlens(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_sqlens"
-    bl_label = "OptiCore Square Lens"
+    bl_label = "Square Lens"
     bl_options = {'REGISTER', 'UNDO'}
     
     ltype1 : EnumProperty(

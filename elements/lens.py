@@ -12,7 +12,7 @@ from .. import utils
 class OBJECT_OT_add_lens(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_lens"
-    bl_label = "OptiCore Lens"
+    bl_label = "Lens"
     bl_options = {'REGISTER', 'UNDO'}
     
     ltype1 : EnumProperty(
