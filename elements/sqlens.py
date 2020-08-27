@@ -90,7 +90,7 @@ class OBJECT_OT_add_sqlens(Operator, AddObjectHelper):
             default=True,
            )
     smooth_type : BoolProperty(
-            name="Use Autosmooth (LuxCore v2.3)",
+            name="Use Autosmooth (LuxCore)",
             default=True,
            )
 

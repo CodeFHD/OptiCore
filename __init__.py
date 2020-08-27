@@ -1,8 +1,8 @@
 bl_info = {
     "name": "OptiCore",
     "author": "Johannes Hinrichs (CodeFHD)",
-    "version": (0, 1),
-    "blender": (2, 82, 0),
+    "version": (1, 0),
+    "blender": (2, 83, 0),
     "location": "View3D > Add > Mesh > Add Lens",
     "description": "Adds a new optical element",
     "warning": "",
@@ -65,6 +65,7 @@ def add_table_button(self, context):
         icon='PLUGIN')
 
 
+"""
 # This allows you to right click on a button and link to the manual
 def add_lens_manual_map():
     url_manual_prefix = "https://docs.blender.org/manual/en/dev/"
@@ -78,7 +79,7 @@ def add_mirror_manual_map():
         ("bpy.ops.mesh.add_mirror", "editors/3dview/object"),
         )
     return url_manual_prefix, url_manual_mapping
-
+"""
 
 classes = (OBJECT_OT_add_lens, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro,
           OBJECT_OT_add_table,OBJECT_OT_add_post)

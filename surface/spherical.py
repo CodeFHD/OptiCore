@@ -2,7 +2,25 @@ import numpy as np
 
 from mathutils import Vector
 
-def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad=0,dshape=False):
+def _fixN1(N1, alpha):
+    """
+    recursive function to test and reduce N1 until condition is met
+    """
+    if (1 - alpha)**(N1 - 2) > 0.01:
+        return N1
+    else:
+        return _fixN1(N1-1, alpha)
+
+def _fixN2(N2, maxb):
+    """
+    recursive function to test and increase N2 until condition is met
+    """
+    if maxb/N2 < 1:
+        return N2
+    else:
+        return _fixN2(N2-1, maxb)
+
+def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad=0,dshape=False,optiverts=False):
     """
     nsurf=1 for first surface,
     nsurf=-1 for second surface
@@ -22,18 +40,33 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
     if dshape:
         maxb = np.pi*N2/(N2-1)
 
+
     sig = 1
     if rad < 0:
         sig = -1
     nhole = not hole
     rad = np.abs(rad)
     ang = np.arcsin(lrad/rad)
+    
+    if optiverts:
+        #for calc of optimaised distribution
+        N2 = _fixN2(N2, maxb)
+        alpha = maxb/N2
+        N1 = _fixN1(N1, alpha)
+        #create list of rs
+        optirs = [lrad]
+        for i in range(N1-1):
+            optirs.append((1-alpha)*optirs[-1])
+        optirs = optirs[::-1]
 
     if not hole:
         verts.append(Vector((-xadd,0,0)))
         splitverts.append(0)
-        a = ang/N1
-        r = rad*np.sin(a)
+        if optiverts:
+            r = optirs[0]
+        else:
+            a = ang/N1
+            r = rad*np.sin(a)
         hang = 0
     else:
         hang = np.arcsin(hrad/rad)
@@ -53,8 +86,11 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
                 fi3 = fi1+nsurf*(j+1)
                 faces.append([fi1,fi2,fi3])
     for i in range(1,N1):
-        a = hang + (ang-hang)*(i+nhole)/(N1-hole)
-        r = rad*np.sin(a)
+        if optiverts:
+            r = optirs[i]
+        else:
+            a = hang + (ang-hang)*(i+nhole)/(N1-hole)
+            r = rad*np.sin(a)
         x = rad-np.sqrt(rad**2-r**2)
         for j in range(N2)[::nsurf]:
             b = maxb*j/N2
@@ -72,7 +108,8 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
                 fi4 = fi1-nsurf*N2
                 faces.append([fi4,fi3,fi2,fi1])
             
-    return verts, faces, splitverts
+    print(len(verts), len(faces))
+    return verts, faces, splitverts, N1, N2
 
 
 def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0):

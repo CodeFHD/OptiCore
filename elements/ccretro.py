@@ -14,7 +14,7 @@ from .. import utils
 class OBJECT_OT_add_CCretro(Operator, AddObjectHelper):
     """Cube Corner Retroreflector Array"""
     bl_idname = "mesh.add_ccretro"
-    bl_label = "Cubecorner Retroreflector Array"
+    bl_label = "Retroreflector Array"
     bl_options = {'REGISTER', 'UNDO'}
     
     rshape : EnumProperty(
@@ -69,6 +69,13 @@ class OBJECT_OT_add_CCretro(Operator, AddObjectHelper):
            description="thickness from CC to front/back face (Minimum 0.1% of CC depth)",
            unit = "LENGTH",
            )
+    A : FloatVectorProperty(
+           name="Tip Offset",
+           default = (0.,0.,0.),
+           description="XYZ offset of the cube tips",
+           min=-1.,
+           max=1.,
+           )
 
     material_name : StringProperty(
             name="Material",
@@ -80,7 +87,7 @@ class OBJECT_OT_add_CCretro(Operator, AddObjectHelper):
             default=False,
            )
     smooth_type : BoolProperty(
-            name="Use Autosmooth (LuxCore v2.3)",
+            name="Use Autosmooth",
             default=True,
            )
 
@@ -105,6 +112,7 @@ class OBJECT_OT_add_CCretro(Operator, AddObjectHelper):
             layout.prop(self, 'rleny')
         layout.prop(self, 'ccdist')
         layout.prop(self, 'facethickness')
+        layout.prop(self, 'A')
 
         layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
         layout.prop(self, 'shade_smooth')
@@ -135,6 +143,7 @@ def add_ccretro_cube(self, context):
     rleny = self.rleny
     ccdist = self.ccdist
     fthick = self.facethickness
+    A = self.A
 
     #calculate base parameters
     h = ccdist/2
@@ -144,6 +153,8 @@ def add_ccretro_cube(self, context):
     dz = ccdist/np.sqrt(6) #height offset of points, alternate dz and 2*dz
 
     ccdepth = 2*dz #total depth of cube corner
+
+    A = [A[i]*ccdist/20 for i in range(len(A))]
 
     #calc number of cc elements:
     if self.rshape == 'circular':
@@ -185,10 +196,10 @@ def add_ccretro_cube(self, context):
     #make cc tip verts (in rows)
     for j in range(ny):
         for i in range(nx - j%2):
-            x = ccxoff + i*ccdist + dxrow*(j%2)
-            y = ccyoff + j*dyrow
-            #z = -ccdepth
-            verts.append(Vector((x,y,-ccdepth)))
+            x = ccxoff + i*ccdist + dxrow*(j%2) + A[0]
+            y = ccyoff + j*dyrow + A[1]
+            z = -ccdepth + A[2]
+            verts.append(Vector((x,y,z)))
     ntips = ny*nx - ny//2
 
     #make cc top verts (in rows+1)
@@ -407,12 +418,15 @@ def add_ccretro_trirect(self, context):
     rleny = self.rleny
     ccdist = self.ccdist
     fthick = self.facethickness
+    A = self.A
 
     #calculate base parameters
     ccdepth = ccdist/np.sqrt(6) #depth of cube corner
     L = np.sqrt(3)/2*ccdist #spacing of the lines,; height of triangle as seen from top
     r = ccdist/(2*np.sqrt(3))
     yoffs = [r, L-r]
+
+    A = [A[i]*ccdist/20 for i in range(len(A))]
 
     #calc number of cc elements:
     if self.rshape == 'circular':
@@ -454,10 +468,10 @@ def add_ccretro_trirect(self, context):
     #make cc tip verts (in rows)
     for j in range(ny):
         for i in range(2*nx-1):
-            x = ccxoff + (i+1)*ccdist/2
-            y = ccyoff + j*L + yoffs[(j+i)%2]
-            #z = -ccdepth
-            verts.append(Vector((x,y,-ccdepth)))
+            x = ccxoff + (i+1)*ccdist/2 + A[0]
+            y = ccyoff + j*L + yoffs[(j+i)%2] + A[1]
+            z = -ccdepth + A[2]
+            verts.append(Vector((x,y,z)))
     ntips = ny*(2*nx - 1)
 
     #make cc top verts (in rows+1)

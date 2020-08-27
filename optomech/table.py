@@ -27,25 +27,25 @@ class OBJECT_OT_add_table(Operator, AddObjectHelper):
     
     length : FloatProperty(
            name="Length",
-           default = 1.8,
+           default = 1800,
            description="Length",
            unit = "LENGTH",
            )
     width : FloatProperty(
            name="Width",
-           default = 0.9,
+           default = 900,
            description="Width",
            unit = "LENGTH",
            )
     thickness : FloatProperty(
            name="Thickness",
-           default = 0.005,
+           default = 5,
            description="Thickness",
            unit = "LENGTH",
            )
     hrad : FloatProperty(
            name="Hole Radius",
-           default = 0.003,
+           default = 3,
            description="Hole Radius",
            unit = "LENGTH",
            )
@@ -57,13 +57,13 @@ class OBJECT_OT_add_table(Operator, AddObjectHelper):
            )
     hspac : FloatProperty(
            name="Hole Spacing",
-           default = 0.025,
+           default = 25,
            description="Spacing between holes",
            unit = "LENGTH",
            )
     brad : FloatProperty(
            name="Bevel Radius",
-           default = 0.003,
+           default = 3,
            description="Radius of edge bevel",
            unit = "LENGTH",
            )
@@ -78,7 +78,7 @@ class OBJECT_OT_add_table(Operator, AddObjectHelper):
             default=True,
            )
     smooth_type : BoolProperty(
-            name="Use Autosmooth (LuxCore v2.3)",
+            name="Use Autosmooth",
             default=True,
            )
 
@@ -110,11 +110,11 @@ class OBJECT_OT_add_table(Operator, AddObjectHelper):
 
     def check_props(self):
         if self.length <= 0:
-            self.length = 1.8
+            self.length = 1800
         if self.width <= 0:
-            self.width = 0.9
+            self.width = 900
         if self.thickness <= 0:
-            self.length = 0.0127
+            self.length = 12.7
         if self.hspac > 0.25*min(self.length, self.width):
             self.hspac = 0.25*min(self.length, self.width)
         if self.hrad >= self.hspac/2:

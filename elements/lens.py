@@ -96,11 +96,15 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
             default=True,
            )
     smooth_type : BoolProperty(
-            name="Use Autosmooth (LuxCore v2.3)",
+            name="Use Autosmooth",
             default=True,
            )
     dshape : BoolProperty(
             name="D-Shaped Lens",
+            default=False,
+           )
+    optiverts : BoolProperty(
+            name="Alternative radial vertex distribution",
             default=False,
            )
 
@@ -134,6 +138,7 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
         if self.shade_smooth:
             layout.prop(self, 'smooth_type')
         layout.prop(self, 'dshape')
+        layout.prop(self, 'optiverts')
 
     def execute(self, context):
         add_lens(self, context)
@@ -180,7 +185,7 @@ def add_lens(self, context):
         verts, faces, splitverts = sfc.add_flat_surface(lrad,N1,N2, dshape=self.dshape)
     else:
         if self.ltype1 == 'spherical':
-            verts, faces, splitverts = sfc.add_spherical_surface(srad1, lrad, N1, N2, dshape=self.dshape)
+            verts, faces, splitverts, N1, N2 = sfc.add_spherical_surface(srad1, lrad, N1, N2, dshape=self.dshape, optiverts=self.optiverts)
         elif self.ltype1 == 'aspheric':
             verts, faces, splitverts = sfc.add_aspheric_surface(srad1, k, A, lrad, N1, N2, dshape=self.dshape)
     
@@ -194,7 +199,7 @@ def add_lens(self, context):
         dvert = dvert[::-1]
     else:
         if self.ltype2 == 'spherical':
-            dvert, dfac, splitverts2 = sfc.add_spherical_surface(srad2, lrad, N1, N2, -1, CT, nVerts=nVerts, dshape=self.dshape)
+            dvert, dfac, splitverts2, N12, N22 = sfc.add_spherical_surface(srad2, lrad, N1, N2, -1, CT, nVerts=nVerts, dshape=self.dshape, optiverts=self.optiverts)
         elif self.ltype2 == 'aspheric':
             dvert, dfac, splitverts2 = sfc.add_aspheric_surface(srad2, k2, A2, lrad, N1, N2, -1, CT, nVerts=nVerts, dshape=self.dshape)
         #dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts=nVerts)

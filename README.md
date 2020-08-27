@@ -8,23 +8,24 @@
 Optical Elements Addon for Blender
 <br />
 
-OptiCore is a Blender-addon to provide accurate and well-defined models of optical elements (lenses, mirrors, ...) as well as optimechanical components (optical bench, posts, lens mounts, ...). These models can not only help you to easily create models of optical laboratory experiments, but also offer a functional implementation of optical elements to create stunning images involving caustics.
+OptiCore is a Blender-addon to provide accurate and well-defined models of optical elements (lenses, mirrors, ...) as well as optimechanical components (optical bench, posts, ...). These models can not only help you to easily create renderings of optical laboratory experiments, but also stunning images involving caustics.
 
 </p>
 
 
-The addon was motivated by the need to create accurate optical lenses. Modelling them in Blender via a boolean operation on spheres can lead to artifacts for low f-number surfaces unless very high (u,v)-numbers are used, making the computation very slow.
-The name Opti"Core" is derived from the LuxCoreRender engine, which is a great tool for physically accurate rendering and also available as a powerful addon for Blender.
+The addon was motivated by the need to create accurate optical lenses. Modelling them in Blender via a boolean operation on spheres can lead to artifacts for low f-number surfaces unless very high (u,v)-number spheress are used, making the computation very slow.
+The name Opti"Core" is derived from the LuxCoreRender engine, which is a great tool for physically accurate rendering, and also available as a powerful addon for Blender.
 
-You can find a brief description of the available optical elements below. Please don't hesitate to contact me or open a GitHub-Issue if you have any requests.
+You can find a brief description of the available optical elements below. Please don't hesitate to contact me or open a GitHub-Issue if you have any feature requests.
 
-For correct optical behaviour, all elements created with this addon should have smooth shading applied, together with the edge-split modifier, auto-smooth mesh or custom split normals. There appear to be differences between these methods, and I still have to figure out which offers the best behaviour. (Input and user feedback welcome!)
+For correct optical behaviour, all elements created with this addon should have smooth shading applied, together with the edge-split modifier, auto-smooth mesh or custom split normals. There appear to be differences between these methods, and I still have to figure out which offers the best behaviour. (Input and user feedback are welcome!)
 
 ## Table of Contents
 * [Optical Elements](#optical-elements)
   * [Lens](#lens)
   * [Square Lens](#square-lens)
   * [Mirror](#mirror)
+  * [Retroreflector](#retroreflector)
 * [Optomechanics](#optomechanics)
   * [Breadboard](#breadboard)
   * [Post](#post)
@@ -44,7 +45,9 @@ An option exists to create a cross-section model (D-shaped lens).
 
 ### Square Lens
 
-Creates a optical lens mesh with a quadratic outline
+Creates a optical lens mesh with a quadratic outline.
+
+The feature set is currently reduces comapred to regular lenses, i.e. spherical surfaces only and no option for a cross-section model.
 
 ### Mirror
 
@@ -56,12 +59,12 @@ Parabolic mirrors can be constructed as off-axis parabolic mirrors.
 
 A hole along the collimated beam axis can be included.
 
-###Retroreflector
+### Retroreflector
 
 Creates an array of cubecorner retroreflectors.
 
 Features two "Retroreflector types":
-- Cubecorner, which is how reflectors are typically made, and
+- "Cubecorner", which is how reflectors are typically manufactured, and
 - "Trirectangular tetrahedron", which is basically only the lower half. (Uncommon, but why not have it, looks cool...)
 
 Retroreflectors can be used in two ways:
@@ -82,9 +85,9 @@ Upon creation, the faces inside the holes are pre-selected. This allows you to e
 
 ### Post
 
-Creates an 0.5-inch optical post (Thorlabs-style), with a 4mm hole at the top and 6mm hole at the bottom, as well as through hole.
+Creates an 0.5-inch optical post (Thorlabs-style), with a 4 mm hole at the top and 6 mm hole at the bottom, as well as a through hole.
 
-Warning: Mesh geometry with the through-hole appears to be very complicated to properly shade smooth. Artifacts may occur with high glossiness.
+Warning: This mesh geometry with a through-hole appears to be very complicated to properly shade smooth. Artifacts may occur with high glossiness. Autosmooth appears to work better than split normals.
 
 Other post-sizes are to follow.
 

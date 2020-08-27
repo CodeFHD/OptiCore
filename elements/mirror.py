@@ -74,7 +74,7 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
             default=True,
            )
     smooth_type : BoolProperty(
-            name="Use Autosmooth (LuxCore v2.3)",
+            name="Use Autosmooth",
             default=True,
            )
     cent_hole : BoolProperty(
@@ -145,7 +145,7 @@ def add_mirror(self, context):
         xOA = 0
     else:
         if surftype == 'spherical':
-            verts, faces, splitverts = sfc.add_spherical_surface(-srad, mrad, N1, N2,hole=self.cent_hole,hrad=hrad)
+            verts, faces, splitverts, N1, N2 = sfc.add_spherical_surface(-srad, mrad, N1, N2,hole=self.cent_hole,hrad=hrad)
             yadd = 0
             xOA = 0
             if srad < 0:
