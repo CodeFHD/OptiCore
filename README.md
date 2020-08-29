@@ -14,6 +14,8 @@ OptiCore is a Blender-addon to provide accurate and well-defined models of optic
 
 <p align="center">
 Intodruction Video on YouTube:
+</p>
+<p align="center">
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=D8rQBVI4lIg
 " target="_blank"><img src="http://img.youtube.com/vi/D8rQBVI4lIg/0.jpg" 
 alt="Introduction Video on YouTube" width="480" height="270" border="10" /></a>
