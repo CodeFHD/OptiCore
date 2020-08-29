@@ -10,9 +10,13 @@ Optical Elements Addon for Blender
 
 OptiCore is a Blender-addon to provide accurate and well-defined models of optical elements (lenses, mirrors, ...) as well as optimechanical components (optical bench, posts, ...). These models can not only help you to easily create renderings of optical laboratory experiments, but also stunning images involving caustics.
 
+</p>
+
+<p align="center">
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=D8rQBVI4lIg
 " target="_blank"><img src="http://img.youtube.com/vi/D8rQBVI4lIg/0.jpg" 
-alt="Introduction Video on YouTube" width="240" height="180" border="10" /></a>
+alt="Introduction Video on YouTube" width="480" height="270" border="10" /></a>
+
 
 </p>
 
