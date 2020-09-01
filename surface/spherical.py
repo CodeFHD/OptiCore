@@ -112,7 +112,7 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
     return verts, faces, splitverts, N1, N2
 
 
-def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0):
+def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical=False):
     """
     nsurf=1 for first surface,
     nsurf=-1 for second surface
@@ -138,7 +138,10 @@ def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0):
         y = lwidth*(i/(N1-1) - 0.5)
         for j in range(N2):
             z = lwidth*(j/(N2-1) - 0.5)
-            r = np.sqrt(y**2 + z**2)
+            if cylindrical:
+                r = y
+            else:
+                r = np.sqrt(y**2 + z**2)
             x = rad-np.sqrt(rad**2-r**2)
             verts.append(Vector((-1.*x*sig*nsurf-xadd,y,z)))
             cond1 = (i==0 or i==N1-1)

@@ -15,6 +15,10 @@ class OBJECT_OT_add_sqlens(Operator, AddObjectHelper):
     bl_label = "Square Lens"
     bl_options = {'REGISTER', 'UNDO'}
     
+    cylindrical : BoolProperty(
+            name="Cylinder Lens",
+            default=False,
+           )
     ltype1 : EnumProperty(
            name="Surface 1 Type",
            items = {("spherical","Spherical",""),
@@ -90,7 +94,7 @@ class OBJECT_OT_add_sqlens(Operator, AddObjectHelper):
             default=True,
            )
     smooth_type : BoolProperty(
-            name="Use Autosmooth (LuxCore)",
+            name="Use Autosmooth",
             default=True,
            )
 
@@ -105,9 +109,10 @@ class OBJECT_OT_add_sqlens(Operator, AddObjectHelper):
         col.label(text="Rotation")
         col.prop(self, 'rotation', text="")
         scene = context.scene
-        #layout.prop(self, 'ltype1')
+        layout.prop(self, 'ltype1')
+        layout.prop(self, 'cylindrical')
         layout.prop(self, 'rad1')
-        #layout.prop(self, 'ltype2')
+        layout.prop(self, 'ltype2')
         layout.prop(self, 'rad2')
         layout.prop(self, 'lenswidth')
         layout.prop(self, 'centerthickness')
@@ -138,12 +143,12 @@ def add_sqlens(self, context):
     N2 = N1
     lwidth = self.lenswidth
     CT = self.centerthickness
-    #if self.ltype1 == 'aspheric':
-    #    k = self.k
-    #    A = self.A
-    #if self.ltype2 == 'aspheric':
-    #    k2 = self.k2
-    #    A2 = self.A2
+    if self.ltype1 == 'aspheric':
+        k = self.k
+        A = self.A
+    if self.ltype2 == 'aspheric':
+        k2 = self.k2
+        A2 = self.A2
 
     ssig1 = 1
     if srad1 < 0:
@@ -170,9 +175,9 @@ def add_sqlens(self, context):
         verts, faces, splitverts = sfc.add_sqflat_surface(lwidth,N1,N2)
     else:
         if self.ltype1 == 'spherical':
-            verts, faces, splitverts = sfc.add_sqspherical_surface(srad1, lwidth, N1, N2)
-        #elif self.ltype1 == 'aspheric':
-        #    verts, faces, splitverts = sfc.add_aspheric_surface(srad1, k, A, lrad, N1, N2)
+            verts, faces, splitverts = sfc.add_sqspherical_surface(srad1, lwidth, N1, N2, cylindrical=self.cylindrical)
+        elif self.ltype1 == 'aspheric':
+            verts, faces, splitverts = sfc.add_sqaspheric_surface(srad1, k, A, lwidth, N1, N2, cylindrical=self.cylindrical)
     
     #add side
     nVerts = len(verts)
@@ -206,9 +211,9 @@ def add_sqlens(self, context):
         dvert = dvert[::-1]
     else:
         if self.ltype2 == 'spherical':
-            dvert, dfac, splitverts2 = sfc.add_sqspherical_surface(srad2, lwidth, N1, N2, -1, CT, nVerts=nVerts)
-        #elif self.ltype2 == 'aspheric':
-        #    dvert, dfac, splitverts2 = sfc.add_aspheric_surface(srad2, k2, A2, lrad, N1, N2, -1, CT, nVerts=nVerts)
+            dvert, dfac, splitverts2 = sfc.add_sqspherical_surface(srad2, lwidth, N1, N2, -1, CT, nVerts=nVerts, cylindrical=self.cylindrical)
+        elif self.ltype2 == 'aspheric':
+            dvert, dfac, splitverts2 = sfc.add_sqaspheric_surface(srad2, k2, A2, lwidth, N1, N2, -1, CT, nVerts=nVerts, cylindrical=self.cylindrical)
         #dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts=nVerts)
         dvert, dfac = dvert[::-1], dfac[::-1]
         

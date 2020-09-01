@@ -68,3 +68,73 @@ def add_aspheric_surface(rad, k, A, lrad, N1, N2,nsurf=1,xadd=0, nVerts=0,dshape
                 faces.append([fi4,fi3,fi2,fi1])
             
     return verts, faces, splitverts
+
+def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical=False):
+    """
+    nsurf=1 for first surface,
+    nsurf=-1 for second surface
+    
+    xadd has to be set for second surface (only)
+    """
+
+    verts = []
+    faces = []
+    splitverts = []
+    vertquads = []
+    
+    surfadd=0
+    #if nsurf == -1:
+    #    surfadd = N2*N1-1
+
+    sig = 1
+    if rad < 0:
+        sig = -1
+    rad = np.abs(rad)
+
+    for i in range(N1):
+        y = lwidth*(i/(N1-1) - 0.5)
+        for j in range(N2):
+            z = lwidth*(j/(N2-1) - 0.5)
+            if cylindrical:
+                r = y
+            else:
+                r = np.sqrt(y**2 + z**2)
+            x = getz(rad,r,k,A)
+            verts.append(Vector((-1.*x*sig*nsurf-xadd,y,z)))
+            cond1 = (i==0 or i==N1-1)
+            cond2 = (j==0 or j==N2-1)
+            if (cond1 or cond2):
+                splitverts.append(1)
+            else:
+                splitverts.append(0)
+            ang = np.arctan2(z+lwidth/(2*N2-2),y+lwidth/(2*N1-2))
+            #if np.abs(ang%(np.pi/2)) < 0.01*lwidth:
+            cond1 = N1%2 == 0
+            cond2 = j==int(N2/2 - 1) or i==int(N1/2 - 1)
+            if cond1 and cond2:
+                vertquads.append(-99)
+            else:
+                vertquads.append(ang/np.pi*2)
+
+    for i in range(N1-1):
+        for j in range(N2-1):
+            f1 = nVerts+surfadd+j+1 + N2*i
+            f2 = nVerts+surfadd+j+ N2*i
+            f3 = nVerts+surfadd+j + N2*(i+1)
+            f4 = nVerts+surfadd+j+1 + N2*(i+1)
+            if vertquads[j+i*N2] >= 1:
+                faces.append([f1,f2,f4][::nsurf])
+                faces.append([f2,f3,f4][::nsurf])
+            elif vertquads[j+i*N2] >= 0:
+                faces.append([f1,f2,f3][::nsurf])
+                faces.append([f1,f3,f4][::nsurf])
+            elif vertquads[j+i*N2] >= -1:
+                faces.append([f1,f2,f4][::nsurf])
+                faces.append([f2,f3,f4][::nsurf])
+            elif vertquads[j+i*N2] >= -2:
+                faces.append([f1,f2,f3][::nsurf])
+                faces.append([f1,f3,f4][::nsurf])
+            else:
+                faces.append([f1,f2,f3,f4][::nsurf])
+            
+    return verts, faces, splitverts

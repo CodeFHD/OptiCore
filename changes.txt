@@ -1,0 +1,7 @@
+v1.1
+- Added cylindircal option to square lens
+- Added aspheric option to square lens
+- fixed a lable in square lens
+
+v1.0
+- First Version
