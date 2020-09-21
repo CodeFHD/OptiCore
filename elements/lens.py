@@ -203,7 +203,7 @@ def add_lens(self, context):
     edges = []
     
     srad1 = self.rad1
-    srad2 = self.rad2
+    srad2 = -self.rad2
     N1 = self.num1
     N2 = self.num2
     lrad = self.lensradius
@@ -223,7 +223,7 @@ def add_lens(self, context):
 
     md = self.makedoublet
     if md:
-        srad3 = self.rad3
+        srad3 = -self.rad3
         CT2 = self.centerthickness2
         if self.ltype3 == 'aspheric':
             k3 = self.k3

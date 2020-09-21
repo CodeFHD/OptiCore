@@ -137,7 +137,7 @@ def add_sqlens(self, context):
     edges = []
     
     srad1 = self.rad1
-    srad2 = self.rad2
+    srad2 = -self.rad2
     N1 = self.num1
     #N2 = self.num2
     N2 = N1
