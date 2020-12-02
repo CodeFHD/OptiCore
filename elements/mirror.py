@@ -74,7 +74,7 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
             default=True,
            )
     smooth_type : BoolProperty(
-            name="Use Autosmooth",
+            name="Use Custom Normals",
             default=True,
            )
     cent_hole : BoolProperty(
@@ -87,6 +87,10 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            description="Radius of Curvature of Mirror Surface",
            min = 0.01,
            unit = "LENGTH",
+           )
+    debugmode : BoolProperty(
+            name="Debug Mode",
+            default=False,
            )
 
     def draw(self, context):
@@ -110,11 +114,10 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
         layout.prop(self, 'cent_hole')
         if self.cent_hole:
             layout.prop(self, 'hole_rad')
+        #layout.prop(self, 'debugmode')
 
     def execute(self, context):
-
         add_mirror(self, context)
-
         return {'FINISHED'}
 
 def add_mirror(self, context):
@@ -140,31 +143,23 @@ def add_mirror(self, context):
 
     #compute mirror surface
     if srad == 0: #flat surface case
-        verts, faces, splitverts = sfc.add_flat_surface(mrad,N1,N2,hole=self.cent_hole,hrad=hrad)
+        verts, faces, normals = sfc.add_flat_surface(mrad,N1,N2,hole=self.cent_hole,hrad=hrad)
         yadd = 0
         xOA = 0
     else:
         if surftype == 'spherical':
-            verts, faces, splitverts, N1, N2 = sfc.add_spherical_surface(-srad, mrad, N1, N2,hole=self.cent_hole,hrad=hrad)
+            verts, faces, normals, N1, N2 = sfc.add_spherical_surface(-srad, mrad, N1, N2,hole=self.cent_hole,hrad=hrad)
             yadd = 0
             xOA = 0
             if srad < 0:
                 xOA = -np.abs(srad)+np.sqrt(srad**2-mrad**2)
         elif surftype == 'parabolic':
-            verts, faces, yadd, xOA, splitverts = sfc.add_parabolic_surface(-srad, mrad, N1, N2, theta, orig=opos,hole=self.cent_hole,hrad=hrad)
-    nVerts = len(verts)
+            verts, faces, yadd, xOA, normals = sfc.add_parabolic_surface(-srad, mrad, N1, N2, theta, orig=opos,hole=self.cent_hole,hrad=hrad)
     
-    #add side
-    for j in range(N2):
-        fi1 = nVerts+(j+1)%(N2)
-        fi2 = nVerts+j
-        fi3 = fi2-N2
-        fi4 = fi1-N2
-        faces.append([fi1,fi2,fi3,fi4])
     nVerts = len(verts)
     
     #add rear surface
-    dvert, dfac, splitverts2 = sfc.add_flat_surface(mrad,N1,N2,-1,CT-xOA,yadd,nVerts=nVerts,hole=self.cent_hole,hrad=hrad)
+    dvert, dfac, normals2 = sfc.add_flat_surface(mrad,N1,N2,-1,CT-xOA,yadd,nVerts=nVerts,hole=self.cent_hole,hrad=hrad)
     dvert = dvert[::-1]
     
     verts = verts+dvert
@@ -173,12 +168,21 @@ def add_mirror(self, context):
     del dvert
     del dfac
 
-    dummy1 = [0 for i in range(len(splitverts2))]
-    dummy2 = [0 for i in range(len(splitverts))]
-    splitverts = splitverts + dummy1
-    splitverts2 = dummy2 + splitverts2[::-1]
+    nVerts2 = len(verts)
+
+    #add side
+    for j in range(N2):
+        fi1 = nVerts+(j+1)%(N2)
+        fi2 = nVerts+j
+        fi3 = fi2-N2
+        fi4 = fi1-N2
+        faces.append([fi1,fi2,fi3,fi4])
+    nVertsSide = len(verts)
+
+    normalsside = sfc.get_ringnormals(N2)
 
     #fill hole
+    normalshole = [] #in case there is no hole
     if self.cent_hole:
         lv = len(verts)
         for j in range(N2):
@@ -187,76 +191,78 @@ def add_mirror(self, context):
             fi4 = (j+1)%N2 + lv - N2
             fi3 = j + lv - N2
             faces.append([fi1,fi2,fi3,fi4])
+
+        normalshole = sfc.get_ringnormals(N2, direction=-1)
     
+    normals = normals + normals2
+
+    #create mesh from verts and faces
     mesh = bpy.data.meshes.new(name="New Mirror")
     mesh.from_pydata(verts, edges, faces)
     # useful for development when the mesh may be invalid.
     #mesh.validate(verbose=True)
     obj = object_data_add(context, mesh, operator=self)
-
-    #custom split normals
     
-    if not self.smooth_type:
-        mesh = obj.data
-        obj.select_set(True)
-        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.ops.mesh.select_all(action='DESELECT')
-        sel_mode = bpy.context.tool_settings.mesh_select_mode
-        bpy.context.tool_settings.mesh_select_mode = [True, False, False]
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-        # mirror face
-        for i in range(len(verts)):
-            if splitverts[i] == 0:
-                mesh.vertices[i].select=False
-            else:
-                mesh.vertices[i].select=True
-        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.context.tool_settings.mesh_select_mode = sel_mode
-        bpy.ops.mesh.split_normals()
-        bpy.ops.mesh.select_all(action='DESELECT')
-
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-        #rear face
-        for i in range(len(verts)):
-            if splitverts2[i] == 0:
-                mesh.vertices[i].select=False
-            else:
-                mesh.vertices[i].select=True
-        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.context.tool_settings.mesh_select_mode = sel_mode
-        bpy.ops.mesh.split_normals()
-        bpy.ops.mesh.select_all(action='DESELECT')
-
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-        #hole
-        if self.cent_hole:
-            for i in range(N2):
-                mesh.vertices[i].select=True
-            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-            bpy.context.tool_settings.mesh_select_mode = sel_mode
-            bpy.ops.mesh.split_normals()
-            bpy.ops.mesh.select_all(action='DESELECT')
-
-            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-            nVerts = len(verts)
-            for i in range(N2):
-                mesh.vertices[nVerts -1 - i].select=True
-            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-            bpy.context.tool_settings.mesh_select_mode = sel_mode
-            bpy.ops.mesh.split_normals()
-            bpy.ops.mesh.select_all(action='DESELECT')
-
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        #end split normal
-
+    #assign matierals
     if self.material_name in bpy.data.materials:
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
+
+    #apply smooth shading
     if self.shade_smooth:
-        if self.smooth_type:
-            obj.data.use_auto_smooth = 1
         bpy.ops.object.shade_smooth()
+        obj.data.use_auto_smooth = True
+        if self.smooth_type:    #assign custom normals
+            bpy.ops.mesh.customdata_custom_splitnormals_clear()
+            bpy.ops.mesh.customdata_custom_splitnormals_add()
+
+            cn1, cn2, cn3, cn4 = [], [], [], []
+            #mirror surface
+            if srad == 0:
+                if self.cent_hole:
+                    nloopsface = 4*N2
+                else:
+                    nloopsface = N2
+            else:
+                if self.cent_hole:
+                    nloopsface = N2*4*(N1-1)
+                else:
+                    nloopsface = N2*(3 + 4*(N1-1))
+            for i in range(nloopsface):
+                vi = mesh.loops[i].vertex_index
+                cn1.append(normals[vi])
+            #rear surface
+            if self.cent_hole:
+                nloopsrear = 4*N2
+            else:
+                nloopsrear = N2
+            for i in range(nloopsrear):
+                vi = mesh.loops[i+nloopsface].vertex_index
+                cn2.append(normals[vi])
+            #side
+            nloopsside = 4*N2
+            for i in range(nloopsside):
+                vi = mesh.loops[i+nloopsface+nloopsrear].vertex_index
+                if vi < nVerts:
+                    vi = vi - nVerts + N2
+                else:
+                    vi = vi - nVerts
+                cn3.append(normalsside[vi])
+            #hole
+            if self.cent_hole:
+                nloopshole = 4*N2
+                for i in range(nloopshole):
+                    vi = mesh.loops[i+nloopsface+nloopsrear+nloopsside].vertex_index
+                    if vi < nVerts:
+                        pass
+                    else:
+                        vi = vi - nVerts2 + N2
+                    cn4.append(normalshole[vi])
+
+            mesh.normals_split_custom_set(cn1 + cn2 + cn3 + cn4)
+
+    #for testing
+    if self.debugmode:
+        mesh.calc_normals_split()
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.select_all(action='DESELECT')

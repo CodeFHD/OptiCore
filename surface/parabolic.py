@@ -2,6 +2,9 @@ import numpy as np
 
 from mathutils import Vector
 
+def getdxdr(r,A):
+    return 2.*r*A
+
 def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,hole=False,hrad=0):
     """
     nsurf=1 for first surface,
@@ -14,7 +17,7 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,
 
     verts = []
     faces = []
-    splitverts = []
+    normals = []
 
     surfadd=0
     if nsurf == -1:
@@ -53,7 +56,11 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,
 
     if not hole:
         verts.append(Vector((A*OAD**2+xoffset-xadd,OAD+yoffset,0)))
-        splitverts.append(0)
+        dxdr = getdxdr(OAD,A)
+        adxdr = np.sqrt(1 + dxdr**2)
+        dxdr = dxdr/adxdr
+        b = np.pi/2
+        normals.append((1/adxdr, -1*dxdr*np.sin(b), -1*dxdr*np.cos(b)))
 
     for j in range(N2)[::nsurf]:
         ri = mrad/N1
@@ -67,7 +74,12 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,
         dp = np.sqrt(yp**2+zp**2)
         xp = A*dp**2
         verts.append(Vector((xp+xoffset-xadd,yp+yoffset,zp)))
-        splitverts.append(0)
+        dxdr = getdxdr(dp,A)
+        adxdr = np.sqrt(1 + dxdr**2)
+        dxdr = dxdr/adxdr
+        sinb = yp/dp
+        cosb = zp/dp
+        normals.append((1/adxdr, -1*dxdr*sinb, -1*dxdr*cosb))
         if not hole:
             fi1 = nVerts+surfadd
             fi2 = fi1+nsurf*((j+1)%N2+1)
@@ -87,10 +99,12 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,
             dp = np.sqrt(yp**2+zp**2)
             xp = A*dp**2
             verts.append(Vector((xp+xoffset-xadd,yp+yoffset,zp)))
-            if i == N1-1:
-                splitverts.append(1)
-            else:
-               splitverts.append(0)
+            dxdr = getdxdr(dp,A)
+            adxdr = np.sqrt(1 + dxdr**2)
+            dxdr = dxdr/adxdr
+            sinb = yp/dp
+            cosb = zp/dp
+            normals.append((1/adxdr, -1*dxdr*sinb, -1*dxdr*cosb))
             fi1 = nVerts+surfadd+nsurf*(j+nhole+i*N2)
             fi2 = nVerts+surfadd+nsurf*((j+1)%N2+nhole+i*N2)
             fi3 = fi2-nsurf*N2
@@ -100,4 +114,4 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,
     xs = [v.x for v in verts]
     fxoffset = min(xs)
 
-    return verts, faces, fyoffset, fxoffset, splitverts
+    return verts, faces, fyoffset, fxoffset, normals

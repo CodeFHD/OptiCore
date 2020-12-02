@@ -94,7 +94,7 @@ class OBJECT_OT_add_sqlens(Operator, AddObjectHelper):
             default=True,
            )
     smooth_type : BoolProperty(
-            name="Use Autosmooth",
+            name="Use Custom Normals",
             default=True,
            )
 
@@ -172,59 +172,56 @@ def add_sqlens(self, context):
 
     #add surface1
     if srad1 == 0: #flat surface case
-        verts, faces, splitverts = sfc.add_sqflat_surface(lwidth,N1,N2)
+        verts, faces, normals = sfc.add_sqflat_surface(lwidth,N1,N2)
     else:
         if self.ltype1 == 'spherical':
-            verts, faces, splitverts = sfc.add_sqspherical_surface(srad1, lwidth, N1, N2, cylindrical=self.cylindrical)
+            verts, faces, normals = sfc.add_sqspherical_surface(srad1, lwidth, N1, N2, cylindrical=self.cylindrical)
         elif self.ltype1 == 'aspheric':
-            verts, faces, splitverts = sfc.add_sqaspheric_surface(srad1, k, A, lwidth, N1, N2, cylindrical=self.cylindrical)
+            verts, faces, normals = sfc.add_sqaspheric_surface(srad1, k, A, lwidth, N1, N2, cylindrical=self.cylindrical)
+    
+    nVerts = len(verts)
+    print('Lfaces1: ', len(faces))
     
     #add side
-    nVerts = len(verts)
-
-    
     if srad1==0 and srad2 == 0:
-        faces.append([0,1] + [nVerts+2, nVerts+3])
+        faces.append([1,2] + [nVerts+1, nVerts+2])
         faces.append([2,3] + [nVerts, nVerts+1])
         faces.append([3,0] + [nVerts+3, nVerts])
-        faces.append([1,2] + [nVerts+1, nVerts+2])
+        faces.append([0,1] + [nVerts+2, nVerts+3])
     elif srad1!=0 and srad2==0:
-        faces.append([i for i in range(N2)] + [nVerts+2, nVerts+3])
+        faces.append([i*N2 + N2-1 for i in range(N1)] + [nVerts+1, nVerts+2])
         faces.append([i+N2*(N1-1) for i in range(N2)[::-1]] + [nVerts, nVerts+1])
         faces.append([i*N2 for i in range(N1)[::-1]] + [nVerts+3, nVerts])
-        faces.append([i*N2 + N2-1 for i in range(N1)] + [nVerts+1, nVerts+2])
+        faces.append([i for i in range(N2)] + [nVerts+2, nVerts+3])
     elif srad1==0 and srad2!=0:
-        faces.append([0,1] + [i+N2*(N1-1) + 4 for i in range(N2)])
+        faces.append([1,2] + [i*N2 + 4 for i in range(N1)])
         faces.append([2,3] + [i + 4 for i in range(N2)[::-1]])
         faces.append([3,0] + [i*N2 + N2-1 + 4 for i in range(N1)[::-1]])
-        faces.append([1,2] + [i*N2 + 4 for i in range(N1)])
+        faces.append([0,1] + [i+N2*(N1-1) + 4 for i in range(N2)])
     else:
-        faces.append([i for i in range(N2)] + [i+N2*(N1-1) + nVerts for i in range(N2)])
+        faces.append([i*N2 + N2-1 for i in range(N1)] + [i*N2 + nVerts for i in range(N1)])
         faces.append([i+N2*(N1-1) for i in range(N2)[::-1]] + [i + nVerts for i in range(N2)[::-1]])
         faces.append([i*N2 for i in range(N1)[::-1]] + [i*N2 + N2-1 + nVerts for i in range(N1)[::-1]])
-        faces.append([i*N2 + N2-1 for i in range(N1)] + [i*N2 + nVerts for i in range(N1)])
+        faces.append([i for i in range(N2)] + [i+N2*(N1-1) + nVerts for i in range(N2)])
     
     #add surface2
     if srad2 == 0:
         #flat surface case
-        dvert, dfac, splitverts2 = sfc.add_sqflat_surface(lwidth,N1,N2,-1,CT,nVerts=nVerts)
+        dvert, dfac, normals2 = sfc.add_sqflat_surface(lwidth,N1,N2,-1,CT,nVerts=nVerts)
         dvert = dvert[::-1]
     else:
         if self.ltype2 == 'spherical':
-            dvert, dfac, splitverts2 = sfc.add_sqspherical_surface(srad2, lwidth, N1, N2, -1, CT, nVerts=nVerts, cylindrical=self.cylindrical)
+            dvert, dfac, normals2 = sfc.add_sqspherical_surface(srad2, lwidth, N1, N2, -1, CT, nVerts=nVerts, cylindrical=self.cylindrical)
         elif self.ltype2 == 'aspheric':
-            dvert, dfac, splitverts2 = sfc.add_sqaspheric_surface(srad2, k2, A2, lwidth, N1, N2, -1, CT, nVerts=nVerts, cylindrical=self.cylindrical)
+            dvert, dfac, normals2 = sfc.add_sqaspheric_surface(srad2, k2, A2, lwidth, N1, N2, -1, CT, nVerts=nVerts, cylindrical=self.cylindrical)
         #dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts=nVerts)
-        dvert, dfac = dvert[::-1], dfac[::-1]
+        dvert, dfac, normals2 = dvert[::-1], dfac[::-1], normals2[::-1]
+    
+    print('Lfaces2: ', len(dfac))
         
     verts = verts+dvert
     faces = faces+dfac
-
-    #dummy1 = [0 for i in range(len(splitverts2))]
-    #dummy2 = [0 for i in range(len(splitverts))]
-    #splitverts = splitverts + dummy1
-    #splitverts2 = dummy2 + splitverts2[::-1]
-    splitverts = splitverts + splitverts2
+    normals = normals + normals2
     
     del dvert
     del dfac
@@ -232,74 +229,56 @@ def add_sqlens(self, context):
     mesh = bpy.data.meshes.new(name="New Square Lens")
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
-    
-    
-    
-    #custom split normals
-    if not self.smooth_type:
-        mesh = obj.data
-        obj.select_set(True)
-        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.ops.mesh.select_all(action='DESELECT')
-        sel_mode = bpy.context.tool_settings.mesh_select_mode
-        bpy.context.tool_settings.mesh_select_mode = [True, False, False]
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-        for i in range(len(verts)):
-            if splitverts[i] == 0:
-                mesh.vertices[i].select=False
-            else:
-                mesh.vertices[i].select=True
-        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.context.tool_settings.mesh_select_mode = sel_mode
-        bpy.ops.mesh.split_normals()
-        bpy.ops.mesh.select_all(action='DESELECT')
-
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-        if srad1 != 0:
-            mesh.vertices[1].select = True
-            mesh.vertices[N2].select = True
-            mesh.vertices[N2-2].select = True
-            mesh.vertices[2*N2-1].select = True
-            mesh.vertices[(N1-1)*N2-1].select = True
-            mesh.vertices[N1*N2-2].select = True
-            mesh.vertices[(N1-2)*N2].select = True
-            mesh.vertices[(N1-1)*N2+1].select = True
-        if srad2 != 0:
-            if srad1 == 0:
-                vadd = 4
-                mesh.vertices[vadd + 1].select = True
-                mesh.vertices[vadd + N2].select = True
-                mesh.vertices[vadd + N2-2].select = True
-                mesh.vertices[vadd + 2*N2-1].select = True
-                mesh.vertices[vadd + (N1-1)*N2-1].select = True
-                mesh.vertices[vadd + N1*N2-2].select = True
-                mesh.vertices[vadd + (N1-2)*N2].select = True
-                mesh.vertices[vadd + (N1-1)*N2+1].select = True
-            else:
-                vadd = N1*N2
-                mesh.vertices[vadd + 1].select = True
-                mesh.vertices[vadd + N2].select = True
-                mesh.vertices[vadd + N2-2].select = True
-                mesh.vertices[vadd + 2*N2-1].select = True
-                mesh.vertices[vadd + (N1-1)*N2-1].select = True
-                mesh.vertices[vadd + N1*N2-2].select = True
-                mesh.vertices[vadd + (N1-2)*N2].select = True
-                mesh.vertices[vadd + (N1-1)*N2+1].select = True
-
-        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.context.tool_settings.mesh_select_mode = sel_mode
-        bpy.ops.mesh.merge_normals()
-        bpy.ops.mesh.select_all(action='DESELECT')
-
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        #end split normals
-
+          
+    #assign material
     if self.material_name in bpy.data.materials:
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
+
+
     if self.shade_smooth:
-        if self.smooth_type:
-            obj.data.use_auto_smooth = 1
         bpy.ops.object.shade_smooth()
+        if not self.smooth_type:
+            obj.data.use_auto_smooth = 1
+        else:
+            #assign custom normals
+            mesh.use_auto_smooth = True
+            bpy.ops.mesh.customdata_custom_splitnormals_clear()
+            bpy.ops.mesh.customdata_custom_splitnormals_add()
+            cn1, cn2, cn3 = [], [], []
+            #surf1
+            if srad1 == 0:
+                nloops1 = 4
+                nloopss1 = 1
+            else:
+                if N1%2 == 1:
+                    nloops1 = 3*2*(N1 - 1)**2
+                else:
+                    nloops1 = 3*2*4*int((N1-1)/2)**2 + 4*(N1-1 + N1-2)
+                nloopss1 = N1-1
+            for i in range(nloops1):
+                vi = mesh.loops[i].vertex_index
+                cn1.append(normals[vi])
+            #surf2
+            if srad2 == 0:
+                nloops2 = 4
+                nloopss2 = 1
+            else:
+                if N1%2 == 1:
+                    nloops2 = 3*2*(N1 - 1)**2
+                else:
+                    nloops2 = 3*2*4*(int(N1/2) -1)**2 + 4*(N1-1 + N1-2)
+                nloopss2 = N1-1
+            for i in range(nloops2):
+                vi = mesh.loops[i + nloops1 + 4*(nloopss1 + nloopss2 + 2)].vertex_index
+                cn2.append(normals[vi])
+            #side
+            cn3 = sfc.get_squarefacenormals(nloopss1, nloopss2)
+
+            #execute
+            mesh.normals_split_custom_set(cn1 + cn3 + cn2)
+
+    #for testing
+    mesh.calc_normals_split()
+    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    bpy.ops.mesh.select_all(action='DESELECT')

@@ -2,7 +2,23 @@ import numpy as np
 
 from mathutils import Vector
 
+def _check_k(k, rad, lrad):
+    #check if k is too large, else crop
+    comp = (rad/lrad)**2 - 1
+    if k > comp*0.9999:
+        k = comp*0.9999
+    return k
+
+def getdxdr(rad, r, k, A):
+    sqt = np.sqrt(1-(1+k)*(r**2/rad**2))
+    t1 = 2*r/rad/(1+sqt)
+    t2 = (1+k) * r**3
+    t22 = rad**3 * sqt * (1 + sqt)**2
+    t3 = sum([2*(i+2)*A[i]*r**(2*(i+2) - 1) for i in range(len(A))])
+    return t1 + t2/t22 + t3
+
 def getz(rad, r,k,A):
+
     f1 = (r**2/rad)/(1+np.sqrt(1-(1+k)*(r**2/rad**2)))
     f2 = sum([A[i]*r**(2*(i+2)) for i in range(len(A))])
     return f1+f2
@@ -17,7 +33,7 @@ def add_aspheric_surface(rad, k, A, lrad, N1, N2,nsurf=1,xadd=0, nVerts=0,dshape
 
     verts = []
     faces = []
-    splitverts = []
+    normals = []
     
     surfadd=0
     if nsurf == -1:
@@ -33,14 +49,19 @@ def add_aspheric_surface(rad, k, A, lrad, N1, N2,nsurf=1,xadd=0, nVerts=0,dshape
     rad = np.abs(rad)
     #ang = np.arcsin(lrad/rad)
 
+    k = _check_k(k, rad, lrad)
+
     verts.append(Vector((-xadd,0,0)))
-    splitverts.append(0)
+    normals.append((nsurf,0,0))
     r = lrad/N1
     x = getz(rad,r,k,A)
     for j in range(N2)[::nsurf]:
         b = maxb*j/N2
         verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b),r*np.cos(b))))
-        splitverts.append(0)
+        dxdr = getdxdr(rad, r, k, A)
+        adxdr = np.sqrt(dxdr**2 + 1)
+        dxdr = dxdr/adxdr
+        normals.append((nsurf/adxdr, sig*dxdr*np.sin(b), sig*dxdr*np.cos(b)))
         if dshape and j==N2-1:
             pass
         else:
@@ -54,10 +75,10 @@ def add_aspheric_surface(rad, k, A, lrad, N1, N2,nsurf=1,xadd=0, nVerts=0,dshape
         for j in range(N2)[::nsurf]:
             b = maxb*j/N2
             verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b),r*np.cos(b))))
-            if i == N1-1:
-                splitverts.append(1)
-            else:
-               splitverts.append(0)
+            dxdr = getdxdr(rad, r, k, A)
+            adxdr = np.sqrt(dxdr**2 + 1)
+            dxdr = dxdr/adxdr
+            normals.append((nsurf/adxdr, sig*dxdr*np.sin(b), sig*dxdr*np.cos(b)))
             if dshape and j==N2-1:
                 pass
             else:
@@ -67,7 +88,7 @@ def add_aspheric_surface(rad, k, A, lrad, N1, N2,nsurf=1,xadd=0, nVerts=0,dshape
                 fi4 = fi1-nsurf*N2
                 faces.append([fi4,fi3,fi2,fi1])
             
-    return verts, faces, splitverts
+    return verts, faces, normals
 
 def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical=False):
     """
@@ -79,8 +100,8 @@ def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindri
 
     verts = []
     faces = []
-    splitverts = []
     vertquads = []
+    normals = []
     
     surfadd=0
     #if nsurf == -1:
@@ -90,6 +111,12 @@ def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindri
     if rad < 0:
         sig = -1
     rad = np.abs(rad)
+
+    if cylindrical:
+        testrad = lwidth/2
+    else:
+        testrad = lwidth/2*np.sqrt(2)
+    k = _check_k(k, rad, testrad)
 
     for i in range(N1):
         y = lwidth*(i/(N1-1) - 0.5)
@@ -101,12 +128,14 @@ def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindri
                 r = np.sqrt(y**2 + z**2)
             x = getz(rad,r,k,A)
             verts.append(Vector((-1.*x*sig*nsurf-xadd,y,z)))
-            cond1 = (i==0 or i==N1-1)
-            cond2 = (j==0 or j==N2-1)
-            if (cond1 or cond2):
-                splitverts.append(1)
+            dxdr = getdxdr(rad, r, k, A)
+            adxdr = np.sqrt(dxdr**2 + 1)
+            dxdr = dxdr/adxdr
+            if cylindrical:
+                b = np.pi/2
             else:
-                splitverts.append(0)
+                b = np.arctan2(y,z)
+            normals.append((nsurf/adxdr, sig*dxdr*np.sin(b), sig*dxdr*np.cos(b)))
             ang = np.arctan2(z+lwidth/(2*N2-2),y+lwidth/(2*N1-2))
             #if np.abs(ang%(np.pi/2)) < 0.01*lwidth:
             cond1 = N1%2 == 0
@@ -137,4 +166,4 @@ def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindri
             else:
                 faces.append([f1,f2,f3,f4][::nsurf])
             
-    return verts, faces, splitverts
+    return verts, faces, normals

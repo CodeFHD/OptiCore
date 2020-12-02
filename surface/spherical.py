@@ -20,6 +20,23 @@ def _fixN2(N2, maxb):
     else:
         return _fixN2(N2-1, maxb)
 
+def get_ringnormals(N, dshape=False, direction=1):
+    """
+    direction is a multiplier used for inverting the direction in the mirror-hole etc.
+    """
+    dtp = np.float64
+    normals = []
+
+    maxb = 2*np.pi
+    if dshape:
+        maxb = np.pi*N/(N-1)
+
+    for j in range(N):
+        b = maxb*j/N
+        normals.append((direction*0.,direction*np.sin(b, dtype=dtp),direction*np.cos(b, dtype=dtp)))
+
+    return normals
+
 def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad=0,dshape=False,optiverts=False):
     """
     nsurf=1 for first surface,
@@ -28,9 +45,13 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
     xadd has to be set for second surface (only)
     """
 
+    #TODO: Could parse arguments by kwargs-dict to keep function call short, then pop here
+
+    dtp = np.float64
+
     verts = []
     faces = []
-    splitverts = []
+    normals = []
     
     surfadd=0
     if nsurf == -1:
@@ -45,8 +66,8 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
     if rad < 0:
         sig = -1
     nhole = not hole
-    rad = np.abs(rad)
-    ang = np.arcsin(lrad/rad)
+    rad = np.abs(rad, dtype=dtp)
+    ang = np.arcsin(lrad/rad, dtype=dtp)
     
     if optiverts:
         #for calc of optimaised distribution
@@ -61,22 +82,26 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
 
     if not hole:
         verts.append(Vector((-xadd,0,0)))
-        splitverts.append(0)
+        normals.append((nsurf,0,0))
         if optiverts:
             r = optirs[0]
+            a = np.arcsin(r/rad, dtype=dtp)
         else:
             a = ang/N1
-            r = rad*np.sin(a)
+            r = rad*np.sin(a, dtype=dtp)
         hang = 0
     else:
-        hang = np.arcsin(hrad/rad)
+        hang = np.arcsin(hrad/rad, dtype=dtp)
         r = hrad
+        a = hang
 
-    x = rad-np.sqrt(rad**2-r**2)
+    x = rad-np.sqrt(rad**2-r**2, dtype=dtp)
     for j in range(N2)[::nsurf]:
         b = maxb*j/N2
-        verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b),r*np.cos(b))))
-        splitverts.append(0)
+        verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b, dtype=dtp),r*np.cos(b, dtype=dtp))))
+        normals.append((nsurf*np.cos(a, dtype=dtp),
+                        sig*np.sin(a, dtype=dtp)*np.sin(b, dtype=dtp),
+                        sig*np.sin(a, dtype=dtp)*np.cos(b, dtype=dtp)))
         if not hole:
             if dshape and j==N2-1:
                 pass
@@ -88,17 +113,17 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
     for i in range(1,N1):
         if optiverts:
             r = optirs[i]
+            a = np.arcsin(r/rad, dtype=dtp)
         else:
             a = hang + (ang-hang)*(i+nhole)/(N1-hole)
-            r = rad*np.sin(a)
-        x = rad-np.sqrt(rad**2-r**2)
+            r = rad*np.sin(a, dtype=dtp)
+        x = rad-np.sqrt(rad**2-r**2, dtype=dtp)
         for j in range(N2)[::nsurf]:
             b = maxb*j/N2
-            verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b),r*np.cos(b))))
-            if i == N1-1:
-                splitverts.append(1)
-            else:
-               splitverts.append(0)
+            verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b, dtype=dtp),r*np.cos(b, dtype=dtp))))
+            normals.append((nsurf*np.cos(a, dtype=dtp),
+                            sig*np.sin(a, dtype=dtp)*np.sin(b, dtype=dtp),
+                            sig*np.sin(a, dtype=dtp)*np.cos(b, dtype=dtp)))
             if dshape and j==N2-1:
                 pass
             else:
@@ -108,8 +133,8 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
                 fi4 = fi1-nsurf*N2
                 faces.append([fi4,fi3,fi2,fi1])
             
-    print(len(verts), len(faces))
-    return verts, faces, splitverts, N1, N2
+    #print(len(verts), len(faces))
+    return verts, faces, normals, N1, N2
 
 
 def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical=False):
@@ -120,10 +145,12 @@ def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical
     xadd has to be set for second surface (only)
     """
 
+    dtp = np.float64
+
     verts = []
     faces = []
-    splitverts = []
     vertquads = []
+    normals = []
     
     surfadd=0
     #if nsurf == -1:
@@ -144,13 +171,15 @@ def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical
                 r = np.sqrt(y**2 + z**2)
             x = rad-np.sqrt(rad**2-r**2)
             verts.append(Vector((-1.*x*sig*nsurf-xadd,y,z)))
-            cond1 = (i==0 or i==N1-1)
-            cond2 = (j==0 or j==N2-1)
-            if (cond1 or cond2):
-                splitverts.append(1)
-            else:
-                splitverts.append(0)
             ang = np.arctan2(z+lwidth/(2*N2-2),y+lwidth/(2*N1-2))
+            a = np.arcsin(r/rad)
+            if cylindrical:
+                b = np.pi/2
+            else:
+                b = np.arctan2(y,z)
+            normals.append((nsurf*np.cos(a, dtype=dtp),
+                            sig*np.sin(a, dtype=dtp)*np.sin(b, dtype=dtp),
+                            sig*np.sin(a, dtype=dtp)*np.cos(b, dtype=dtp)))
             #if np.abs(ang%(np.pi/2)) < 0.01*lwidth:
             cond1 = N1%2 == 0
             cond2 = j==int(N2/2 - 1) or i==int(N1/2 - 1)
@@ -180,4 +209,4 @@ def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical
             else:
                 faces.append([f1,f2,f3,f4][::nsurf])
             
-    return verts, faces, splitverts
+    return verts, faces, normals

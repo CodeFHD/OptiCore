@@ -82,14 +82,14 @@ class OBJECT_OT_add_CCretro(Operator, AddObjectHelper):
             default="",
            )
 
-    shade_smooth : BoolProperty(
-            name="Smooth Shading",
-            default=False,
-           )
-    smooth_type : BoolProperty(
-            name="Use Autosmooth",
-            default=True,
-           )
+    #shade_smooth : BoolProperty(
+    #        name="Smooth Shading",
+    #        default=False,
+    #       )
+    #smooth_type : BoolProperty(
+    #        name="Use Autosmooth",
+    #        default=True,
+    #       )
 
     def draw(self, context):
         layout = self.layout
@@ -115,9 +115,9 @@ class OBJECT_OT_add_CCretro(Operator, AddObjectHelper):
         layout.prop(self, 'A')
 
         layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
-        layout.prop(self, 'shade_smooth')
-        if self.shade_smooth:
-            layout.prop(self, 'smooth_type')
+        #layout.prop(self, 'shade_smooth')
+        #if self.shade_smooth:
+        #    layout.prop(self, 'smooth_type')
 
     def execute(self, context):
         if self.retrotype == 'cube':
@@ -387,10 +387,10 @@ def add_ccretro_cube(self, context):
     if self.material_name in bpy.data.materials:
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
-    if self.shade_smooth:
-        if self.smooth_type:
-            obj.data.use_auto_smooth = 1
-        bpy.ops.object.shade_smooth()
+    #if self.shade_smooth:
+    #    if self.smooth_type:
+    #        obj.data.use_auto_smooth = 1
+    #    bpy.ops.object.shade_smooth()
 
 
 
@@ -637,7 +637,7 @@ def add_ccretro_trirect(self, context):
     if self.material_name in bpy.data.materials:
         mat = bpy.data.materials[self.material_name]
         obj.data.materials.append(mat)
-    if self.shade_smooth:
-        if self.smooth_type:
-            obj.data.use_auto_smooth = 1
-        bpy.ops.object.shade_smooth()
+    #if self.shade_smooth:
+    #    if self.smooth_type:
+    #        obj.data.use_auto_smooth = 1
+    #    bpy.ops.object.shade_smooth()
