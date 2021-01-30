@@ -1,7 +1,6 @@
 import bpy
 import numpy as np
 
-from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
@@ -9,7 +8,7 @@ from .. import surface as sfc
 from .. import object_data_add
 from .. import utils
 
-class OBJECT_OT_add_lens(Operator, AddObjectHelper):
+class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_lens"
     bl_label = "Lens"
@@ -153,6 +152,24 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
             name="Debug Mode",
             default=False,
            )
+    ior : FloatProperty(
+           name="IOR (Info Only)",
+           default = 1.5,
+           description="Index of Refraction. Not transferred to material, only for UI information.",
+           )
+    def get_flen(self):
+        return self.flen_intern
+    flen_intern : FloatProperty(
+           name="Focal Length",
+           default = 0.,
+           description="Focal length of the lens.",
+           )
+    flen : FloatProperty(
+           name="Focal Length",
+           default = 0.,
+           description="Focal length of the lens.",
+           get=get_flen,
+           )
 
     def draw(self, context):
         layout = self.layout
@@ -199,6 +216,11 @@ class OBJECT_OT_add_lens(Operator, AddObjectHelper):
         layout.prop(self, 'dshape')
         #layout.prop(self, 'optiverts')
         #layout.prop(self, 'debugmode')
+        col2 = layout.column(align=True)
+        col2.label(text="Optical Parameters")
+        col2.prop(self, 'ior')
+        col2.prop(self, 'flen')
+
 
     def execute(self, context):
         add_lens(self, context)
@@ -481,6 +503,10 @@ def add_lens(self, context):
                         cn5.append((0,-1,0))
             mesh.normals_split_custom_set(cn1 + cn2 + cn3 + cn4 + cn5)
 
+    #compute optical parameters
+    if not md:
+        self.flen_intern = utils.lens_math.f_lensmaker(self.rad1, self.rad2, self.ior, self.centerthickness)
+            
     #for testing
     if self.debugmode:
         mesh.calc_normals_split()

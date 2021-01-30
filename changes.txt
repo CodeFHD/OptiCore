@@ -4,6 +4,7 @@ v1.1
 - Fixed a label in square lens
 - Removed smooth shading option from ccretro
 - Fully mathematical custom normals for all lens and mirror variant, now default setting
+- added focal length info field, with IOR input field that is not connected to the rendering material! (Impossible in general because of textures)
 
 v1.0
 - First Version
