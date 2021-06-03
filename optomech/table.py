@@ -317,9 +317,9 @@ def add_tableface(leng, wid, dz, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev
     #create hole-bevel verts
     if topface:
         for i in range(ny):
-            yoff = (i/(ny-1)- 0.5)*(wid-hspac) 
+            yoff = (i/(ny-1)- 0.5)*((ny-1)*hspac) 
             for j in range(nx):
-                xoff = (j/(nx-1)- 0.5)*(leng-hspac)
+                xoff = (j/(nx-1)- 0.5)*((nx-1)*hspac)
                 for k in range(nph):
                     ang = k/nph*2*np.pi + np.pi
                     verts.append(Vector((hrad*1.1*np.sin(ang)+xoff,hrad*1.1*np.cos(ang)+yoff,dz)))
@@ -331,9 +331,9 @@ def add_tableface(leng, wid, dz, nx, ny, hrad, brad, nph, nph4, nph2, nbev, nbev
     else:
         dz2 = 0
     for i in range(ny):
-        yoff = (i/(ny-1)- 0.5)*(wid-hspac) 
+        yoff = (i/(ny-1)- 0.5)*((ny-1)*hspac) 
         for j in range(nx):
-            xoff = (j/(nx-1)- 0.5)*(leng-hspac)
+            xoff = (j/(nx-1)- 0.5)*((nx-1)*hspac)
             for k in range(nph):
                 ang = k/nph*2*np.pi + np.pi
                 verts.append(Vector((hrad*np.sin(ang)+xoff,hrad*np.cos(ang)+yoff,dz+dz2)))

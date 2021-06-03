@@ -15,7 +15,7 @@ import numpy as np
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-from .elements import OBJECT_OT_add_lens, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro
+from .elements import OBJECT_OT_add_lens, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro, OBJECT_OT_add_siemens
 from .optomech import OBJECT_OT_add_table, OBJECT_OT_add_post
 
 class OBJECT_MT_opticsmenu(bpy.types.Menu):
@@ -27,6 +27,7 @@ class OBJECT_MT_opticsmenu(bpy.types.Menu):
         self.layout.operator(OBJECT_OT_add_sqlens.bl_idname)
         self.layout.operator(OBJECT_OT_add_mirror.bl_idname)
         self.layout.operator(OBJECT_OT_add_CCretro.bl_idname)
+        self.layout.operator(OBJECT_OT_add_siemens.bl_idname)
 
 class OBJECT_MT_optomechmenu(bpy.types.Menu):
     bl_idname = 'mesh.optomechmenu'
@@ -82,6 +83,7 @@ def add_mirror_manual_map():
 """
 
 classes = (OBJECT_OT_add_lens, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro,
+           OBJECT_OT_add_siemens,
           OBJECT_OT_add_table,OBJECT_OT_add_post)
 menus = (OBJECT_MT_opticsmenu, OBJECT_MT_optomechmenu)
 
