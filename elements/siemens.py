@@ -89,6 +89,9 @@ def add_siemensstar(self, context):
     r1 = self.rad1
     r2 = self.rad2
 
+    if not OE:
+        if r1 > r2: r2, r1 = r1, r2
+
     #center vertex
     verts.append(Vector((0,0,0)))
 
@@ -135,15 +138,17 @@ def add_siemensstar(self, context):
     
     #faces outside star
     for i in range(Nlines):
-        f = []
-        for j in range(Nseg+1)[::-1]:
+        for j in range(Nseg):
+            f = []
+            f.append(i*(Nseg+1) + j + 2)
             f.append(i*(Nseg+1) + j + 1)
-        for j in range(Nseg+1):
-            f.append(nVerts + i*(Nseg+1) + j + 1)
-        if OE:
-            faces.append(f)
-        else:
-            faces.append(f[::-1])
+            f.append(i*(Nseg+1) + j + 1 + nVerts)
+            f.append(i*(Nseg+1) + j + 2 + nVerts)
+            if OE:
+                faces.append(f)
+            else:
+                faces.append(f[::-1])
+    
     #top/bottom faces
     if OE:
         for i in range(Nlines):
