@@ -78,6 +78,27 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            description="Lens outer radius",
            unit = "LENGTH",
            )
+    flangerad1 : FloatProperty(
+           name="Flange Width Surface 1",
+           default = 0.,
+           description="Flange Width Surface 1",
+           unit = "LENGTH",
+           min = 0,
+           )
+    flangerad2 : FloatProperty(
+           name="Flange Width Surface 2",
+           default = 0.,
+           description="Flange Width Surface 2",
+           unit = "LENGTH",
+           min = 0,
+           )
+    flangerad3 : FloatProperty(
+           name="Flange Width Surface 3",
+           default = 0.,
+           description="Flange Width Surface 3",
+           unit = "LENGTH",
+           min = 0,
+           )
     centerthickness : FloatProperty(
            name="Center Thickness",
            default = 1.,
@@ -184,11 +205,17 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
         scene = context.scene
         layout.prop(self, 'ltype1')
         layout.prop(self, 'rad1')
+        if not self.ltype1=='aspheric': #TMP
+            layout.prop(self, 'flangerad1')
         layout.prop(self, 'ltype2')
         layout.prop(self, 'rad2')
+        if not self.ltype2=='aspheric': #TMP
+            layout.prop(self, 'flangerad2')
         if self.makedoublet:
             layout.prop(self, 'ltype3')
             layout.prop(self, 'rad3')
+            if not self.ltype3=='aspheric': #TMP
+                layout.prop(self, 'flangerad3')
         layout.prop(self, 'lensradius')
         layout.prop(self, 'centerthickness')
         if self.makedoublet:
@@ -234,11 +261,17 @@ def add_lens(self, context):
     N1 = self.num1
     N2 = self.num2
     lrad = self.lensradius
+    flrad1 = self.flangerad1
+    flrad2 = self.flangerad2
+    hasfl1 = flrad1 > 0.01*lrad
+    hasfl2 = flrad2 > 0.01*lrad
     CT = self.centerthickness
     if self.ltype1 == 'aspheric':
+        hasfl1 = 0 #TMP
         k = self.k
         A = self.A
     if self.ltype2 == 'aspheric':
+        hasfl2 = 0 #TMP
         k2 = self.k2
         A2 = self.A2
     ssig1 = 1
@@ -251,54 +284,78 @@ def add_lens(self, context):
     md = self.makedoublet
     if md:
         srad3 = -self.rad3
+        flrad3 = self.flangerad3
+        hasfl3 = flrad3 > 0.01*lrad
         CT2 = self.centerthickness2
         if self.ltype3 == 'aspheric':
+            hasfl3 = 0 #TMP
             k3 = self.k3
             A3 = self.A3
         ssig3 = 1
         if srad3 < 0:
             ssig3 = -1
+
+    #TODO: This may need to move down
+    if flrad1 > 0.99*lrad: flrad1 = 0.99*lrad
+    if flrad2 > 0.99*lrad: flrad2 = 0.99*lrad
+    lrad1 = lrad - flrad1 if hasfl1 else lrad
+    lrad2 = lrad - flrad2 if hasfl2 else lrad
+    if md:
+        if flrad3 > 0.99*lrad: flrad3 = 0.99*lrad
+        lrad3 = lrad - flrad3 if hasfl3 else lrad
     
     #check surface radii for consistency
     ##check radius overflow
-    if not utils.check_surface(np.abs(srad1), lrad): srad1=0
-    if not utils.check_surface(np.abs(srad2), lrad): srad2=0
+    if not utils.check_surface(np.abs(srad1), lrad1):
+        srad1 = 0
+        lrad1 = lrad
+        hasfl1 = 0
+    if not utils.check_surface(np.abs(srad2), lrad2):
+        srad2 = 0
+        lrad2 = lrad
+        hasfl2 = 0
     if md:
-        if not utils.check_surface(np.abs(srad3), lrad): srad3=0
+        if not utils.check_surface(np.abs(srad3), lrad3):
+            srad3 = 0
+            lrad3 = lrad
+            hasfl3 = 0
     ##check center thickness
     lsurf1, lsurf2 = 0, 0
     if not srad1 == 0:
-        lsurf1 = srad1-ssig1*np.sqrt(srad1**2-lrad**2)
+        lsurf1 = srad1-ssig1*np.sqrt(srad1**2-lrad1**2)
     if not srad2 == 0:
-        lsurf2 = srad2-ssig2*np.sqrt(srad2**2-lrad**2)
+        lsurf2 = srad2-ssig2*np.sqrt(srad2**2-lrad2**2)
     if (lsurf1 + lsurf2) > CT:
         CT = lsurf1 + lsurf2
     if md:
         lsurf3 = 0
         if not srad3 == 0:
-            lsurf3 = srad3-ssig3*np.sqrt(srad3**2-lrad**2)
-        if (-lsurf2 + lsurf3) > CT2:
-            CT2 = -lsurf2 + lsurf3
+            lsurf3 = srad3-ssig3*np.sqrt(srad3**2-lrad3**2)
+        if (-lsurf2 + lsurf3) > CT2: CT2 = -lsurf2 + lsurf3
 
     #add surface1
     if srad1 == 0: #flat surface case
-        verts, faces, normals = sfc.add_flat_surface(lrad,N1,N2, dshape=self.dshape)
+        verts, faces, normals = sfc.add_flat_surface(lrad1,N1,N2, dshape=self.dshape)
     elif self.ltype1 == 'spherical':
-        verts, faces, normals, N1, N2 = sfc.add_spherical_surface(srad1, lrad, N1, N2, dshape=self.dshape, optiverts=self.optiverts)
+        verts, faces, normals, N1, N2 = sfc.add_spherical_surface(srad1, lrad1, N1, N2, dshape=self.dshape, optiverts=self.optiverts, lrad_ext=lrad)
     elif self.ltype1 == 'aspheric':
-        verts, faces, normals = sfc.add_aspheric_surface(srad1, k, A, lrad, N1, N2, dshape=self.dshape)
+        verts, faces, normals = sfc.add_aspheric_surface(srad1, k, A, lrad1, N1, N2, dshape=self.dshape)
+
+    #add flat annulus verts if needed
+    #dvert = 
+    #dfac = 
     
     nVerts = len(verts)
     nFacs = len(faces)
     
     #add surface2
     if srad2 == 0:#flat surface case
-        dvert, dfac, normals2 = sfc.add_flat_surface(lrad,N1,N2,-1,CT,nVerts=nVerts, dshape=self.dshape)
+        dvert, dfac, normals2 = sfc.add_flat_surface(lrad2,N1,N2,-1,CT,nVerts=nVerts, dshape=self.dshape)
         #dvert = dvert[::-1]
     elif self.ltype2 == 'spherical':
-        dvert, dfac, normals2, N12, N22 = sfc.add_spherical_surface(srad2, lrad, N1, N2, -1, CT, nVerts=nVerts, dshape=self.dshape, optiverts=self.optiverts)
+        dvert, dfac, normals2, N12, N22 = sfc.add_spherical_surface(srad2, lrad2, N1, N2, -1, CT, nVerts=nVerts, dshape=self.dshape, optiverts=self.optiverts, lrad_ext=lrad)
     elif self.ltype2 == 'aspheric':
-        dvert, dfac, normals2 = sfc.add_aspheric_surface(srad2, k2, A2, lrad, N1, N2, -1, CT, nVerts=nVerts, dshape=self.dshape)
+        dvert, dfac, normals2 = sfc.add_aspheric_surface(srad2, k2, A2, lrad2, N1, N2, -1, CT, nVerts=nVerts, dshape=self.dshape)
     dvert, dfac, normals2 = dvert[::-1], dfac[::-1], normals2[::-1]#for flat surface, there is only one dfac and normals are all same so it doesn't matter to leave it here
 
     #reverse face normals if doublet lens #TODO: check if needed for convention, in that case add to custom normals
@@ -340,12 +397,12 @@ def add_lens(self, context):
         #add surface3
         if srad3 == 0:
             #flat surface case
-            dvert, dfac, normals3 = sfc.add_flat_surface(lrad,N1,N2,-1,CT+CT2,nVerts=nVerts2, dshape=self.dshape)
+            dvert, dfac, normals3 = sfc.add_flat_surface(lrad3,N1,N2,-1,CT+CT2,nVerts=nVerts2, dshape=self.dshape)
             #dvert = dvert[::-1]
         elif self.ltype3 == 'spherical':
-            dvert, dfac, normals3, N12, N22 = sfc.add_spherical_surface(srad3, lrad, N1, N2, -1, CT+CT2, nVerts=nVerts2, dshape=self.dshape, optiverts=self.optiverts)
+            dvert, dfac, normals3, N12, N22 = sfc.add_spherical_surface(srad3, lrad3, N1, N2, -1, CT+CT2, nVerts=nVerts2, dshape=self.dshape, optiverts=self.optiverts, lrad_ext=lrad)
         elif self.ltype3 == 'aspheric':
-            dvert, dfac, normals3 = sfc.add_aspheric_surface(srad3, k3, A3, lrad, N1, N2, -1, CT+CT2, nVerts=nVerts2, dshape=self.dshape)
+            dvert, dfac, normals3 = sfc.add_aspheric_surface(srad3, k3, A3, lrad3, N1, N2, -1, CT+CT2, nVerts=nVerts2, dshape=self.dshape)
         dvert, dfac, normals3 = dvert[::-1], dfac[::-1], normals3[::-1]
         
         verts = verts+dvert
@@ -440,17 +497,31 @@ def add_lens(self, context):
             #surf1
             if srad1 == 0:
                 nloops1 = N2
+                nloops1_fl = N2
             else:
                 nloops1 = (N2-self.dshape)*(3 + 4*(N1-1))
-            for i in range(nloops1):
+                nloops1_fl = nloops1 - 2*hasfl1*(3 + 4*(N1-1)+1)
+            for i in range(nloops1_fl):
                 vi = mesh.loops[i].vertex_index
                 cn1.append(normals[vi])
+            if hasfl1:
+                for i in range(2*(3 + 4*(N1-1))+2):
+                    vi = mesh.loops[nloops1_fl + i].vertex_index
+                    cn1.append(normals[nVerts-1])
             #surf2
             if srad2 == 0:
                 nloops2 = N2
+                d_fl = 0
+                nloops2_fl = N2
             else:
                 nloops2 = (N2-self.dshape)*(3 + 4*(N1-1))
-            for i in range(nloops2):
+                d_fl = 2*hasfl2*(3 + 4*(N1-1)+1)
+                nloops2_fl = nloops2 - 2*hasfl2*(3 + 4*(N1-1)+1)
+            if hasfl2:
+                for i in range(d_fl):
+                    vi = mesh.loops[nloops2_fl + i + nloops1].vertex_index
+                    cn2.append(normals[nVerts2-1])
+            for i in range(d_fl, nloops2):
                 vi = mesh.loops[i + nloops1].vertex_index
                 cn2.append(normals[vi])
             #edge12
@@ -479,11 +550,29 @@ def add_lens(self, context):
                 #surf3
                 if srad3 == 0:
                     nloops4 = N2
+                    d_fl = 0
+                    nloops4_fl = N2
+                else:
+                    nloops4 = (N2-self.dshape)*(3 + 4*(N1-1))
+                    d_fl = 2*hasfl3*(3 + 4*(N1-1)+1)
+                    nloops4_fl = nloops4 - 2*hasfl3*(3 + 4*(N1-1)+1)
+                if hasfl3:
+                    for i in range(d_fl):
+                        vi = mesh.loops[nloops4_fl + i + nloops1 + nloops2 + nloops3].vertex_index
+                        cn4.append(normals[nVerts3-1])
+                for i in range(d_fl, nloops4):
+                    vi = mesh.loops[i + nloops1 + nloops2 + nloops3].vertex_index
+                    cn4.append(normals[vi])
+                """
+                #surf3
+                if srad3 == 0:
+                    nloops4 = N2
                 else:
                     nloops4 = (N2-self.dshape)*(3 + 4*(N1-1))
                 for i in range(nloops4):
                     vi = mesh.loops[i + nloops1 + nloops2 + nloops3].vertex_index
                     cn4.append(normals[vi])
+                """
                 #edge23
                 nloops5 = 4*(N2-self.dshape)
                 for i in range(nloops5):

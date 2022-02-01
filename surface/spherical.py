@@ -37,7 +37,7 @@ def get_ringnormals(N, dshape=False, direction=1):
 
     return normals
 
-def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad=0,dshape=False,optiverts=False):
+def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad=0,dshape=False,optiverts=False,lrad_ext=0):
     """
     nsurf=1 for first surface,
     nsurf=-1 for second surface
@@ -47,7 +47,7 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
 
     #TODO: Could parse arguments by kwargs-dict to keep function call short, then pop here
 
-    dtp = np.float64
+    dtp = np.float64#for testing
 
     verts = []
     faces = []
@@ -70,7 +70,7 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
     ang = np.arcsin(lrad/rad, dtype=dtp)
     
     if optiverts:
-        #for calc of optimaised distribution
+        #for calc of optimised distribution
         N2 = _fixN2(N2, maxb)
         alpha = maxb/N2
         N1 = _fixN1(N1, alpha)
@@ -110,7 +110,7 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
                 fi2 = fi1+nsurf*((j+1)%N2+1)
                 fi3 = fi1+nsurf*(j+1)
                 faces.append([fi1,fi2,fi3])
-    for i in range(1,N1):
+    for i in range(1,N1 - (lrad_ext > lrad)):
         if optiverts:
             r = optirs[i]
             a = np.arcsin(r/rad, dtype=dtp)
@@ -129,6 +129,24 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurf=1,xadd=0,nVerts=0,hole=False,hrad
             else:
                 fi1 = nVerts+surfadd+nsurf*(j+nhole+i*N2)
                 fi2 = nVerts+surfadd+nsurf*((j+1)%N2+nhole+i*N2)
+                fi3 = fi2-nsurf*N2
+                fi4 = fi1-nsurf*N2
+                faces.append([fi4,fi3,fi2,fi1])
+
+    #if there is flat annulus
+    if lrad_ext > lrad:
+        i = N1 - 1 - nsurf #WHYYYYY do I have to add -nsurf?????
+        r = lrad_ext
+        #x = rad-np.sqrt(rad**2-r**2, dtype=dtp) #DON't calculate this because it should go straight out from last regular
+        for j in range(N2)[::nsurf]:
+            b = maxb*j/N2
+            verts.append(Vector((-1.*x*sig*nsurf-xadd,r*np.sin(b, dtype=dtp),r*np.cos(b, dtype=dtp))))
+            normals.append((nsurf,0,0))
+            if dshape and j==N2-1:
+                pass
+            else:
+                fi1 = nVerts+surfadd+nsurf*(j+nhole+i*N2)+N2
+                fi2 = nVerts+surfadd+nsurf*((j+1)%N2+nhole+i*N2)+N2
                 fi3 = fi2-nsurf*N2
                 fi4 = fi1-nsurf*N2
                 faces.append([fi4,fi3,fi2,fi1])
