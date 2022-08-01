@@ -178,6 +178,11 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            default = 1.5,
            description="Index of Refraction. Not transferred to material, only for UI information.",
            )
+    ior2 : FloatProperty(
+           name="IOR (Info Only)",
+           default = 1.6,
+           description="Index of Refraction of second lens half. Not transferred to material, only for UI information.",
+           )
     def get_flen(self):
         return self.flen_intern
     flen_intern : FloatProperty(
@@ -190,6 +195,15 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            default = 0.,
            description="Focal length of the lens.",
            get=get_flen,
+           )
+    addrayfan : BoolProperty(
+            name="Add Ray Fan",
+            default=False,
+           )
+    zdet : FloatProperty(
+           name="Detector Distance",
+           default = 48.0,
+           description="Distance to plane where rays are traced to.",
            )
 
     def draw(self, context):
@@ -247,10 +261,17 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
         col2.label(text="Optical Parameters")
         col2.prop(self, 'ior')
         col2.prop(self, 'flen')
+        if self.makedoublet:
+            col2.prop(self, 'ior2')
+        col2.prop(self, 'addrayfan')
+        if self.addrayfan:
+            col2.prop(self, 'zdet')
 
 
     def execute(self, context):
         add_lens(self, context)
+        if self.addrayfan:
+            utils.trace_rays(self, context)
         return {'FINISHED'}
 
 def add_lens(self, context):
