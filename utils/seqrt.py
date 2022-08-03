@@ -5,6 +5,8 @@ from mathutils import Vector
 
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
+from . import rayfan
+
 def rotate_rodrigues(D, N, n1, n2, refract=1, direction=1, surface=1):
     """
     Rodrigues rotation formula
@@ -134,11 +136,6 @@ def sphere_intersect(O, D, C, r, rad, n1, n2, refract=1, direction=1):
     
     return P, N
 
-def init_rayfan_2D(Nrays, rad, rayfanx):
-    O = [[rayfanx,0,i] for i in np.linspace(-rad, rad, Nrays)]
-    D = [[1.,0,0] for i in range(len(O))]
-    return np.array(O), np.array(D)
-
 def trace_rays(self, context):
     verts = []
     edges = []
@@ -156,8 +153,17 @@ def trace_rays(self, context):
         i2 = 1
 
     lr = self.lensradius
-    nrays = 11
-    O, D = init_rayfan_2D(nrays, 0.9*lr, -1.0*lr)
+    nrays = self.nrays
+    if self.fantype == 'f2d':
+        O, D = rayfan.rayfan2D(nrays, 0.9*lr, -1.0*lr)
+    elif self.fantype == 'f3d':
+        O, D = rayfan.rayfan3D(nrays, 0.9*lr, -1.0*lr)
+        nrays = nrays*nrays - nrays + 1
+    elif self.fantype == 'f3dr':
+        O, D = rayfan.rayfan3D_uniformdiskrandom(nrays, 0.9*lr, -1.0*lr)
+    elif self.fantype == 'f3dt':
+        O, D = rayfan. rayfan3D_tri(nrays, 0.9*lr, -1.0*lr)
+        nrays = nrays*nrays - nrays//2
 
     nVerts = 0
 
