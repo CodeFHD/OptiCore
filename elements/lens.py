@@ -205,68 +205,93 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            default = 48.0,
            description="Distance to plane where rays are traced to.",
            )
+    nrays : IntProperty(
+           name="Nrays",
+           default = 11,
+           description="Number of rays for ray fan",
+           min=3,
+           )
+    fantype : EnumProperty(
+           name="Ray Fan Type",
+           items = {("f2d","2D",""),
+                    ("f3d","3D",""),
+                    ("f3dt","3D tris",""),
+                    ("f3dr","3D random","")},
+           default = "f2d",
+           description="Ray Fan Type",
+           #options={'HIDDEN'},
+           )
 
     def draw(self, context):
-        layout = self.layout
+        scene = context.scene
+        #context.window_manager.invoke_props_dialog(self, width=500)
+        row = self.layout
+        #layout.scale_x = 2.0
+        #row = layout.row(align=True)
+        #row.scale_x = 2.0
         # Location
-        col = layout.column(align=True)
+        col = row.column(align=True)
         col.label(text="Location")
         col.prop(self, 'location', text="")
         # Rotation
-        col = layout.column(align=True)
-        col.label(text="Rotation")
-        col.prop(self, 'rotation', text="")
-        scene = context.scene
-        layout.prop(self, 'ltype1')
-        layout.prop(self, 'rad1')
+        col2 = col.column(align=True)
+        col2.label(text="Rotation")
+        col2.prop(self, 'rotation', text="")
+        col3 = row.column(align=True)
+        #col3.scale_x = 2.0
+        col3.label(text="Lens Parameters")
+        col3.prop(self, 'ltype1')
+        col3.prop(self, 'rad1')
         if not self.ltype1=='aspheric': #TMP
-            layout.prop(self, 'flangerad1')
-        layout.prop(self, 'ltype2')
-        layout.prop(self, 'rad2')
+            col3.prop(self, 'flangerad1')
+        col3.prop(self, 'ltype2')
+        col3.prop(self, 'rad2')
         if not self.ltype2=='aspheric': #TMP
-            layout.prop(self, 'flangerad2')
+            col3.prop(self, 'flangerad2')
         if self.makedoublet:
-            layout.prop(self, 'ltype3')
-            layout.prop(self, 'rad3')
+            col3.prop(self, 'ltype3')
+            col3.prop(self, 'rad3')
             if not self.ltype3=='aspheric': #TMP
-                layout.prop(self, 'flangerad3')
-        layout.prop(self, 'lensradius')
-        layout.prop(self, 'centerthickness')
+                col3.prop(self, 'flangerad3')
+        col3.prop(self, 'lensradius')
+        col3.prop(self, 'centerthickness')
         if self.makedoublet:
-            layout.prop(self, 'centerthickness2')
-        layout.prop(self, 'num1')
-        layout.prop(self, 'num2')
+            col3.prop(self, 'centerthickness2')
+        col3.prop(self, 'num1')
+        col3.prop(self, 'num2')
         if self.ltype1=='aspheric':
-            layout.prop(self, 'k')
-            layout.prop(self, 'A')
+            col3.prop(self, 'k')
+            col3.prop(self, 'A')
         if self.ltype2=='aspheric':
-            layout.prop(self, 'k2')
-            layout.prop(self, 'A2')
+            col3.prop(self, 'k2')
+            col3.prop(self, 'A2')
         if self.makedoublet:
             if self.ltype3=='aspheric':
-                layout.prop(self, 'k3')
-                layout.prop(self, 'A3')
-        layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
+                col3.prop(self, 'k3')
+                col3.prop(self, 'A3')
+        col3.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
         if self.makedoublet:
-            layout.prop_search(self, "material_name2", bpy.data, "materials", icon="NONE")
-            layout.prop_search(self, "material_name3", bpy.data, "materials", icon="NONE")
-        layout.prop(self, 'makedoublet')
-        layout.prop(self, 'shade_smooth')
+            col3.prop_search(self, "material_name2", bpy.data, "materials", icon="NONE")
+            col3.prop_search(self, "material_name3", bpy.data, "materials", icon="NONE")
+        col3.prop(self, 'makedoublet')
+        col3.prop(self, 'shade_smooth')
         if self.shade_smooth:
-            layout.prop(self, 'smooth_type')
-        layout.prop(self, 'dshape')
-        #layout.prop(self, 'optiverts')
-        #layout.prop(self, 'debugmode')
-        col2 = layout.column(align=True)
-        col2.label(text="Optical Parameters")
-        col2.prop(self, 'ior')
-        col2.prop(self, 'flen')
+            col3.prop(self, 'smooth_type')
+        col3.prop(self, 'dshape')
+        #col3.prop(self, 'optiverts')
+        col3.prop(self, 'debugmode')
+        col4 = row.column(align=True)
+        #col4.scale_x = 2.0
+        col4.label(text="Optical Parameters")
+        col4.prop(self, 'ior')
+        col4.prop(self, 'flen')
         if self.makedoublet:
-            col2.prop(self, 'ior2')
-        col2.prop(self, 'addrayfan')
+            col4.prop(self, 'ior2')
+        col4.prop(self, 'addrayfan')
         if self.addrayfan:
-            col2.prop(self, 'zdet')
-
+            col4.prop(self, 'zdet')
+            col4.prop(self, 'nrays')
+            col4.prop(self, 'fantype')
 
     def execute(self, context):
         add_lens(self, context)
