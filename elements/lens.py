@@ -216,10 +216,16 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            items = {("f2d","2D",""),
                     ("f3d","3D",""),
                     ("f3dt","3D tris",""),
-                    ("f3dr","3D random","")},
+                    ("f3dr","3D random",""),
+                    ("f2df","2D Finite",""),},
            default = "f2d",
            description="Ray Fan Type",
            #options={'HIDDEN'},
+           )
+    fandist : FloatProperty(
+           name="Ray Fan Origin",
+           default = 20.,
+           description="Distance where ray fan originates.",
            )
 
     def draw(self, context):
@@ -292,6 +298,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col4.prop(self, 'zdet')
             col4.prop(self, 'nrays')
             col4.prop(self, 'fantype')
+            col4.prop(self, 'fandist')
 
     def execute(self, context):
         add_lens(self, context)

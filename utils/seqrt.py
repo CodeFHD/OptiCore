@@ -155,15 +155,19 @@ def trace_rays(self, context):
     lr = self.lensradius
     nrays = self.nrays
     if self.fantype == 'f2d':
-        O, D = rayfan.rayfan2D(nrays, 0.9*lr, -1.0*lr)
+        O, D = rayfan.rayfan2D(nrays, 0.9*lr, -1.0*self.fandist)
     elif self.fantype == 'f3d':
-        O, D = rayfan.rayfan3D(nrays, 0.9*lr, -1.0*lr)
+        O, D = rayfan.rayfan3D(nrays, 0.9*lr, -1.0*self.fandist)
+        nrays = int(np.sqrt(nrays))
         nrays = nrays*nrays - nrays + 1
     elif self.fantype == 'f3dr':
-        O, D = rayfan.rayfan3D_uniformdiskrandom(nrays, 0.9*lr, -1.0*lr)
+        O, D = rayfan.rayfan3D_uniformdiskrandom(nrays, 0.9*lr, -1.0*self.fandist)
     elif self.fantype == 'f3dt':
-        O, D = rayfan. rayfan3D_tri(nrays, 0.9*lr, -1.0*lr)
+        O, D = rayfan. rayfan3D_tri(nrays, 0.9*lr, -1.0*self.fandist)
+        nrays = int(np.sqrt(nrays))
         nrays = nrays*nrays - nrays//2
+    elif self.fantype == 'f2df':
+        O, D = rayfan.rayfan2D_finite(nrays, 0.9*lr, self.fandist)
 
     nVerts = 0
 

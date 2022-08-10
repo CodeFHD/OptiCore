@@ -1,25 +1,21 @@
 import bpy
 import numpy as np
 
-def retasnparray(func):
-    def wrapper(*args, **kwargs):
-        O, D = func(*args, **kwargs)
-        O = np.array(O)
-        D = np.array(D)
-        return O, D
-    return wrapper
 
-@retasnparray
+#######################
+#infinite ray fans
+
 def rayfan2D(Nrays, rad, rayfanx=-20):
     #init ray fan (2D plot)
     O = [[rayfanx,0,i] for i in np.linspace(-rad, rad, Nrays)]
     
     D = [[1.,0,0] for i in range(len(O))]
     
-    return O, D
+    return np.array(O), np.array(D)
 
-@retasnparray
+
 def rayfan3D(Nrays, rad, rayfanx=-20):
+    Nrays = int(np.sqrt(Nrays))
     #init ray fan(3D image)
     ao = 0#np.pi/Nrays#angular offset to reduce effect of rays on axis exactly
     O = [[rayfanx, i*np.sin(j+ao), i*np.cos(j+ao)] for i in np.linspace(0,rad,Nrays) for j in np.linspace(0,2*np.pi,Nrays,endpoint=False)]
@@ -28,9 +24,8 @@ def rayfan3D(Nrays, rad, rayfanx=-20):
     
     D = [[1.,0,0] for i in range(len(O))]
     
-    return O, D
+    return np.array(O), np.array(D)
 
-@retasnparray
 def rayfan3D_uniformdiskrandom(Nrays, rad, rayfanx=-20):
     #init ray fan (3D uniform sample disk)
     u1 = np.random.rand(Nrays)
@@ -44,10 +39,10 @@ def rayfan3D_uniformdiskrandom(Nrays, rad, rayfanx=-20):
     
     D = [[1.,0,0] for i in range(len(O))]
     
-    return O, D
+    return np.array(O), np.array(D)
 
-@retasnparray
 def rayfan3D_tri(Nrays,rad, rayfanx=-20):
+    Nrays = int(np.sqrt(Nrays))
     O = []
     for i in range(Nrays):
         y = rad*(2*i/(Nrays-1) - 1)
@@ -57,4 +52,27 @@ def rayfan3D_tri(Nrays,rad, rayfanx=-20):
     
     D = [[1.,0,0] for i in range(len(O))]
     
-    return O, D
+    return np.array(O), np.array(D)
+
+
+#######################
+#finite ray fans
+
+def rayfan2D_finite(Nrays, rad, rayfanx=20):
+    #init ray fan (2D plot)
+    s = np.sign(rayfanx)
+    ang_max = np.arctan(rad/np.abs(rayfanx))
+
+    if s > 0:
+        O = [[-1.*rayfanx,0,0] for i in np.linspace(-rad, rad, Nrays)]
+    elif s < 0:
+        O = [[-1.*rad/0.9,0,-1.*(rad/0.9 - rayfanx)*np.sin(a)/np.cos(a)] for a in np.linspace(-ang_max, ang_max, Nrays)]
+    elif s == 0:
+        return rayfan2D(Nrays, rad, -1.*rad/0.9)
+
+    D = [[np.cos(a),0,np.sin(a)] for a in np.linspace(-ang_max, ang_max, Nrays)]
+    
+    return np.array(O), np.array(D)
+
+#######################
+#virtual image ray fans
