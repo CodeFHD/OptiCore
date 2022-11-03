@@ -111,6 +111,15 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            description="Center thickness of lens segment 2",
            unit = "LENGTH",
            )
+    #THIS DIDN'T WORK
+    #ASPDEG : IntProperty(
+    #       name='ASPDEG',
+    #       default = 3,
+    #       description = "Maximum Degree of Aspheric Coefficients to be Displayed",
+    #       min = 3,
+    #       max = 12,
+    #       )
+    ASPDEG = 3
     k : FloatProperty(
            name="k",
            default = 0.,
@@ -118,8 +127,10 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     A : FloatVectorProperty(
            name="A",
-           default = (0.,0.,0.),
+           #default = (0.,0.,0.),
+           default = list([0. for i in range(ASPDEG)]),
            description="Aspheric correction coefficients",
+           size = ASPDEG,
            )
     k2 : FloatProperty(
            name="k2",
@@ -128,8 +139,9 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     A2 : FloatVectorProperty(
            name="A2",
-           default = (0.,0.,0.),
+           default = list([0. for i in range(ASPDEG)]),
            description="Aspheric correction coefficients",
+           size = ASPDEG,
            )
     k3 : FloatProperty(
            name="k3",
@@ -138,8 +150,9 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     A3 : FloatVectorProperty(
            name="A3",
-           default = (0.,0.,0.),
+           default = list([0. for i in range(ASPDEG)]),
            description="Aspheric correction coefficients",
+           size = ASPDEG,
            )
     material_name : StringProperty(
             name="Material",
@@ -227,6 +240,13 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            default = 20.,
            description="Distance where ray fan originates.",
            )
+    fanangle : FloatProperty(
+           name="Ray Fan Angle",
+           default = 0.,
+           description="Angle of Ray Fan.",
+           min = 0.,
+           max = 90.,
+           )
 
     def draw(self, context):
         scene = context.scene
@@ -299,6 +319,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col4.prop(self, 'nrays')
             col4.prop(self, 'fantype')
             col4.prop(self, 'fandist')
+            col4.prop(self, 'fanangle')
 
     def execute(self, context):
         add_lens(self, context)

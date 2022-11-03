@@ -169,6 +169,9 @@ def trace_rays(self, context):
     elif self.fantype == 'f2df':
         O, D = rayfan.rayfan2D_finite(nrays, 0.9*lr, self.fandist)
 
+    if self.fanangle != 0:
+        O,D = rayfan.rotate_fan(O,D, self.fanangle)
+
     nVerts = 0
 
     #surface 1

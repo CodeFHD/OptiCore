@@ -5,6 +5,17 @@ import numpy as np
 #######################
 #infinite ray fans
 
+def rotate_fan(O,D, angle):
+    alpha = angle*np.pi/180
+    Rotmat = np.array([[np.cos(alpha), 0, np.sin(alpha)],
+                        [0,1,0],
+                        [-np.sin(alpha), 0, np.cos(alpha)]])
+        
+    O = np.einsum('ik,jk->ji', Rotmat, O)
+    D = np.einsum('ik,jk->ji', Rotmat, D)
+
+    return O, D
+
 def rayfan2D(Nrays, rad, rayfanx=-20):
     #init ray fan (2D plot)
     O = [[rayfanx,0,i] for i in np.linspace(-rad, rad, Nrays)]
