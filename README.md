@@ -86,6 +86,12 @@ A "Tip offset" can be specified to apply an offset to the base bottom vertices o
 
 Hint: slightly bevel all edges to give a realistic segemented look due to real imperfections of sharp corners.
 
+### Siemens Star
+
+Creates a Siemens Star, a typical MTF or contrast test object.
+
+The structure can be created open ended, or surrounded by a solid cylinder wall and the Siemens Star cut out as a negative Structure.
+
 ## Optomechanics
 
 ### Breadboard

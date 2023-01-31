@@ -305,7 +305,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col3.prop(self, 'smooth_type')
         col3.prop(self, 'dshape')
         #col3.prop(self, 'optiverts')
-        col3.prop(self, 'debugmode')
+        #col3.prop(self, 'debugmode')
         col4 = row.column(align=True)
         #col4.scale_x = 2.0
         col4.label(text="Optical Parameters")

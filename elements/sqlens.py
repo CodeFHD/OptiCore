@@ -279,6 +279,6 @@ def add_sqlens(self, context):
             mesh.normals_split_custom_set(cn1 + cn3 + cn2)
 
     #for testing
-    mesh.calc_normals_split()
-    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-    bpy.ops.mesh.select_all(action='DESELECT')
+    #mesh.calc_normals_split()
+    #bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    #bpy.ops.mesh.select_all(action='DESELECT')
