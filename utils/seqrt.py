@@ -7,6 +7,8 @@ from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 from . import rayfan
 
+EPSILON = 0.00001
+
 def rotate_rodrigues(D, N, n1, n2, refract=1, direction=1, surface=1):
     """
     Rodrigues rotation formula
@@ -221,15 +223,41 @@ def trace_rays(self, context):
         O = np.array(P)
 
     #detector
-    P = plane_intersect(O, D, self.centerthickness + self.centerthickness2 + self.zdet)
-    #make rays
-    for i in range(nrays):
-        verts.append(Vector(O[i]))
-        verts.append(Vector(P[i]))
-        edges.append([nVerts + 2*i, nVerts + 2*i + 1])
-    #reinit
-    nVerts = len(verts)
-    O = np.array(P)
+    if self.tracetoscene:
+        P = []
+        anyhit = False
+        for i in range(O.shape[0]):
+            o = np.array(O[i,:]) + EPSILON
+            d = np.array(D[i,:])
+            o[0] = o[0]*-1
+            d[0] = d[0]*-1
+            scene = context.scene
+            graph = bpy.context.evaluated_depsgraph_get()
+            result = scene.ray_cast(graph, origin=o, direction = d)
+            hit, p, normal, index, ob, matrix = result
+            if hit:
+                anyhit = True
+                p[0] = p[0]*-1
+                print(o)
+                print(d)
+                print(p)
+                P.append(p)
+            else:
+                P.append([float('nan'), float('nan'), float('nan')])
+        P = np.array(P)
+    else:
+        anyhit = True
+        P = plane_intersect(O, D, self.centerthickness + self.centerthickness2 + self.zdet)
+    
+    if anyhit:
+        #make rays
+        for i in range(nrays):
+            verts.append(Vector(O[i]))
+            verts.append(Vector(P[i]))
+            edges.append([nVerts + 2*i, nVerts + 2*i + 1])
+        ##reinit
+        #nVerts = len(verts)
+        #O = np.array(P)
 
     #flip convention
     verts2 = []

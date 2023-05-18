@@ -183,7 +183,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             default=False,
            )
     debugmode : BoolProperty(
-            name="Debug Mode",
+            name="Display Edit Mode",
             default=False,
            )
     ior : FloatProperty(
@@ -247,6 +247,10 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            min = 0.,
            max = 90.,
            )
+    tracetoscene : BoolProperty(
+            name="Trace Ray Fan to Scene",
+            default=False,
+           )
 
     def draw(self, context):
         scene = context.scene
@@ -305,7 +309,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col3.prop(self, 'smooth_type')
         col3.prop(self, 'dshape')
         #col3.prop(self, 'optiverts')
-        #col3.prop(self, 'debugmode')
+        col3.prop(self, 'debugmode')
         col4 = row.column(align=True)
         #col4.scale_x = 2.0
         col4.label(text="Optical Parameters")
@@ -320,6 +324,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col4.prop(self, 'fantype')
             col4.prop(self, 'fandist')
             col4.prop(self, 'fanangle')
+            col4.prop(self, 'tracetoscene')
 
     def execute(self, context):
         add_lens(self, context)
