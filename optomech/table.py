@@ -267,7 +267,6 @@ def add_table(self, context):
         #inside bevels
         o = nbev4 + nx*ny*nph
         for i in range(ny):
-            print(i)
             for j in range(nx):
                 idx = (i*nx + j)*nph
                 for k in range(nph):
@@ -292,7 +291,7 @@ def add_table(self, context):
 
     if self.shade_smooth:
         if self.smooth_type:
-            obj.data.use_auto_smooth = 1
+            bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes/smooth_by_angle.blend/NodeTree/Smooth by Angle")
         bpy.ops.object.shade_smooth()
 
 

@@ -180,7 +180,6 @@ def add_sqlens(self, context):
             verts, faces, normals = sfc.add_sqaspheric_surface(srad1, k, A, lwidth, N1, N2, cylindrical=self.cylindrical)
     
     nVerts = len(verts)
-    print('Lfaces1: ', len(faces))
     
     #add side
     if srad1==0 and srad2 == 0:
@@ -216,8 +215,6 @@ def add_sqlens(self, context):
             dvert, dfac, normals2 = sfc.add_sqaspheric_surface(srad2, k2, A2, lwidth, N1, N2, -1, CT, nVerts=nVerts, cylindrical=self.cylindrical)
         #dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts=nVerts)
         dvert, dfac, normals2 = dvert[::-1], dfac[::-1], normals2[::-1]
-    
-    print('Lfaces2: ', len(dfac))
         
     verts = verts+dvert
     faces = faces+dfac
@@ -239,10 +236,9 @@ def add_sqlens(self, context):
     if self.shade_smooth:
         bpy.ops.object.shade_smooth()
         if not self.smooth_type:
-            obj.data.use_auto_smooth = 1
+            pass
         else:
             #assign custom normals
-            mesh.use_auto_smooth = True
             bpy.ops.mesh.customdata_custom_splitnormals_clear()
             bpy.ops.mesh.customdata_custom_splitnormals_add()
             cn1, cn2, cn3 = [], [], []

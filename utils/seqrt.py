@@ -7,7 +7,7 @@ from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 from . import rayfan
 
-EPSILON = 0.00001
+EPSILON = 0.001
 
 def rotate_rodrigues(D, N, n1, n2, refract=1, direction=1, surface=1):
     """
@@ -227,8 +227,9 @@ def trace_rays(self, context):
         P = []
         anyhit = False
         for i in range(O.shape[0]):
-            o = np.array(O[i,:]) + EPSILON
+            o = np.array(O[i,:]) # + EPSILON
             d = np.array(D[i,:])
+            o = o + d*EPSILON
             o[0] = o[0]*-1
             d[0] = d[0]*-1
             scene = context.scene
@@ -238,9 +239,6 @@ def trace_rays(self, context):
             if hit:
                 anyhit = True
                 p[0] = p[0]*-1
-                print(o)
-                print(d)
-                print(p)
                 P.append(p)
             else:
                 P.append([float('nan'), float('nan'), float('nan')])

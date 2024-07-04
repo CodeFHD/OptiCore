@@ -568,7 +568,6 @@ def add_lens(self, context):
     #apply smooth shading
     if self.shade_smooth:
         bpy.ops.object.shade_smooth()
-        mesh.use_auto_smooth = True
         if self.smooth_type: #assign custom normals
             bpy.ops.mesh.customdata_custom_splitnormals_clear()
             bpy.ops.mesh.customdata_custom_splitnormals_add()
@@ -677,6 +676,5 @@ def add_lens(self, context):
             
     #for testing
     if self.debugmode:
-        mesh.calc_normals_split()
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.ops.mesh.select_all(action='DESELECT')

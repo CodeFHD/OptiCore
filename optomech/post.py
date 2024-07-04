@@ -406,8 +406,9 @@ def add_post05_v1(self, context):
 
     if self.shade_smooth:
         if self.smooth_type:
-            obj.data.auto_smooth_angle = 10*np.pi/180
-            obj.data.use_auto_smooth = 1
+            bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes/smooth_by_angle.blend/NodeTree/Smooth by Angle")
+            # obj.data.auto_smooth_angle = 10*np.pi/180
+            # obj.data.use_auto_smooth = 1
         bpy.ops.object.shade_smooth()
 
 ####################################################################################################
@@ -652,6 +653,7 @@ def add_post05_v2(self, context):
 
     if self.shade_smooth:
         if self.smooth_type:
-            obj.data.auto_smooth_angle = 10*np.pi/180
-            obj.data.use_auto_smooth = 1
+            bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes/smooth_by_angle.blend/NodeTree/Smooth by Angle")
+            # obj.data.auto_smooth_angle = 10*np.pi/180
+            # obj.data.use_auto_smooth = 1
         bpy.ops.object.shade_smooth()
