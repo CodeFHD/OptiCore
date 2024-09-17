@@ -109,8 +109,8 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
         layout.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
         #layout.prop(self, 'material_name')
         layout.prop(self, 'shade_smooth')
-        if self.shade_smooth:
-            layout.prop(self, 'smooth_type')
+        # if self.shade_smooth:
+        #     layout.prop(self, 'smooth_type')
         layout.prop(self, 'cent_hole')
         if self.cent_hole:
             layout.prop(self, 'hole_rad')

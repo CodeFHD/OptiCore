@@ -10,11 +10,10 @@ Optical Elements Addon for Blender
 
 OptiCore is a Blender-addon to provide accurate and well-defined models of optical elements (lenses, mirrors, ...) as well as optimechanical components (optical bench, posts, ...). These models can not only help you to easily create renderings of optical laboratory experiments, but also stunning images involving caustics.
 
+This addon will primarily be maintained for the latest Blender release. The last commit was tested on Blender version 4.2.1 LTS.
+
 </p>
 
-<p align="center">
-Introduction Video on YouTube:
-</p>
 <p align="center">
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=D8rQBVI4lIg
 " target="_blank"><img src="http://img.youtube.com/vi/D8rQBVI4lIg/0.jpg" 
@@ -46,13 +45,17 @@ For correct optical behaviour, all elements created with this addon should have 
 
 ### Lens
 
-Creates an optical lens with two flat, spherical or apsheric surfaces. Set surface radius = 0 for a flat surface.
+Creates an optical lens with flat, spherical or apsheric surfaces. Set surface radius = 0 for a flat surface.
+
+Singlet, Doublet and Triplet lenses are supported. (More than three elements cemented together are uncommon and are not covered at the moment because they would blow up the code due to the way the Blender API registers settings-parameters.)
 
 The component origin is placed at the on-axis intersection with surface 1.
 
 Aspheric surfaces are defined with a conical constant and three coefficients for polynominal terms. See the respective Wikipedia-page for an explanation: <https://en.wikipedia.org/wiki/Aspheric_lens>
 
-An option exists to create a cross-section model (D-shaped lens).
+The lens can also be created as a cross-section model (D-shape option).
+
+A ray fan can be added to visualize the optical path of rays through the lens. This uses an internal, sequential ray tracing algorithm. Presently, aspheric surfaces are not supported.
 
 ### Square Lens
 
@@ -107,39 +110,3 @@ Creates an 0.5-inch optical post (Thorlabs-style), with a 4 mm hole at the top a
 Warning: This mesh geometry with a through-hole appears to be very complicated to properly shade smooth. Artifacts may occur with high glossiness. Autosmooth appears to work better than split normals.
 
 Other post-sizes are to follow.
-
-## ToDo List
-
-### Optical Components To Add
-- flat annulus around concave lens surfaces
-- elliptics (off-axis flat mirrors)
-- Prisms (right-angle, triangle, dove, roof, cats-eye-RR, penta, wedge[?])
-- cylindrical lenses/mirrors
-- Fresnel lenses
-- wedged window
-- Axicons/laser line generators
-- Further types of aspheric surfaces
--- Schmidt corrector plate
--- free-form with input formula; if feasible
-- Microlens array (test if at all usable with 32bit rendering)
-- doublets/triplets with well-defined interior surface
-
-### Optical Component Improvements
-- All: Consistent default settings of size, i.e. mm vs m scale
-- Lens: center thickness checks: small surface radii as well as aspheric
-- Lens: If faces touch, don't generate one outer rim to avoid duplicate vertices and split-normals
-- Lens: Origin at focus point (at least infinity focus)
-- Mirror: along-focus holes for OAPs
-- CC-RR: manufacturing-accurate closure at sides
-- CC-RR: Include Bevel option
-- CC-RR: Tip offset presets
-
-### Other Programming
-- Cross-section models (D-shaped - done for regular lens), perhaps with variable cut width
-- lens file import (seq, zmx, spd - open standards? patents? copyright?)
-- lens system designer GUI
-
-### Performance Assessments
-
-- split-normals vs. edge-split artefacts
-- general limitations of 32bit ray tracing

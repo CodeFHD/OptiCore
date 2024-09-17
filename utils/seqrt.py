@@ -144,10 +144,10 @@ def trace_rays(self, context):
     faces = []
 
     md = self.makedoublet
-    nsurf = 2 + md
+    nsurf = 1 + int(md)
 
     i0 = 1
-    i1 = self.ior
+    i1 = self.ior1
     if md:
         i2 = self.ior2
         i3 = 1
@@ -194,7 +194,7 @@ def trace_rays(self, context):
     #surface 2
     r = self.rad2
     surface = np.sign(r).astype(int)
-    C = np.array([self.centerthickness + self.rad2, 0, 0])
+    C = np.array([self.centerthickness1 + self.rad2, 0, 0])
     P, N = sphere_intersect(O, D, C, r, lr, i1, i2)
     D = rotate_rodrigues(D, N, i1, i2, 1, 1, surface)
     #make rays
@@ -210,7 +210,7 @@ def trace_rays(self, context):
         #surface 3
         r = self.rad3
         surface = np.sign(r).astype(int)
-        C = np.array([self.centerthickness + self.centerthickness2 + self.rad3, 0, 0])
+        C = np.array([self.centerthickness1 + self.centerthickness2 + self.rad3, 0, 0])
         P, N = sphere_intersect(O, D, C, r, lr, i2, i3)
         D = rotate_rodrigues(D, N, i2, i3, 1, 1, surface)
         #make rays
@@ -245,7 +245,7 @@ def trace_rays(self, context):
         P = np.array(P)
     else:
         anyhit = True
-        P = plane_intersect(O, D, self.centerthickness + self.centerthickness2 + self.zdet)
+        P = plane_intersect(O, D, self.centerthickness1 + self.centerthickness2 + self.zdet)
     
     if anyhit:
         #make rays
