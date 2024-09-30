@@ -28,26 +28,27 @@ def rayfan3D(Nrays, rad, rayfanz=-20):
     O, D = np.array(O), np.array(D)
     return O, D
 
-def rayfan3D_uniformdiskrandom(Nrays, rad, rayfanx=-20):
+def rayfan3D_uniformdiskrandom(Nrays, rad, rayfanz=-20):
     #init ray fan (3D uniform sample disk)
     u1 = np.random.rand(Nrays)
     u2 = np.random.rand(Nrays)
-    Ox = np.zeros(Nrays) + rayfanx
+    Ox = rad * np.sqrt(u1) * np.sin(2*np.pi*u2)
     Oy = rad * np.sqrt(u1) * np.cos(2*np.pi*u2)
-    Oz = rad * np.sqrt(u1) * np.sin(2*np.pi*u2)
+    Oz = np.zeros(Nrays) + rayfanz
     O = np.vstack((Ox, Oy, Oz)).T
-    D = [[1.,0,0] for i in range(len(O))]
+    D = [[0,0,1.] for i in range(len(O))]
     O, D = np.array(O), np.array(D)
     return O, D
 
-def rayfan3D_square(Nrays, rad, rayfanx=-20):
+def rayfan3D_square(Nrays, rad, rayfanz=-20):
     Nrays = int(np.sqrt(Nrays))
-    O = [[rayfanx, rad*(2*i/(Nrays-1) - 1), rad*(2*j/(Nrays-1) - 1)] for j in range(Nrays) for i in range(Nrays)]
-    D = [[1.,0,0] for i in range(len(O))]
+    O = [[rad*(2*j/(Nrays-1) - 1), rad*(2*i/(Nrays-1) - 1), rayfanz] for j in range(Nrays) for i in range(Nrays)]
+    D = [[0,0,1.] for i in range(len(O))]
     O, D = np.array(O), np.array(D)
     return O, D
 
 def rayfan3D_tri(Nrays,rad, rayfanz=-20):
+    Nrays = int(np.sqrt(Nrays))
     O = []
     for i in range(Nrays):
         x = rad*(2*i/(Nrays-1) - 1)
