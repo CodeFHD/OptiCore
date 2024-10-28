@@ -1,3 +1,22 @@
+"""
+Copyright 2019-2024, Johannes Hinrichs
+
+This file is part of OptiCore.
+
+OptiCore is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OptiCore is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import numpy as np
 
 from mathutils import Vector
@@ -36,19 +55,11 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,xadd=0,nVerts=0,
     xmin = 0
 
     if orig=='FP':
-        #if fp < 1:
-        #    xmin = (np.abs(OAD)+mrad)**2*A
-        #elif np.abs(OAD) > mrad:
-        #    xmin = (np.abs(OAD)-mrad)**2*A
         xoffset = -fp
         yoffset = 0
         fxoffset = -fp+xmin
         fyoffset = OAD
     elif orig == 'MC':
-        #if fp < 1:
-        #    xmin = (np.abs(OAD)+mrad)**2*A
-        #elif np.abs(OAD) > mrad:
-        #    xmin = (np.abs(OAD)-mrad)**2*A
         xoffset = -xOAD
         yoffset = -OAD
         fxoffset = -xOAD+xmin

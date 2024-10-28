@@ -1,3 +1,22 @@
+"""
+Copyright 2019-2024, Johannes Hinrichs
+
+This file is part of OptiCore.
+
+OptiCore is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OptiCore is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import bpy
 import numpy as np
 
@@ -15,12 +34,29 @@ from ..utils.raytrace.lenssystem import Lenssystem
 from ..utils.raytrace.trace_sequential import exec_trace, trace_to_scene
 from ..utils.raytrace import rayfan
 
+def reset_lens_defaults():
+    bpy.context.window_manager.operator_properties_last("mesh.add_lens").num1 = 32
+    bpy.context.window_manager.operator_properties_last("mesh.add_lens").num2 = 64
+    bpy.context.window_manager.operator_properties_last("mesh.add_lens").nrays = 11
+    bpy.context.window_manager.operator_properties_last("mesh.add_lens").addrayfan = False
+    bpy.context.window_manager.operator_properties_last("mesh.add_lens").tracetoscene = False
+
 class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_lens"
     bl_label = "Lens"
     bl_options = {'REGISTER', 'UNDO'}
     
+    display_option : EnumProperty(
+        name="Settings",
+        items = {("default","Most Important",""),
+                 ("optical","Optical Design",""),
+                 ("geometry","Model Geometry",""),
+                 ("rayfan","Ray Tracing",""),
+                 ("paraxial","Paraxial Optics",""),},
+        default = "default",
+        description="Select which settings are displayed in this window.",
+           )
     makedoublet : EnumProperty(
         name="Lens configuration",
         items = {("1", "Singlet", ""),
@@ -32,7 +68,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            name="Surface 1 Type",
            items = {("spherical","Spherical",""),
                     ("aspheric","Aspheric","")},
-           default = "spherical",
+           default = "aspheric",
            description="Shape of Surface 1",
            #options={'HIDDEN'},
            )
@@ -40,7 +76,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            name="Surface 2 Type",
            items = {("spherical","Spherical",""),
                     ("aspheric","Aspheric","")},
-           default = "spherical",
+           default = "aspheric",
            description="Shape of Surface 2",
            #options={'HIDDEN'},
            )
@@ -48,7 +84,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            name="Surface 3 Type",
            items = {("spherical","Spherical",""),
                     ("aspheric","Aspheric","")},
-           default = "spherical",
+           default = "aspheric",
            description="Shape of Surface 3",
            #options={'HIDDEN'},
            )
@@ -56,31 +92,31 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            name="Surface 4 Type",
            items = {("spherical","Spherical",""),
                     ("aspheric","Aspheric","")},
-           default = "spherical",
+           default = "aspheric",
            description="Shape of Surface 4",
            #options={'HIDDEN'},
            )
     rad1 : FloatProperty(
            name="Surface 1 Radius",
-           default = 12.,
+           default = 61.47,
            description="Radius of Curvature of Surface 1",
            unit = "LENGTH",
            )
     rad2 : FloatProperty(
            name="Surface 2 Radius",
-           default = -24.,
+           default = -44.64,
            description="Radius of Curvature of Surface 2",
            unit = "LENGTH",
            )
     rad3 : FloatProperty(
            name="Surface 3 Radius",
-           default = 24.,
+           default = -129.94,
            description="Radius of Curvature of Surface 3",
            unit = "LENGTH",
            )
     rad4 : FloatProperty(
            name="Surface 4 Radius",
-           default = 24.,
+           default = -126.,
            description="Radius of Curvature of Surface 4",
            unit = "LENGTH",
            )
@@ -98,7 +134,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     lensradius : FloatProperty(
            name="Lens Radius",
-           default = 3.,
+           default = 12.5,
            description="Lens outer radius",
            unit = "LENGTH",
            )
@@ -132,19 +168,19 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     centerthickness1 : FloatProperty(
            name="Center Thickness",
-           default = 1.,
+           default = 6.,
            description="Center thickness of lens",
            unit = "LENGTH",
            )
     centerthickness2 : FloatProperty(
            name="Center Thickness 2",
-           default = 1.,
+           default = 2.5,
            description="Center thickness of lens segment 2",
            unit = "LENGTH",
            )
     centerthickness3 : FloatProperty(
            name="Center Thickness 3",
-           default = 1.,
+           default = 4.,
            description="Center thickness of lens segment 3",
            unit = "LENGTH",
            )
@@ -164,7 +200,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     A1 : FloatVectorProperty(
            name="A",
-           #default = (0.,0.,0.),
+           # default = (1e-5,0.,0.), # for testing
            default = list([0. for i in range(ASPDEG)]),
            description="Aspheric correction coefficients",
            size = ASPDEG,
@@ -202,16 +238,24 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            description="Aspheric correction coefficients",
            size = ASPDEG,
            )
-    material_name : StringProperty(
-            name="Material",
+    material_name1 : StringProperty(
+            name="Material1",
+            description="Material Surface 1",
             default="",
            )
     material_name2 : StringProperty(
-            name="Material 2",
+            name="Material2",
+            description="Material Surface 2",
             default="",
            )
     material_name3 : StringProperty(
-            name="Material 3",
+            name="Material3",
+            description="Material Surface 3",
+            default="",
+           )
+    material_name4 : StringProperty(
+            name="Material4",
+            description="Material Surface 4",
             default="",
            )
     shade_smooth : BoolProperty(
@@ -223,30 +267,35 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             default=True,
            )
     dshape : BoolProperty(
-            name="D-Shaped Lens",
+            name="Cross-section Model",
             default=False,
            )
     optiverts : BoolProperty(
             name="Alternative radial vertex distribution",
             default=False,
            )
-    debugmode : BoolProperty(
+    display_edit : BoolProperty(
             name="Display Edit Mode",
             default=False,
            )
+    wavelength : StringProperty(
+            name="Wavelengths",
+            default="e;F';C'",
+            description="Wavelengths for calculations and ray tracing. Values are separated by semicolon. The first value is taken as the primary wavelength. Values can either be entered in nanometers or using Fraunhofer line letters ",
+           )
     ior1 : FloatProperty(
            name="IOR 1",
-           default = 1.5,
+           default = 1.5168, # N-BK7 Schott
            description="Index of Refraction of first lens section. Not transferred to material, only for paraxial infromations.",
            )
     ior2 : FloatProperty(
            name="IOR 2",
-           default = 1.6,
+           default = 1.67271, # N-SF5 Schott
            description="Index of Refraction of second lens section. Not transferred to material, only for paraxial infromations.",
            )
     ior3 : FloatProperty(
            name="IOR 3",
-           default = 1.55,
+           default = 1.62005, # N-F2 Schott
            description="Index of Refraction of third lens section. Not transferred to material, only for paraxial infromations.",
            )
     def get_flen(self):
@@ -254,13 +303,26 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
     flen_intern : FloatProperty(
            name="Focal Length",
            default = 0.,
-           description="Paraxial EFL of the lens.",
+           description="Paraxial EFL of the lens",
            )
     flen : FloatProperty(
            name="Focal Length",
            default = 0.,
-           description="Paraxial EFL of the lens.",
+           description="Paraxial EFL of the lens",
            get=get_flen,
+           )
+    def get_rmsspotsize(self):
+        return self.rmsspotsize_intern
+    rmsspotsize_intern : FloatProperty(
+           name="RMS spot size",
+           default = 0.,
+           description="RMS spot size of the ray trace in the sensor plane",
+           )
+    rmsspotsize : FloatProperty(
+           name="RMS spot size",
+           default = 0.,
+           description="RMS spot size of the ray trace in the sensor plane",
+           get=get_rmsspotsize,
            )
     addrayfan : BoolProperty(
             name="Add Ray Fan",
@@ -277,26 +339,14 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            description="Number of rays for ray fan",
            min=3,
            )
-    """
-    fantype : EnumProperty(
-           name="Ray Fan Type",
-           items = {("f2d","2D",""),
-                    ("f3d","3D",""),
-                    ("f3dt","3D tris",""),
-                    ("f3dr","3D random",""),
-                    ("f2df","2D Finite",""),},
-           default = "f2d",
-           description="Ray Fan Type",
-           #options={'HIDDEN'},
-           )
-    """
     fantype : EnumProperty(
            name="Ray Fan Type",
            items = {("2D","2D",""),
                     ("3D_square","3D square",""),
                     ("3D_tri","3D tris",""),
                     ("3D_random","3D random",""),
-                    ("2D_finite","2D Finite",""),},
+                    ("2D_finite","2D Finite",""),
+                    ("3D_rings", "3D rings", ""),},
            default = "2D",
            description="Ray Fan Type",
            #options={'HIDDEN'},
@@ -310,7 +360,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            name="Ray Fan Angle",
            default = 0.,
            description="Angle of Ray Fan.",
-           min = 0.,
+           min = -90.,
            max = 90.,
            )
     fandiam : FloatProperty(
@@ -324,105 +374,140 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             name="Trace Ray Fan to Scene",
             default=False,
            )
+    autofocus : BoolProperty(
+            name="RMS-Focus",
+            description='Attempt to autofocus by ray tracing and evaluating the RMS spot size',
+            default=False,
+           )
+    autosolve : BoolProperty(
+            name="Automatically optimize one parameter",
+            default=False,
+           )
+    solve_for : EnumProperty(
+        name="Autosolver",
+        items = {("r1","Surface 1 Radius",""),
+                 ("r2","Surface 2 Radius",""),
+                 ("r3","Surface 3 Radius",""),
+                 ("r4","Surface 4 Radius",""),
+                 ("n1","Glass 1 index",""),
+                 ("n2","Glass 2 index",""),
+                 ("n3","Glass 3 index",""),},
+        default = "r1",
+        description="Select which parameter to automatically optimize.",
+           )
+    flen_goal : FloatProperty(
+           name="Focal Length target",
+           default = 100.,
+           description="Paraxial EFL of the lens used in autosolver.",
+           min=1.,
+           )
 
     def draw(self, context):
         md = self.makedoublet
+        disp = self.display_option
         scene = context.scene
-        #context.window_manager.invoke_props_dialog(self, width=500)
         row = self.layout
-        #layout.scale_x = 2.0
-        #row = layout.row(align=True)
-        #row.scale_x = 2.0
-        # Location
         col = row.column(align=True)
-        col.label(text="Location")
-        col.prop(self, 'location', text="")
-        # Rotation
-        col2 = col.column(align=True)
-        col2.label(text="Rotation")
-        col2.prop(self, 'rotation', text="")
-        col3 = row.column(align=True)
-        #col3.scale_x = 2.0
-        col3.label(text="Lens Parameters")
-        col3.prop(self, 'ltype1')
-        col3.prop(self, 'rad1')
-        if not self.ltype1=='aspheric': #TMP
-            col3.prop(self, 'flangerad1')
-        col3.prop(self, 'ltype2')
-        col3.prop(self, 'rad2')
-        if not self.ltype2=='aspheric': #TMP
-            col3.prop(self, 'flangerad2')
-        if md in ["2", "3"]:
-            col3.prop(self, 'ltype3')
-            col3.prop(self, 'rad3')
-            if not self.ltype3=='aspheric': #TMP
-                col3.prop(self, 'flangerad3')
-        if md in ["3"]:
-            col3.prop(self, 'ltype4')
-            col3.prop(self, 'rad4')
-            if not self.ltype4=='aspheric': #TMP
-                col3.prop(self, 'flangerad4')
-        col3.prop(self, 'lensradius')
-        col3.prop(self, 'centerthickness1')
-        if md in ["2", "3"]:
-            col3.prop(self, 'centerthickness2')
-        if md in ["3"]:
-            col3.prop(self, 'centerthickness3')
-        col3.prop(self, 'num1')
-        col3.prop(self, 'num2')
-        if self.ltype1=='aspheric':
-            col3.prop(self, 'k1')
-            col3.prop(self, 'A1')
-        if self.ltype2=='aspheric':
-            col3.prop(self, 'k2')
-            col3.prop(self, 'A2')
-        if md in ["2", "3"]:
-            if self.ltype3=='aspheric':
-                col3.prop(self, 'k3')
-                col3.prop(self, 'A3')
-        if md in ["3"]:
-            if self.ltype4=='aspheric':
-                col3.prop(self, 'k4')
-                col3.prop(self, 'A4')
-        # col3.prop_search(self, "material_name", bpy.data, "materials", icon="NONE")
-        # if md in ["2", "3"]:
-        #     col3.prop_search(self, "material_name2", bpy.data, "materials", icon="NONE")
-        # if md in ["3"]:
-        #     col3.prop_search(self, "material_name3", bpy.data, "materials", icon="NONE")
-        col3.prop(self, 'makedoublet')
-        col3.prop(self, 'shade_smooth')
-        # if self.shade_smooth:
-        #     col3.prop(self, 'smooth_type')
-        col3.prop(self, 'dshape')
-        #col3.prop(self, 'optiverts')
-        col3.prop(self, 'debugmode')
-        col4 = row.column(align=True)
-        #col4.scale_x = 2.0
-        col4.label(text="Optical Parameters")
-        col4.prop(self, 'ior1')
-        if md in ["2", "3"]:
-            col4.prop(self, 'ior2')
-        if md in ["3"]:
-            col4.prop(self, 'ior3')
-        col4.prop(self, 'flen')
-        col4.prop(self, 'addrayfan')
-        if self.addrayfan:
-            col4.prop(self, 'zdet')
-            col4.prop(self, 'nrays')
-            col4.prop(self, 'fantype')
-            col4.prop(self, 'fandist')
-            col4.prop(self, 'fanangle')
-            col4.prop(self, 'fandiam')
-            col4.prop(self, 'tracetoscene')
-
+        if disp == 'default':
+            col.prop(self, 'flen')
+            col.prop(self, 'rmsspotsize')
+            col.prop(self, 'lensradius')
+            col.prop(self, 'rad1')
+            col.prop(self, 'rad2')
+            col.prop(self, 'rad3')
+            col.prop(self, 'rad4')
+            col.prop(self, 'centerthickness1')
+            col.prop(self, 'centerthickness2')
+            col.prop(self, 'centerthickness3')
+            col.prop(self, 'ior1')
+            col.prop(self, 'ior2')
+            col.prop(self, 'ior3')
+        if disp == 'optical':
+            col.label(text="Lens Parameters")
+            col.prop(self, 'flen')
+            col.prop(self, 'rmsspotsize')
+            col.prop(self, 'lensradius')
+            col.prop(self, 'centerthickness1')
+            col.prop(self, 'centerthickness2')
+            col.prop(self, 'centerthickness3')
+            # col.prop(self, 'ltype1')
+            col.prop(self, 'rad1')
+            col.prop(self, 'k1')
+            col.prop(self, 'A1')
+            col.prop(self, 'flangerad1')
+            # col.prop(self, 'ltype2')
+            col.prop(self, 'rad2')
+            col.prop(self, 'k2')
+            col.prop(self, 'A2')
+            col.prop(self, 'flangerad2')
+            # col.prop(self, 'ltype3')
+            col.prop(self, 'rad3')
+            col.prop(self, 'k3')
+            col.prop(self, 'A3')
+            col.prop(self, 'flangerad3')
+            # col.prop(self, 'ltype4')
+            col.prop(self, 'rad4')
+            col.prop(self, 'k4')
+            col.prop(self, 'A4')
+            col.prop(self, 'flangerad4')
+        if disp == 'geometry':
+            # Location
+            col.label(text="Location")
+            col.prop(self, 'location', text="")
+            # Rotation
+            col.label(text="Rotation")
+            col.prop(self, 'rotation', text="")
+            col.label(text="Modelling Parameters")
+            col.prop(self, 'num1')
+            col.prop(self, 'num2')
+            col.prop_search(self, "material_name1", bpy.data, "materials", icon="NONE")
+            col.prop_search(self, "material_name2", bpy.data, "materials", icon="NONE")
+            col.prop_search(self, "material_name3", bpy.data, "materials", icon="NONE")
+            col.prop_search(self, "material_name4", bpy.data, "materials", icon="NONE")
+            col.prop(self, 'shade_smooth')
+        if disp == 'rayfan':
+            col.prop(self, 'flen')
+            col.prop(self, 'rmsspotsize')
+            col.prop(self, 'zdet')
+            col.prop(self, 'nrays')
+            col.prop(self, 'fantype')
+            col.prop(self, 'fandist')
+            col.prop(self, 'fanangle')
+            col.prop(self, 'fandiam')
+            col.prop(self, 'tracetoscene')
+            col.prop(self, 'autofocus')
+        if disp == 'paraxial':
+            col.label(text="Optical Parameters")
+            # col.prop(self, 'wavelength')
+            col.prop(self, 'ior1')
+            col.prop(self, 'ior2')
+            col.prop(self, 'ior3')
+            col.prop(self, 'flen')
+            col.prop(self, 'rmsspotsize')
+            
+        # global config, always displayed
+        col.prop(self, 'display_edit')
+        col.prop(self, 'dshape')
+        col.prop(self, 'addrayfan')
+        col.prop(self, 'makedoublet')
+        col.prop(self, 'display_option')
+            
     def execute(self, context):
         add_lens(self, context)
         if self.addrayfan:
         #     utils.trace_rays(self, context)
-            add_rayfan(self, context)
+            rmsspotsize = add_rayfan(self, context)
+            self.rmsspotsize_intern = rmsspotsize
         return {'FINISHED'}
     
-def get_default_paramdict():
+    @classmethod
+    def reset_properties(cls):
+        for prop, default_value in cls._defaults.items():
+            setattr(cls, prop, default_value)
+        # Reset each property to its default value
+        # cls.centerthickness1 = cls.__annotations__['centerthickness1'].default
+    
+def get_default_paramdict_lens():
     """
     This functions returns a parameter dictionary filled with some default values.
     This can be used as a template for external calls to add_lens()
@@ -458,20 +543,19 @@ def get_default_paramdict():
     paramdict['makedoublet'] = "1"
     paramdict['dshape'] = False
     paramdict['optiverts'] = False
-    paramdict['material_name'] = ""
+    paramdict['material_name1'] = ""
     paramdict['material_name2'] = ""
     paramdict['material_name3'] = ""
+    paramdict['material_name4'] = ""
     paramdict['shade_smooth'] = True
     paramdict['smooth_type'] = True
     paramdict['ior1'] = 1.5
     paramdict['ior2'] = 1.6
     paramdict['ior3'] = 1.55
-    paramdict['debugmode'] = False
+    paramdict['display_edit'] = False
     return paramdict
 
 def add_lens(self, context, paramdict=None):
-    edges = []
-    
     # extract parameters
     if paramdict is None:
         ltype1 = self.ltype1
@@ -503,15 +587,16 @@ def add_lens(self, context, paramdict=None):
         md = self.makedoublet
         dshape = self.dshape
         optiverts = self.optiverts
-        material_name = self.material_name
+        material_name1 = self.material_name1
         material_name2 = self.material_name2
         material_name3 = self.material_name3
+        material_name4 = self.material_name4
         shade_smooth = self.shade_smooth
         smooth_type = self.smooth_type
         ior1 =  self.ior1
         ior2 =  self.ior2
         ior3 =  self.ior3
-        debugmode = self.debugmode
+        display_edit = self.display_edit
     else:
         ltype1 = paramdict['ltype1']
         ltype2 = paramdict['ltype2']
@@ -542,88 +627,26 @@ def add_lens(self, context, paramdict=None):
         md = paramdict['makedoublet']
         dshape = paramdict['dshape']
         optiverts = paramdict['optiverts']
-        material_name = paramdict['material_name']
+        material_name1 = paramdict['material_name1']
         material_name2 = paramdict['material_name2']
         material_name3 = paramdict['material_name3']
+        material_name4 = paramdict['material_name4']
         shade_smooth = paramdict['shade_smooth']
         smooth_type = paramdict['smooth_type']
         ior1 =  paramdict['ior1']
         ior2 =  paramdict['ior2']
         ior3 =  paramdict['ior3']
-        debugmode = paramdict['debugmode']
-    
-    num_sides = int(md)       
-    num_surfaces = int(md) + 1
+        display_edit = paramdict['display_edit']
 
-    hasfl1 = flrad1 > 0.01*lrad
-    hasfl2 = flrad2 > 0.01*lrad
-    if ltype1 == 'aspheric':
-        hasfl1 = 0 #TMP
-    if ltype2 == 'aspheric':
-        hasfl2 = 0 #TMP
-    ssig1 = 1
-    if srad1 < 0:
-        ssig1 = -1
-    ssig2 = 1
-    if srad2 < 0:
-        ssig2 = -1
+    """
+    Verification of the geometry
+    """
 
-    if md in ["2", "3"]:
-        hasfl3 = flrad3 > 0.01*lrad
-        if ltype3 == 'aspheric':
-            hasfl3 = 0 #TMP
-        ssig3 = 1
-        if srad3 < 0:
-            ssig3 = -1
-    else:
-        hasfl3 = 0
-    if md in ["3"]:
-        hasfl4 = flrad4 > 0.01*lrad
-        if ltype4 == 'aspheric':
-            hasfl4 = 0 #TMP
-        ssig4 = 1
-        if srad4 < 0:
-            ssig4 = -1
-    else:
-        hasfl4 = 0
-
-    #TODO: This may need to move down
-    if flrad1 > 0.99*lrad: flrad1 = 0.99*lrad
-    if flrad2 > 0.99*lrad: flrad2 = 0.99*lrad
-    lrad1 = lrad - flrad1 if hasfl1 else lrad
-    lrad2 = lrad - flrad2 if hasfl2 else lrad
-    if md in ["2", "3"]:
-        if flrad3 > 0.99*lrad: flrad3 = 0.99*lrad
-        lrad3 = lrad - flrad3 if hasfl3 else lrad
-    else:
-        lrad3 = 0
-    if md in ["3"]:
-        if flrad4 > 0.99*lrad: flrad4 = 0.99*lrad
-        lrad4 = lrad - flrad4 if hasfl4 else lrad
-    else:
-        lrad4 = 0
-    
-    #check surface radii for consistency
-    ##check radius overflow
-    if not utils.check_surface(np.abs(srad1), lrad1):
-        srad1 = 0
-        lrad1 = lrad
-        hasfl1 = 0
-    if not utils.check_surface(np.abs(srad2), lrad2):
-        srad2 = 0
-        lrad2 = lrad
-        hasfl2 = 0
-    if md in ["2", "3"]:
-        if not utils.check_surface(np.abs(srad3), lrad3):
-            srad3 = 0
-            lrad3 = lrad
-            hasfl3 = 0
-    if md in ["3"]:
-        if not utils.check_surface(np.abs(srad4), lrad4):
-            srad4 = 0
-            lrad4 = lrad
-            hasfl4 = 0
-    hasfl = [hasfl1, hasfl2, hasfl3, hasfl4]
+    lrad1, hasfl1, flrad1, ssig1 = utils.check_surface(srad1, lrad, flrad1, k1, A1)
+    lrad2, hasfl2, flrad2, ssig2 = utils.check_surface(srad2, lrad, flrad2, k2, A2)
+    lrad3, hasfl3, flrad3, ssig3 = utils.check_surface(srad3, lrad, flrad3, k3, A3)
+    lrad4, hasfl4, flrad4, ssig4 = utils.check_surface(srad4, lrad, flrad4, k4, A4)
+   
     ##check center thickness
     """        
     lsurf1, lsurf2 = 0, 0
@@ -645,7 +668,14 @@ def add_lens(self, context, paramdict=None):
         if (-lsurf3 + lsurf4) > CT3: CT3 = -lsurf3 + lsurf4
     """
         
+    """
+    prepare some variables
+    """
+    num_sides = int(md)       
+    num_surfaces = int(md) + 1
+    
     # collect into lists for looping
+    hasfl = [hasfl1, hasfl2, hasfl3, hasfl4]
     srad_list = [srad1, srad2, srad3, srad4]
     lrad_list = [lrad1, lrad2, lrad3, lrad4]
     CT_list = [0, CT1, CT2, CT3]
@@ -658,6 +688,15 @@ def add_lens(self, context, paramdict=None):
     # initialize with zero in order to facilitate taking differences starting from surface 0
     nVerts_at_segment = [0]
     nLoops_at_segment = [0]
+    nFaces_at_segment = [0]
+    
+    """
+    Generating the vertices and faces
+    """
+    
+    # keeping the separate generator algorithms for consistency testing and efficiency
+    if k1 == 0 and np.all(np.array(A1) == 0):
+        ltype1 = 'spherical'
 
     #add surface1
     if srad1 == 0: #flat surface case
@@ -665,11 +704,12 @@ def add_lens(self, context, paramdict=None):
     elif ltype1 == 'spherical':
         verts, faces, normals, N1, N2 = sfc.add_spherical_surface(srad1, lrad1, N1, N2,1, dshape=dshape, optiverts=optiverts, lrad_ext=lrad)
     elif ltype1 == 'aspheric':
-        verts, faces, normals = sfc.add_aspheric_surface(srad1, k1, A1, lrad1, N1, N2,1, dshape=dshape)
+        verts, faces, normals = sfc.add_aspheric_surface(srad1, k1, A1, lrad1, N1, N2,1, dshape=dshape, lrad_ext=lrad)
     
     nVerts1 = len(verts)
     nFacs1 = len(faces)
     nVerts_at_segment.append(len(verts))
+    nFaces_at_segment.append(len(faces))
     
     # all sides are equal so this is generic and gets added below
     normalsside = sfc.get_ringnormals(N2, dshape=dshape)
@@ -682,13 +722,15 @@ def add_lens(self, context, paramdict=None):
     nVerts_prev = nVerts1 # N2
     for i in range(1, int(md)+1):
         # get parameters for this surface
-        # they are named with index 0 to avoid confusion with globals without number where exits, e.g. lrad
+        # they are named with index 0 to avoid confusion with globals without number where that exists, e.g. lrad
         srad0 = srad_list[i]
         lrad0 = lrad_list[i]
         CT_sum = CT_sum + CT_list[i]
         ltype0 = ltype_list[i]
         k0 = k_list[i]
         A0 = A_list[i]
+        if k0 == 0 and np.all(np.array(A0) == 0):
+            ltype0 = 'spherical'
         
         # get the new surface and append
         if srad0 == 0:#flat surface case
@@ -696,7 +738,7 @@ def add_lens(self, context, paramdict=None):
         elif ltype0 == 'spherical':
             dvert, dfac, dnormals, N12, N22 = sfc.add_spherical_surface(srad0, lrad0, N1, N2, +1, CT_sum, nVerts=nVerts_tot, dshape=dshape, optiverts=optiverts, lrad_ext=lrad)
         elif ltype0 == 'aspheric':
-            dvert, dfac, dnormals = sfc.add_aspheric_surface(srad0, k0, A0, lrad0, N1, N2, +1, CT_sum, nVerts=nVerts_tot, dshape=dshape)
+            dvert, dfac, dnormals = sfc.add_aspheric_surface(srad0, k0, A0, lrad0, N1, N2, +1, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad)
         # flip normals for last surface
         if i==int(md):
             dfac = [df[::-1] for df in dfac]
@@ -708,6 +750,7 @@ def add_lens(self, context, paramdict=None):
         
         nVerts_this = len(dvert)
         nVerts_at_segment.append(len(verts))
+        nFaces_at_segment.append(len(faces))
         
         # add the side
         for j in range(N2-dshape):
@@ -719,7 +762,6 @@ def add_lens(self, context, paramdict=None):
         if dshape:
             if srad_prev==0:
                 ptss1 = [nVerts_tot - 1, nVerts_tot - N2]
-                #ptss1 = [nVerts_tot - (N2-1), nVerts_tot]
             else:
                 p0 = nVerts_tot - nVerts_prev 
                 ptss1 = [p0 + (x+1)*N2 for x in range(N1)][::-1] + [p0] + [p0 + 1 + x*N2 for x in range(N1)]
@@ -728,65 +770,133 @@ def add_lens(self, context, paramdict=None):
             else:
                 p0 = len(verts) - nVerts_this
                 ptss2 = [p0 + 1 + x*N2 for x in range(N1)][::-1] + [p0] + [p0 + (x+1)*N2 for x in range(N1)]
-                #ptss2 = [nVerts_tot + x*N2 for x in range(N1)] + [len(verts)-1] + [nVerts_tot + (x+1)*N2-1 for x in range(N1)[::-1]]
             faces.append(ptss1 + ptss2)
         
         # update needed carry-over-parameters after this surface
         nVerts_prev = len(dvert)
-        #if i == 1: nVerts_prev = N2
         nVerts_tot = len(verts) # the (total) length of verts so far
         nVerts_at_segment.append(len(verts))
+        nFaces_at_segment.append(len(faces))
         srad_prev = 1.*srad0
     
     #create mesh from verts and faces
     del dvert
     del dfac
+    edges = [] # edges are not explicitly created here so we pass an empty list
     mesh = bpy.data.meshes.new(name="Lens")
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 
     """
+    Adding Blender Materials
+    """
     #assign material(s)
-    if material_name in bpy.data.materials:
-        mat = bpy.data.materials[material_name]
-        obj.data.materials.append(mat)
-    if md:
-        cond2 = material_name2 in bpy.data.materials
-        cond3 = material_name3 in bpy.data.materials
-    if md and cond2 and cond3:
-        if material_name2 in bpy.data.materials:
-            mat2 = bpy.data.materials[material_name2]
-            obj.data.materials.append(mat2)
-        if material_name3 in bpy.data.materials:
-            mat3 = bpy.data.materials[material_name3]
-            obj.data.materials.append(mat3)
+    hasmat1 = material_name1 in bpy.data.materials
+    hasmat2 = material_name2 in bpy.data.materials
+    hasmat3 = material_name3 in bpy.data.materials
+    hasmat4 = material_name4 in bpy.data.materials
+    hasmat_any = hasmat1 or hasmat2 or hasmat3 or hasmat4
+    
+    # initially change to edit mode
+    if hasmat_any:
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.ops.mesh.select_all(action='DESELECT')
         sel_mode = bpy.context.tool_settings.mesh_select_mode
-        bpy.context.tool_settings.mesh_select_mode = [False, False, True]
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        #rear surface (mat3)
-        for i in range(nFacSide):
-            mesh.polygons[i + nFacs3].select=True
-        for i in range(ndFac3):
-            mesh.polygons[i + nFacs2+ nFacSide].select=True
+        bpy.context.tool_settings.mesh_select_mode = [False, False, True] # face select mode
+    
+    # apend the materials to the objects material list
+    dummy = 0 # keep track of the material index in the list if there is a gap
+    if hasmat1:
+        mat1 = bpy.data.materials[material_name1]
+        obj.data.materials.append(mat1)
+        mat_idx_1 = dummy
+        dummy = dummy + 1
+    if hasmat2:
+        mat2 = bpy.data.materials[material_name2]
+        obj.data.materials.append(mat2)
+        mat_idx_2 = dummy
+        dummy = dummy + 1
+    if hasmat3:
+        mat3 = bpy.data.materials[material_name3]
+        obj.data.materials.append(mat3)
+        mat_idx_3 = dummy
+        dummy = dummy + 1
+    if hasmat4:
+        mat4 = bpy.data.materials[material_name4]
+        obj.data.materials.append(mat4)
+        mat_idx_4 = dummy
+        
+    # S1
+    if hasmat1:    
+        # deselect all
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.context.tool_settings.mesh_select_mode = sel_mode
-        obj.active_material_index = 2
-        bpy.ops.object.material_slot_assign()
         bpy.ops.mesh.select_all(action='DESELECT')
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        #middle surface (mat2)
-        for i in range(ndFac2):
-            mesh.polygons[i + nFacs].select=True
+        # select the relevant faces
+        nfaces = nFaces_at_segment[1] - nFaces_at_segment[0]
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False) # this needs to happen in object mode for some reason
+        for i in range(nfaces):
+            mesh.polygons[i].select=True
+        # assign the material
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        bpy.context.tool_settings.mesh_select_mode = sel_mode
-        obj.active_material_index = 1
+        obj.active_material_index = mat_idx_1
         bpy.ops.object.material_slot_assign()
+    
+    # S2
+    if hasmat2:    
+        # deselect all
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.select_all(action='DESELECT')
+        # select the relevant faces
+        nfaces = nFaces_at_segment[2] - nFaces_at_segment[1]
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        for i in range(nfaces):
+            mesh.polygons[i + nFaces_at_segment[1]].select=True
+        # assign the material
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        obj.active_material_index = mat_idx_2
+        bpy.ops.object.material_slot_assign()
+    
+    # S3
+    if hasmat3 and md in ['2', '3']:  
+        # deselect all
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.select_all(action='DESELECT')
+        # select the relevant faces
+        nfaces = nFaces_at_segment[4] - nFaces_at_segment[3]
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        for i in range(nfaces):
+            mesh.polygons[i + nFaces_at_segment[3]].select=True
+        # assign the material
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        obj.active_material_index = mat_idx_3
+        bpy.ops.object.material_slot_assign()
+    
+    # S4
+    if hasmat4 and md in ['3']:  
+        # deselect all
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.select_all(action='DESELECT')
+        # select the relevant faces
+        nfaces = nFaces_at_segment[6] - nFaces_at_segment[5]
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        for i in range(nfaces):
+            mesh.polygons[i + nFaces_at_segment[5]].select=True
+        # assign the material
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        obj.active_material_index = mat_idx_4
+        bpy.ops.object.material_slot_assign()
+    
+    # side
+    # TODO implement if requested
+    
+    # d-shaoe
+    # TODO implement if requested
+    
+    """
+    Creating split edge normals for smooth shading
     """
     
-    # apply smooth shading
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
     if shade_smooth:
         bpy.ops.object.shade_smooth()
         bpy.ops.mesh.customdata_custom_splitnormals_clear()
@@ -848,10 +958,12 @@ def add_lens(self, context, paramdict=None):
                 n_loops = n_loops + n_side1 + n_side2 + 2
             
             i_segment = i_segment + 1
-       
-        
+
         mesh.normals_split_custom_set(cn_list)
 
+    """
+    Basic paraxial lens analysis
+    """
     #compute optical parameters
     y, u = 1, 0
     t_list = CT_list[1:]
@@ -860,12 +972,13 @@ def add_lens(self, context, paramdict=None):
     y1, u1 = paraxial.trace_lens(y,u, srad_list, t_list, n_list, n_elements)
     EFL = paraxial.calc_EFL(y, u1)
     self.flen_intern = EFL
-    # if not md:
-    #     self.flen_intern = utils.lens_math.f_lensmaker(srad1, -srad2, ior1, CT1)
             
-    if debugmode:
+    if display_edit:
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.ops.mesh.select_all(action='DESELECT')
+    else:
+        # do this explicitly in case edit was left toggled before   
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)    
         
 
 def add_rayfan(self, context):
@@ -889,17 +1002,17 @@ def add_rayfan(self, context):
     CT2 = self.centerthickness2
     CT3 = self.centerthickness3
     k1 = self.k1
-    A1 = self.A1
+    A1 = [a for a in self.A1]
     k2 = self.k2
-    A2 = self.A2
+    A2 = [a for a in self.A2]
     k3 = self.k3
-    A3 = self.A3
+    A3 = [a for a in self.A3]
     k4 = self.k4
-    A4 = self.A4
+    A4 = [a for a in self.A4]
     md = self.makedoublet
     dshape = self.dshape
     optiverts = self.optiverts
-    material_name = self.material_name
+    material_name1 = self.material_name1
     material_name2 = self.material_name2
     material_name3 = self.material_name3
     shade_smooth = self.shade_smooth
@@ -907,7 +1020,7 @@ def add_rayfan(self, context):
     ior1 =  self.ior1
     ior2 =  self.ior2
     ior3 =  self.ior3
-    debugmode = self.debugmode
+    display_edit = self.display_edit
     ##################
     hasfl1 = flrad1 > 0.01*lrad
     hasfl2 = flrad2 > 0.01*lrad
@@ -955,13 +1068,18 @@ def add_rayfan(self, context):
         lrad4 = lrad - flrad4 if hasfl4 else lrad
     else:
         lrad4 = 0
+    # if not aspehric, unset k values
+    if not ltype1 == 'aspheric': k1 = 0
+    if not ltype2 == 'aspheric': k2 = 0
+    if not ltype3 == 'aspheric': k3 = 0
+    if not ltype4 == 'aspheric': k4 = 0
     ##################
     srad_list = [srad1, srad2, srad3, srad4]
     lrad_list = [lrad1, lrad2, lrad3, lrad4]
     CT_list = [0, CT1, CT2, CT3]
     ltype_list = [ltype1, ltype2, ltype3, ltype4]
     k_list = [k1, k2, k3, k4]
-    #A_list = [A1, A2, A3, A4]
+    A_list = [A1, A2, A3, A4]
     n_list = [ior1, ior2, ior3]
     ##################
     n_surfaces = int(md) + 1
@@ -972,18 +1090,23 @@ def add_rayfan(self, context):
     y1, u1 = paraxial.trace_lens(y,u, srad_list, t_list, n_list2, n_elements)
     BFL = paraxial.calc_BFL(y1, u1)
     ##################
+   
     # create element and fill
     ele = Element()
+    # lists with length n_surfaces
     ele.data['type'] = ['STANDARD' for i in range(n_surfaces)]
     ele.data['radius'] = srad_list[:n_surfaces]
-    ele.data['asph'] = [None for i in range(n_surfaces)]
-    ele.data['CT'] = CT_list[1:n_surfaces]
+    ele.data['asph'] = [[k_list[i]] + A_list[i] for i in range(n_surfaces)]
+    ele.data['coating'] = [None for i in range(n_surfaces)]
     # ele.data['lrad'].append(surf_infos[idx]['lrad'])
     ele.data['rCA'] = lrad_list[:n_surfaces]
-    ele.data['decenter'] = [None for i in range(n_surfaces)]
-    ele.data['tilt'] = [None for i in range(n_surfaces)]
+    ele.data['surf_decenter'] = [None for i in range(n_surfaces)]
+    ele.data['surf_tilt'] = [None for i in range(n_surfaces)]
+    # lists with length n_surfaces - 1
+    ele.data['CT'] = CT_list[1:n_surfaces]
     ele.data['material'] = ['FIXVALUE_' + str(n_list[i]) for i in range(n_surfaces-1)]
-    # create lens from element
+   
+   # create lens from element
     lens = Lenssystem()
     lens.elements = [[ele,0]]
     lens.num_optical_surfaces = n_surfaces
@@ -1000,13 +1123,22 @@ def add_rayfan(self, context):
     # set up the rays
     if self.fantype in ["2D_finite"]:
         rayfany = self.fandist*np.tan(self.fanangle*np.pi/180)
-        initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, -1.*rayfany]
-    else:
-        initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist]    
+        initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, 1.*rayfany]
+    else:# self.fantype in ["2D"]:
+        initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, self.fanangle*np.pi/180] 
+    #else:
+    #    initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist]    
     rays = rayfan.RayFan(self.fantype, initparams, store_history=True)
     surflist = [i for i in range(1, lens.num_optical_surfaces + 1)] # standard surface list for non-ghost trace
-    trace_detecor = not self.tracetoscene
-    rays = exec_trace(lens, rays, surflist, trace_detector=trace_detecor)
+    trace_detector = not self.tracetoscene
+    rays = exec_trace(lens, rays, surflist, trace_detector=trace_detector)
+    if trace_detector and self.autofocus:
+        retval = rays.autofocus(EFL=self.flen_intern)
+        if retval is not None:
+            offset_min, P_new = retval
+            rays.O_history[len(rays.O_history)-1] = P_new
+        else:
+            print('AUTOFOCUS FAILED')
         
     # if trace to scene, perform the last trace
     if self.tracetoscene:
@@ -1030,7 +1162,23 @@ def add_rayfan(self, context):
             verts.append(Vector(o))
             edges.append([nVerts + 2*i, nVerts + 2*i + 1])
         nVerts = len(verts)
+        
+    # calculate rms spot size
+    if trace_detector:    
+        # get points in detector plane
+        P = np.array(rays.O_history[len(rays.O_history)-1])
+        # get mean point
+        Pmean = np.nanmean(P, axis=0)
+        # get differences
+        Pdiff = P - Pmean
+        r2 = np.einsum('ij,ij->i',Pdiff,Pdiff)
+        # calculate rms
+        rmsspotsize = np.sqrt(np.nanmean(r2))
+    else:
+        rmsspotsize = float('NaN')
             
     mesh = bpy.data.meshes.new(name="Rayfan")
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
+    
+    return rmsspotsize

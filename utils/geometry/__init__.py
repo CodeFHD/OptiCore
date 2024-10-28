@@ -17,5 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .table import *
-from .post import *
+import numpy as np
+
+def get_rotmat_x(phi):
+    R = [[1, 0, 0],
+         [0, np.cos(phi),-np.sin(phi)],
+         [0, np.sin(phi), np.cos(phi)]]
+    return np.array(R)
+
+def get_rotmat_y(phi):
+    R = [[np.cos(phi), 0, np.sin(phi)],
+         [0, 1, 0],
+         [-np.sin(phi), 0, np.cos(phi)]]
+    return np.array(R)
+
+def get_rotmat_z(phi):
+    R = [[np.cos(phi), -np.sin(phi), 0],
+         [np.sin(phi), np.cos(phi), 0],
+         [1, 0, 1]]
+    return np.array(R)

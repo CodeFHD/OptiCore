@@ -1,7 +1,27 @@
+"""
+Copyright 2019-2024, Johannes Hinrichs
+
+This file is part of OptiCore.
+
+OptiCore is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OptiCore is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import bpy
+#from bpy.ops.object import shade_smooth
 import numpy as np
 
-from bpy.types import Operator
+from bpy.types import Operator, ParticleSettingsTextureSlot
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
@@ -18,7 +38,8 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
     mtype : EnumProperty(
            name="Surface Shape",
            items = {("parabolic","Parabolic",""),
-                    ("spherical","Spherical","")},
+                    ("spherical","Spherical",""),
+                    ("aspheric", "Aspheric", "")},
            default = "parabolic",
            description="Shape of Mirror Surface",
            )
@@ -59,6 +80,19 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            description="Thickness at thinnest point",
            unit = "LENGTH",
            )
+    ASPDEG = 3
+    k : FloatProperty(
+           name="k",
+           default = 0.,
+           description="Aspheric conical constant",
+           )
+    A : FloatVectorProperty(
+           name="A",
+           #default = (0.,0.,0.),
+           default = list([0. for i in range(ASPDEG)]),
+           description="Aspheric correction coefficients",
+           size = ASPDEG,
+           )
     theta : FloatProperty(
            name="Offset Angle",
            default = 0.,
@@ -88,8 +122,8 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
            min = 0.01,
            unit = "LENGTH",
            )
-    debugmode : BoolProperty(
-            name="Debug Mode",
+    display_edit : BoolProperty(
+            name="Display Edit Mode",
             default=False,
            )
 
@@ -102,6 +136,9 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
         layout.prop(self, 'rad')
         layout.prop(self, 'mirrorradius')
         layout.prop(self, 'centerthickness')
+        if self.mtype == 'aspheric':
+            layout.prop(self, 'k')
+            layout.prop(self, 'A')
         if self.mtype == 'parabolic':
             layout.prop(self, 'theta')
         layout.prop(self, 'num1')
@@ -114,52 +151,112 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
         layout.prop(self, 'cent_hole')
         if self.cent_hole:
             layout.prop(self, 'hole_rad')
-        #layout.prop(self, 'debugmode')
+        layout.prop(self, 'display_edit')
 
     def execute(self, context):
         add_mirror(self, context)
         return {'FINISHED'}
-
-def add_mirror(self, context):
-    edges = []
     
-    srad = self.rad
-    N1 = self.num1
-    N2 = self.num2
-    mrad = self.mirrorradius
-    CT = self.centerthickness
-    surftype = self.mtype
-    theta = self.theta*180/np.pi
-    opos = self.opos
-    hrad=0
-    if self.cent_hole:
-        hrad = self.hole_rad
-        if hrad > 0.99*mrad:
-            hrad = 0.99*mrad
+def get_default_paramdict_mirror():
+    """
+    This functions returns a parameter dictionary filled with some default values.
+    This can be used as a template for external calls to add_lens()
+    when it is desired to only use a subset of the possible varaibles
+    """
+    paramdict = {}
+    paramdict['rad'] = 12.
+    paramdict['num1'] = 32
+    paramdict['num2'] = 64
+    paramdict['mirrorradius'] = 3.
+    paramdict['centerthickness'] = 1.
+    paramdict['mtype'] = 'parabolic'
+    paramdict['k'] = 0.
+    paramdict['A'] = list([0. for i in range(3)])
+    paramdict['theta'] = 0.
+    paramdict['opos'] = "FP"
+    paramdict['cent_hole'] = False
+    paramdict['hole_rad'] = 0.1
+    paramdict['material_name'] = ""
+    paramdict['shade_smooth'] = True
+    paramdict['smooth_type'] = True
+    paramdict['display_edit'] = False
+    paramdict['flipdirection'] = 1
+    return paramdict
+
+def add_mirror(self, context, paramdict=None):
+    if paramdict is None:
+        srad = self.rad
+        N1 = self.num1
+        N2 = self.num2
+        mrad = self.mirrorradius
+        CT = self.centerthickness
+        surftype = self.mtype
+        k = self.k
+        A = self.A
+        theta = self.theta*180/np.pi
+        opos = self.opos
+        hrad = 0
+        cent_hole = self.cent_hole
+        if self.cent_hole:
+            hrad = self.hole_rad
+            if hrad > 0.99*mrad:
+                hrad = 0.99*mrad
+        material_name = self.material_name
+        shade_smooth = self.shade_smooth
+        smooth_type = self.smooth_type
+        display_edit = self.display_edit
+        flipdirection = False
+    else:
+        srad = paramdict['rad']
+        N1 = paramdict['num1']
+        N2 = paramdict['num2']
+        mrad = paramdict['mirrorradius']
+        CT = paramdict['centerthickness']
+        surftype = paramdict['mtype']
+        k = paramdict['k']
+        A = paramdict['A']
+        theta = paramdict['theta']*180/np.pi
+        opos = paramdict['opos']
+        hrad = 0
+        cent_hole = paramdict['cent_hole']
+        if cent_hole:
+            hrad = paramdict['hole_rad']
+            if hrad > 0.99*mrad:
+                hrad = 0.99*mrad
+        material_name = paramdict['material_name']
+        shade_smooth = paramdict['shade_smooth']
+        smooth_type = paramdict['smooth_type']
+        display_edit = paramdict['display_edit']
+        flipdirection = paramdict['flipdirection']
     
     #check surface radius for consistency
     if surftype == 'spherical':
-        if not utils.check_surface(np.abs(srad), mrad): srad=0
+        if abs(srad) < mrad: srad = 0
+        # if not utils.check_surface(np.abs(srad), mrad): srad=0
 
     #compute mirror surface
     if srad == 0: #flat surface case
-        verts, faces, normals = sfc.add_flat_surface(mrad,N1,N2,hole=self.cent_hole,hrad=hrad)
+        verts, faces, normals = sfc.add_flat_surface(mrad,N1,N2,hole=cent_hole,hrad=hrad)
         yadd = 0
         xOA = 0
     else:
         if surftype == 'spherical':
-            verts, faces, normals, N1, N2 = sfc.add_spherical_surface(-srad, mrad, N1, N2,hole=self.cent_hole,hrad=hrad)
+            verts, faces, normals, N1, N2 = sfc.add_spherical_surface(-srad, mrad, N1, N2,hole=cent_hole,hrad=hrad)
             yadd = 0
             xOA = 0
             if srad < 0:
                 xOA = -np.abs(srad)+np.sqrt(srad**2-mrad**2)
+        elif surftype == 'aspheric':
+            verts, faces, normals = sfc.add_aspheric_surface(-srad, k, A, mrad, N1, N2,1)
+            yadd = 0
+            xOA = 0
         elif surftype == 'parabolic':
-            verts, faces, yadd, xOA, normals = sfc.add_parabolic_surface(-srad, mrad, N1, N2, theta, orig=opos,hole=self.cent_hole,hrad=hrad)
+            verts, faces, yadd, xOA, normals = sfc.add_parabolic_surface(-srad, mrad, N1, N2, theta, orig=opos,hole=cent_hole,hrad=hrad)
     
     nVerts = len(verts)
     
     #add rear surface
-    dvert, dfac, normals2 = sfc.add_flat_surface(mrad,N1,N2,-1,CT-xOA,yadd,nVerts=nVerts,hole=self.cent_hole,hrad=hrad)
+    dvert, dfac, normals2 = sfc.add_flat_surface(mrad,N1,N2,-1,CT-xOA,yadd,nVerts=nVerts,hole=cent_hole,hrad=hrad)
     dvert = dvert[::-1]
     
     verts = verts+dvert
@@ -183,7 +280,7 @@ def add_mirror(self, context):
 
     #fill hole
     normalshole = [] #in case there is no hole
-    if self.cent_hole:
+    if cent_hole:
         lv = len(verts)
         for j in range(N2):
             fi2 = j
@@ -197,33 +294,34 @@ def add_mirror(self, context):
     normals = normals + normals2
 
     #create mesh from verts and faces
-    mesh = bpy.data.meshes.new(name="New Mirror")
+    mesh = bpy.data.meshes.new(name="Mirror")
+    edges = [] # edges are not explicitly created here so we pass an empty list
     mesh.from_pydata(verts, edges, faces)
     # useful for development when the mesh may be invalid.
     #mesh.validate(verbose=True)
     obj = object_data_add(context, mesh, operator=self)
     
     #assign matierals
-    if self.material_name in bpy.data.materials:
-        mat = bpy.data.materials[self.material_name]
+    if material_name in bpy.data.materials:
+        mat = bpy.data.materials[material_name]
         obj.data.materials.append(mat)
 
     #apply smooth shading
-    if self.shade_smooth:
+    if shade_smooth:
         bpy.ops.object.shade_smooth()
-        if self.smooth_type:    #assign custom normals
+        if smooth_type:    #assign custom normals
             bpy.ops.mesh.customdata_custom_splitnormals_clear()
             bpy.ops.mesh.customdata_custom_splitnormals_add()
 
             cn1, cn2, cn3, cn4 = [], [], [], []
             #mirror surface
             if srad == 0:
-                if self.cent_hole:
+                if cent_hole:
                     nloopsface = 4*N2
                 else:
                     nloopsface = N2
             else:
-                if self.cent_hole:
+                if cent_hole:
                     nloopsface = N2*4*(N1-1)
                 else:
                     nloopsface = N2*(3 + 4*(N1-1))
@@ -231,7 +329,7 @@ def add_mirror(self, context):
                 vi = mesh.loops[i].vertex_index
                 cn1.append(normals[vi])
             #rear surface
-            if self.cent_hole:
+            if cent_hole:
                 nloopsrear = 4*N2
             else:
                 nloopsrear = N2
@@ -248,7 +346,7 @@ def add_mirror(self, context):
                     vi = vi - nVerts
                 cn3.append(normalsside[vi])
             #hole
-            if self.cent_hole:
+            if cent_hole:
                 nloopshole = 4*N2
                 for i in range(nloopshole):
                     vi = mesh.loops[i+nloopsface+nloopsrear+nloopsside].vertex_index
@@ -259,8 +357,11 @@ def add_mirror(self, context):
                     cn4.append(normalshole[vi])
 
             mesh.normals_split_custom_set(cn1 + cn2 + cn3 + cn4)
+            
+    if flipdirection == -1:
+        obj.rotation_euler = [0,0,np.pi]
 
     #for testing
-    if self.debugmode:
+    if display_edit:
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.ops.mesh.select_all(action='DESELECT')

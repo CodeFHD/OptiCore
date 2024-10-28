@@ -1,16 +1,35 @@
+"""
+Copyright 2019-2024, Johannes Hinrichs
+
+This file is part of OptiCore.
+
+OptiCore is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OptiCore is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import time
 
 import numpy as np
 
-from .import rayfan
-from  .import intersect as rt_intersect
+from . import rayfan
+from . import intersect as rt_intersect
+from . import intersect_asphere as rt_intersect_asph
 
 import bpy
 
 import warnings
 warnings.filterwarnings('ignore')
 
-    
 
 def exec_trace(lens, rays, surfs, trace_detector=True):
     """
@@ -46,32 +65,72 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
 
     """
     # initialize variables
+    if lens.surf_sequence is not None:
+        surfs = lens.surf_sequence
     lastsurface = surfs[0] - 1
     n_surfs = len(surfs)
     ld = lens.data # abbreviation
+    reflectionstate = 1 # TODO: merge this into a better direction handling mechanism
 
-    #start ray tracing loop over surfaces
+    # start ray tracing loop over surfaces
     for i, idx_s in enumerate(surfs):
         # current direction of propagation
-        direction = idx_s - lastsurface
+        direction = int(np.sign(idx_s - lastsurface))
         # check if the next (not current!) surface is identical to the last surface.
         # In this case, a reflection must happen, else a refraction.
         refract = 1
+        ismirror = ld['ismirror'][idx_s]
+        ismirror_pre = ld['ismirror'][idx_s-1]
+        mirrorfactor = 1 - 2*ismirror_pre
+        reflectionstate = reflectionstate*mirrorfactor
         if i < (n_surfs-1):
             nextsurface = surfs[i+1]
         else:
             nextsurface = max(surfs)+1
         if nextsurface == lastsurface:
+            # case ghost
+            refract = -1
+        if ismirror:
+            # case mirror
             refract = -1
 
         # get surface parameters
         r = ld['radius'][idx_s]
         rad = ld['rCA'][idx_s]
+        k = ld['asph'][idx_s][0]
+        A = ld['asph'][idx_s][1:]
+        # determine the type of surface w.r.t. the intersection algorithms:
+        hasrad = r != 0
+        hasconic = k != 0 and k is not None
+        haspoly = not (np.all(np.array(A) == 0) or np.all(np.array(A) == None) or A is None)
+        
+        if not hasrad and not haspoly:
+            surfshape = 'flat'
+        elif not hasconic and not haspoly:
+            surfshape = 'spherical'
+        elif haspoly:
+            surfshape = 'aspheric'
+        else:
+            surfshape = 'conic'
+        """
+        elif not hasrad and haspoly:
+            surfshape = 'polynomic'
+        elif not hasconic and not haspoly:
+            surfshape = 'spherical'
+        elif hasrad and not haspoly and k == -1:
+            surfshape = 'parabolic'
+        elif hasconic and not haspoly:
+            surfshape = 'conic'
+        else: 
+            surfshape = 'aspheric'
+        """
 
         # set center of sphere coordinates
         # TODO: Add decenter and tilt
         C = [0, 0, ld['CT_sum'][idx_s] + r]
         C = np.array(C)
+        C_CT = [0, 0, ld['CT_sum'][idx_s]]
+        C_CT = np.array(C_CT)
 
         # flip inside/outside IOR depending on direction
         if direction == 1:
@@ -81,7 +140,6 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
 
         # get the current rays
         O, D = rays.get_rays()
-        nfail = sum(np.isnan(O[:,0]))
         
         # Check if aperture is involved
         # ToDo: a more universal way would be to always trace each aperture and check for positive ray-t,
@@ -111,10 +169,26 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
 
         # trace rays
         # calculate lens intersection points
-        if r == 0:
-            P , N, idx_fail = rt_intersect.circle_intersect(O, D, C[2], rad)
+        if surfshape == 'aspheric':
+            P, N, idx_fail = rt_intersect_asph.intersect_asphere(O, D, C_CT, rad, r, k, A)
         else:
-            P , N, idx_fail = rt_intersect.lens_intersect(O, D, C, r, rad, direction = direction)
+            P, N, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, rad, k, A, surfshape, direction = direction)#*reflectionstate)
+        
+        """
+        if surfshape == 'flat':
+            # print('Intersection flat at idx_s', idx_s)
+            P , N, idx_fail = rt_intersect.circle_intersect(O, D, C[2], rad)
+        # elif surfshape == 'parabolic':
+        #     # print('Intersection parabolic at idx_s', idx_s)
+        #     P, N, idx_fail = rt_intersect_asph.parabola_intersect(O, D, C_CT, r, 0)
+        elif surfshape in ['spherical', 'parabolic', 'conic']:
+            # print('Intersection conic at idx_s', idx_s)
+            P, N, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, k)
+        else:
+            # print('Intersection lens at idx_s', idx_s)
+            P , N, idx_fail = rt_intersect.lens_intersect(O, D, C, r, rad, direction = direction*reflectionstate)
+        """
+        
         # calculate new ray directions
         if refract == 1:
             D_new = rt_intersect.refract_ray(D, N, n1, n2)
@@ -130,33 +204,38 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
 
     # TODO: additional aperture check before the detector
 
-    #trace detector
+    # trace detector
     if trace_detector:    
         O, D = rays.get_rays()
         P, N, idx_fail = rt_intersect.rectangle_intersect(O, D, lens.detector['Quad'])
+        rays.D_tosensor = np.array(rays.D)
         rays.update(P, None, None, None, idx_fail, N=N)
 
     return rays
-
 
 
 def trace_to_scene(context, rays):
     EPSILON = 0.001
     P = []
     anyhit = False
-    for i in range(rays.O.shape[0]):
-        o = np.array(O[i,:]) # + EPSILON
+    O, D = rays.get_rays()
+    for i in range(O.shape[0]):
+        o = np.array(O[i,:])
         d = np.array(D[i,:])
         o = o + d*EPSILON
+        o[[0,1,2]] = o[[2,0,1]]
+        d[[0,1,2]] = d[[2,0,1]]
         o[0] = o[0]*-1
         d[0] = d[0]*-1
         scene = context.scene
         graph = bpy.context.evaluated_depsgraph_get()
         result = scene.ray_cast(graph, origin=o, direction = d)
         hit, p, normal, index, ob, matrix = result
+        p = np.array(p)
+        p[[2,0,1]] = p[[0,1,2]]
         if hit:
             anyhit = True
-            p[0] = p[0]*-1
+            p[2] = p[2]*-1
             P.append(p)
         else:
             P.append([float('nan'), float('nan'), float('nan')])
