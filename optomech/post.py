@@ -65,7 +65,7 @@ class OBJECT_OT_add_post(Operator, AddObjectHelper):
            )
     smooth_type : BoolProperty(
             name="Use Autosmooth",
-            default=True,
+            default=False,
            )
     meshversion: BoolProperty(
             name="Mesh Type",

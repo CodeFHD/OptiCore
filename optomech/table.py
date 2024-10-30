@@ -98,7 +98,7 @@ class OBJECT_OT_add_table(Operator, AddObjectHelper):
            )
     smooth_type : BoolProperty(
             name="Use Autosmooth",
-            default=True,
+            default=False,
            )
 
     def draw(self, context):

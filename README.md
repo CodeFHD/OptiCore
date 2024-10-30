@@ -15,8 +15,8 @@ This addon will primarily be maintained for the latest Blender release. The last
 </p>
 
 <p align="center">
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=D8rQBVI4lIg
-" target="_blank"><img src="http://img.youtube.com/vi/D8rQBVI4lIg/0.jpg" 
+<a href="https://www.youtube.com/watch?v=8ZCyBPaqaqY
+" target="_blank"><img src="http://img.youtube.com/vi/8ZCyBPaqaqY/0.jpg" 
 alt="Introduction Video on YouTube" width="480" height="270" border="10" /></a>
 
 </p>
