@@ -199,6 +199,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         name="Display Edit Mode",
         default=False,
         )
+    split_cemented : BoolProperty(
+        name="Split models of cemented lenses",
+        default=False,
+        )
 
     def draw(self, context):
         scene = context.scene
@@ -228,6 +232,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         col.label(text="Mechanical Parameters")
         col.prop(self, 'dshape')
         col.prop(self, 'display_edit')
+        col.prop(self, 'split_cemented')
         col.prop(self, 'num1')
         col.prop(self, 'num2')
 
@@ -258,7 +263,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 implement a logic that it is not necessary to create the same element twice.
                 """
                 num_surfaces = len(ele.data['radius'])
-                if num_surfaces > 4:
+                if num_surfaces > 4 and not self.split_cemented:
                     # TODO: Currently only supporting up to triplet groups
                     continue
                 dz_this = CT_sum + dz
@@ -283,6 +288,39 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                     paramdict['display_edit'] = False
                     paramdict['flipdirection'] = ele.direction
                     add_mirror(self, context, paramdict=paramdict)
+                    bpy.ops.transform.translate(value=(-dz_this, 0, 0))
+                    obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+                    created_objects.append(obj_name)
+                elif self.split_cemented and num_surfaces > 2:
+                    for i in range(num_surfaces - 1):
+                        paramdict = get_default_paramdict_lens()
+                        paramdict[f'rad1'] = ele.data['radius'][i]
+                        paramdict[f'rad2'] = ele.data['radius'][i+1]
+                        paramdict['num1'] = self.num1
+                        paramdict['num2'] = self.num2
+                        paramdict['lensradius'] = max(ele.data['rCA'][i:i+2])
+                        if ele.data['rCA'][i] < max(ele.data['rCA'][i:i+2]):
+                            paramdict[f'flangerad1'] = max(ele.data['rCA'][i:i+2]) - ele.data['rCA'][i]
+                        if ele.data['rCA'][i+1] < max(ele.data['rCA'][i:i+2]):
+                            paramdict[f'flangerad2'] = max(ele.data['rCA'][i:i+2]) - ele.data['rCA'][i+1]
+                        paramdict[f'centerthickness1'] = ele.data['CT'][i]
+                        test_asph = [x in [0, None] for x in ele.data['asph'][i]]
+                        if not np.all(test_asph):
+                            paramdict[f'k1'] = ele.data['asph'][i][0]
+                            paramdict[f'A1'] = ele.data['asph'][i][1:]
+                            paramdict[f'ltype1'] = 'aspheric'
+                        test_asph = [x in [0, None] for x in ele.data['asph'][i+1]]
+                        if not np.all(test_asph):
+                            paramdict[f'k2'] = ele.data['asph'][i+1][0]
+                            paramdict[f'A2'] = ele.data['asph'][i+1][1:]
+                            paramdict[f'ltype2'] = 'aspheric'
+                        paramdict['makedoublet'] = '1'
+                        paramdict['dshape'] = self.dshape
+                        add_lens(self, context, paramdict=paramdict)
+                        bpy.ops.transform.translate(value=(-dz_this, 0, 0))
+                        obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+                        created_objects.append(obj_name)
+                        dz_this = dz_this + ele.data['CT'][i]
                 else:
                     paramdict = get_default_paramdict_lens()
                     for i in range(num_surfaces):
@@ -313,9 +351,9 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                     # paramdict['ior'] = 
                     # paramdict['display_edit'] =
                     add_lens(self, context, paramdict=paramdict)
-                bpy.ops.transform.translate(value=(-dz_this, 0, 0))
-                obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
-                created_objects.append(obj_name)
+                    bpy.ops.transform.translate(value=(-dz_this, 0, 0))
+                    obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+                    created_objects.append(obj_name)
                 radius_outer = max(radius_outer, max(ele.data['rCA']))
                 
         t2 = time.perf_counter()
@@ -325,6 +363,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         # build the lens, raytrace, and get the rays for plotting
         lens.build(self.wl)
         self.flen_intern = lens.EFL_paraxial()
+        # print('PARAXIAL BFL:', lens.BFL_paraxial())
         
         t3 = time.perf_counter()
 
@@ -343,8 +382,11 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 # created_objects.append(obj_name)
             
         t4 = time.perf_counter()
+        t41_sum = 0
+        t42_sum = 0
             
         if self.addrayfan:
+            t40 = time.perf_counter()
             # try to convert the angles and clamp between -90 and 90 degrees
             fanangles = [self.fanangle]
             try:
@@ -383,6 +425,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                     rays = trace_to_scene(context, rays)
                 
                 t41 = time.perf_counter()
+                t41_sum = t41_sum + t41 - t40
         
                 # create the lines
                 verts = []
@@ -426,18 +469,22 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 mesh = bpy.data.meshes.new(name="Rayfan")
                 mesh.from_pydata(verts, edges, faces)
                 obj = object_data_add(context, mesh, operator=self)
+                t42 = time.perf_counter()
+                t42_sum = t42_sum + t42 - t41
             
-        t5 = time.perf_counter()
+        #t5 = time.perf_counter()
+        """
         debugprint()
-        debugprint('Times:')
-        debugprint(f'Load zmx: {(t1-t0):.2f}')
-        debugprint(f'Create Elements: {(t2-t1):.2f}')
-        debugprint(f'Build lens: {(t3-t2):.2f}')
-        debugprint(f'Create Apertures: {(t4-t3):.2f}')
+        print('Execution Times:')
+        print(f'parsing .zmx-file: {(t1-t0):.3f}')
+        print(f'Create Element-Meshes: {(t2-t1):.3f}')
+        print(f'Build lens: {(t3-t2):.3f}')
+        print(f'Create Aperture-Meshes: {(t4-t3):.3f}')
         if self.addrayfan:
-            debugprint(f'Raytracing: {(t41-t4):.2f}')
-            debugprint(f'Adding ray fan: {(t5-t41):.2f}')
+            print(f'Raytracing: {(t41_sum):.3f}')
+            print(f'Adding ray-fan-mesh: {(t42_sum):.3f}')
         debugprint()
+        """
         
         # Select all just created objects
         bpy.ops.object.select_all(action='DESELECT')
@@ -510,6 +557,7 @@ def parse_surface(surflines):
     for line in surflines:
         if line.startswith('TYPE'):
             type = line.split()[1]
+            if type == 'XASPHERE': type = 'EVENASPH'
         elif line.startswith('STOP'):
             isstop = True
         elif line.startswith('CURV'):
