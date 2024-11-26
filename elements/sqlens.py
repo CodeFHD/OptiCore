@@ -116,6 +116,11 @@ class OBJECT_OT_add_sqlens(Operator, AddObjectHelper):
             name="Use Custom Normals",
             default=True,
            )
+    ignore_surface_checks : BoolProperty(
+            name="Ignore geometry checks",
+            description="Ignores some geometric checks. Intermediate hotfix solution. MAY LEAD TO ERRORS!",
+            default=False,
+           )
 
     def draw(self, context):
         layout = self.layout
@@ -147,6 +152,7 @@ class OBJECT_OT_add_sqlens(Operator, AddObjectHelper):
         layout.prop(self, 'shade_smooth')
         if self.shade_smooth:
             layout.prop(self, 'smooth_type')
+        layout.prop(self, 'ignore_surface_checks')
 
     def execute(self, context):
         add_sqlens(self, context)
@@ -176,18 +182,19 @@ def add_sqlens(self, context):
     if srad2 < 0:
         ssig2 = -1
     
-    #check surface radii for consistency
-    ##check radius overflow
-    if abs(srad1) < np.sqrt(2)/2*lwidth: srad1 = 0
-    if abs(srad2) < np.sqrt(2)/2*lwidth: srad2 = 0
-    ##check center thickness
-    lsurf1, lsurf2 = 0, 0
-    if not srad1 == 0:
-        lsurf1 = srad1-ssig1*np.sqrt(srad1**2-0.5*lwidth**2)
-    if not srad2 == 0:
-        lsurf2 = srad2-ssig2*np.sqrt(srad2**2-0.5*lwidth**2)
-    if (lsurf1 + lsurf2) > CT:
-        CT = lsurf1 + lsurf2
+    if not self.ignore_surface_checks:
+        #check surface radii for consistency
+        ##check radius overflow
+        if abs(srad1) < np.sqrt(2)/2*lwidth: srad1 = 0
+        if abs(srad2) < np.sqrt(2)/2*lwidth: srad2 = 0
+        ##check center thickness
+        lsurf1, lsurf2 = 0, 0
+        if not srad1 == 0:
+            lsurf1 = srad1-ssig1*np.sqrt(srad1**2-0.5*lwidth**2)
+        if not srad2 == 0:
+            lsurf2 = srad2-ssig2*np.sqrt(srad2**2-0.5*lwidth**2)
+        if (lsurf1 + lsurf2) > CT:
+            CT = lsurf1 + lsurf2
 
     #add surface1
     if srad1 == 0: #flat surface case
