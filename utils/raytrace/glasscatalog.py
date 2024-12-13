@@ -22,50 +22,109 @@ import pickle
 
 import numpy as np
 
-# import pickled glass catalog
 modulepath = os.path.dirname(__file__)
-infname = os.path.join(modulepath, r'glasscatalog_sellmeier.pkl')
-with open(infname, 'rb') as infile:
-    sellmeier = pickle.load(infile)
-infname = os.path.join(modulepath, r'glasscatalog_cauchy.pkl')
-with open(infname, 'rb') as infile:
-    cauchy = pickle.load(infile)
+glasscatdir = os.path.join(modulepath, 'glasscatalog')
 
-# special cases
-# TODO: glass catalogs seem to specify refrafctive indices relativd to air in at least some cases.
-# Check and update if needed.
-n_vac = 1.0
+N_FALLBACK = 1.6
 
 """
-Conversion functions
+Section: Catalog imports
+"""
+
+filename = os.path.join(glasscatdir, r'glasscatalog_CDGM.pkl')
+with open(filename, 'rb') as inputfile:
+    coefficients_CDGM = pickle.load(inputfile)
+
+filename = os.path.join(glasscatdir, r'glasscatalog_Hikari.pkl')
+with open(filename, 'rb') as inputfile:
+    coefficients_Hikari = pickle.load(inputfile)
+
+filename = os.path.join(glasscatdir, r'glasscatalog_HOYA.pkl')
+with open(filename, 'rb') as inputfile:
+    coefficients_Hoya = pickle.load(inputfile)
+
+filename = os.path.join(glasscatdir, r'glasscatalog_Ohara.pkl')
+with open(filename, 'rb') as inputfile:
+    coefficients_Ohara = pickle.load(inputfile)
+
+filename = os.path.join(glasscatdir, r'glasscatalog_Schott.pkl')
+with open(filename, 'rb') as inputfile:
+    coefficients_Schott = pickle.load(inputfile)
+
+filename = os.path.join(glasscatdir, r'glasscatalog_Sumita.pkl')
+with open(filename, 'rb') as inputfile:
+    coefficients_Sumita = pickle.load(inputfile)
+
+
+"""
+Section: Special definitions e.g. for legacy materials not included in known databases by manufacturers.
+Entries must contain the formula-name as the first entry, then coefficients in appropriate format.
+"""
+coefficients_special = {}
+coefficients_special['Schott_F7'] = ['tabulated_n', [0.440, 0.4861, 0.5876, 0.6563, 0.700], [1.647073, 1.6378, 1.625358, 1.620207, 1.617707]]
+
+
+"""
+Section: Map catalogs
+"""
+
+CATALOG_MAP = {'CDGM': coefficients_CDGM,
+               'Hikari': coefficients_Hikari,
+               'Hoya': coefficients_Hoya,
+               'Ohara': coefficients_Ohara,
+               'Schott': coefficients_Schott,
+               'Sumita': coefficients_Sumita,
+               'special': coefficients_special,}
+# Define a default order in whoch glass catalogs are probed.
+# The default dict should include all catalogs.
+# This default order is rather arbitrary, suggestions why a specific order is to be preferred are welcome.
+# At the time of writing this, there are two different materials named F2 and F5 in Schott and CDGM data. So order is important and/or a separate mechnanism to handle catalog-specification is needed.
+CATALOG_ORDER_DEFAULT = ['Schott', 'Ohara', 'Hoya', 'CDGM', 'Hikari', 'Sumita', 'special']
+
+
+"""
+Section: Refractive index formulas
 """
 
 def n_Air(wl):
+    # It is common that refrctive indices are specified relative to air instead of vacuum
+    # For now, treat n_air as 1
+    # More explicit confirmation for different sources/mateirals is needed.
+    return 1
+    """
     # Source of equation: https://www.nature.com/articles/srep46111
     B1, B2, C1, C2 = 0.05792105, 0.00167917, 238.0185, 57.362
     n = 1 + B1 / (C1 - wl**2) + B2 / (C2 - wl**2)
     return n
+    """
 
-def nSellmeier(wl, A):
+def nSellmeier(wl, C, coefficientorder='sorted'):
+    if not len(C)%2 == 0:
+        print(f'ERROR: Number of coefficients supplied to nSellmeier() must be even. Returning default value n={N_FALLBACK}')
+        return N_FALLBACK
+    n_terms = (len(C))//2
     wl2 = wl**2
-    n2 = 1 + A[0]*wl2/(wl2 - A[3]) + A[1]*wl2/(wl2 - A[4]) + A[2]*wl2/(wl2 - A[5])
-    return np.sqrt(n2)
+    if coefficientorder == 'sorted':
+        terms = [C[2*i]*wl2/(wl2 - C[2*i+1]) for i in range(n_terms)]
+        n2 = 1 + sum(terms)
+        return np.sqrt(n2)
+    elif coefficientorder == 'separated':
+        terms = [C[i]*wl2/(wl2 - C[i+n_terms]) for i in range(n_terms)]
+        n2 = 1 + sum(terms)
+        return np.sqrt(n2)
+    else:
+        print(f'ERROR: Invalid argument for coefficientorder in nSellmeier(): {coefficientorder}. Returning default value n={N_FALLBACK}')
+        return N_FALLBACK
 
-def nCauchy(wl, A):
-    if len(A) < 3:
-        print('ERROR: insufficient number of coefficients for nCauchy(). Defualting to n=1.5')
-        if isinstance(wl, np.ndarray):
-            return np.full(wl.shape, 1.5)
-        else:
-            return 1.5
-    n2 = A[0] + A[1]*wl**2
-    for i in range(2, len(A)):
-        n2 = n2 + A[i]/wl**(2*(i-1))
-    #n2 = A[0] + A[1] * wl ** 2 + A[2] / wl ** 2 + A[3] / wl ** 4 + A[4] / wl ** 6
-    if isinstance(n2, np.ndarray):
-        n2[n2 < 0] = 0
-    elif n2 < 0:
-        return 0
+def nPolynominal(wl, C, npos=1, nneg=1):
+    if not len(C) == (1 + npos + nneg):
+        print(f'ERROR: Number of coefficients supplied to nPolynominal() must be equal to 1 + npos + nneg. Returning default value n={N_FALLBACK}')
+        return N_FALLBACK
+    # This is essentially the same as Equation 3 of refractiveindex.info
+    constterm = C[0]
+    posterm = [C[i + 1]*wl**(2*(i+1)) for i in range(npos)]
+    negterm = [C[i + 1 + npos]*wl**(-2*(i+1)) for i in range(nneg)]
+    n2 = constterm + sum(posterm) + sum(negterm)
     return np.sqrt(n2)
 
 #modern abbe
@@ -102,11 +161,11 @@ def nAbbe_d(wl, A):
     A = calc_cauchyA_nd(B, nd)
     return A + B/wl**2
 
-"""
-refractiveindex.info database parsing
-"""
-
+# implementation of formulas defined for the refractive-index.info database
 def get_n_by_equation(equation_number, C, wl):
+    """
+    Equations implemented by refractiveindex.info
+    """
     if equation_number == 1:
         n_terms = (len(C) - 1)//2
         n2 = 1 + C[0] + np.sum([C[2*i+1]*wl**2/(wl**2 - C[2*i+2]**2) for i in range(n_terms)])
@@ -150,58 +209,162 @@ def get_glass_refractiveindexinfo(gname, catalog=None):
     # catalogfile_nk = os.path.join(riipath, 'catalog-nk.yml')
     pass
 
+
+"""
+Section: calaog_specific resolving
+"""
+
+def get_n_CDGM(wl, C):
+    if C[0] == 'Sellmeier2':
+        n = nSellmeier(wl, C[1:], coefficientorder='sorted')
+        return n
+    elif C[0] == 'Poly-1-4':
+        n = nPolynominal(wl, C[1:], npos=1, nneg=4)
+        return n
+    else:
+        return -1
+
+def get_n_Hikari(wl, C):
+    n = nPolynominal(wl, C, npos=2, nneg=6)
+    return n
+
+def get_n_Hoya(wl, C):
+    n = nPolynominal(wl, C, npos=1, nneg=4)
+    return n
+
+def get_n_Ohara(wl, C):
+    n = nSellmeier(wl, C, coefficientorder='separated')
+    return n
+
+def get_n_Schott(wl, C):
+    n = nSellmeier(wl, C, coefficientorder='separated')
+    return n
+
+def get_n_Sumita(wl, C):
+    n = nPolynominal(wl, C, npos=1, nneg=4)
+    return n
+
+CATALOG_RESOLVE_MAP = {'CDGM': get_n_CDGM,
+                       'Hikari': get_n_Hikari,
+                       'Hoya': get_n_Hoya,
+                       'Ohara': get_n_Ohara,
+                       'Schott': get_n_Schott,
+                       'Sumita': get_n_Sumita,}
+
 """
 Main Resolver
 """
 
-def get_n(gname, wl=0.5):
+def _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
+    # print(f'LOOKUP {glassname} WITH {substitute_prefix} in {catalog_name}')
+    if substitute_prefix is not None:
+        glassname = substitute_prefix + glassname
+    if glassname in CATALOG_MAP[catalog_name]:
+        # print('FIND', catalog_name, glassname, substitute_prefix)
+        coefficients = CATALOG_MAP[catalog_name][glassname]
+        n = CATALOG_RESOLVE_MAP[catalog_name](wl, coefficients)
+        return n
+    else:
+        # print('NO FIND')
+        return -1
+
+def _iteration_get_n(glassname, wl=0.5875618, substitute_prefix=None, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False):
+    # Case 1: Check if glassname starts with manufacturer string, i.e. explicitly specified
+    glassname_prefix = glassname.split('_')[0]
+    if glassname_prefix in CATALOG_MAP:
+        #print(f'DIRECT CHECK FOR {glassname} with {substitute_prefix} IN {glassname_prefix}')
+        glassname = '_'.join(glassname.split('_')[1:])
+        n = _get_n_from_catalog(glassname, glassname_prefix, wl, substitute_prefix=substitute_prefix)
+        if n != -1:
+            return n
+
+    # Case 2: Search catalogs in specified order
+    for catalog_name in catalog_order:
+        #print(f'GENERAL SEARCH FOR {glassname} with {substitute_prefix} IN {catalog_name}')
+        n = _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=substitute_prefix)
+        if n != -1:
+            return n
+
+    # Case 3: Material not found in this iteration
+    return -1
+
+def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False):
     """
     Wavelength is given in micrometers
     """
-    def _iteration_get_n(gname, wl):
-        if gname == 'VACUUM':
-            return n_vac
-        elif gname == 'AIR':
-            return n_Air(wl)
-        elif gname in sellmeier.keys():
-            return nSellmeier(wl, sellmeier[gname])
-        elif gname in cauchy.keys():
-            return nCauchy(wl, cauchy[gname])
-        elif gname.startswith('FIXVALUE_'): # fix refractive index
-            return float(gname.split('_')[1])
-        elif gname.startswith('___BLANK'): # from .zmx files
-            # not 100 percent sure how to interpret this correctly
-            # Items 3 and 4 are obviously index and Abbe number, if d- or e-wavelength (or relative to the wavelength specified in the header) unclear, difference is probably marginal. Choosing "d" here because it is probably historically prevalent.
-            # Item 1 can eb either 1 or 2, and item 5 may contain small numbers. No idea what they represent.
-            nd = float(gname.split()[3].replace(',', '.'))
-            vd = gname.split()[4]
-            # catch odd cases
-            if vd == '?':
-                return nd
-            vd = float(vd.replace(',', '.'))
-            if vd == 0:
-                return nd
-            n = nAbbe_d(wl, [nd, vd])
+
+    # Case 1: Special cases outside of catalog handling
+    if glassname == 'VACUUM':
+        return 1./n_Air(wl) # Common practise in optics design to specify refractive index relative to (standard-)air rather than vacuum. TODO: Needs double-check if all manufacturers follow the same logic.
+        # return 1. # Vacuum-based definition
+    elif glassname == 'AIR':
+        return n_Air(wl)
+    elif glassname.startswith('FIXVALUE_'):
+        # fix refractive index
+        return float(glassname.split('_')[1])
+    elif glassname.startswith('___BLANK'):
+        # from .zmx files
+        # not 100 percent sure how to interpret this correctly
+        # Items 3 and 4 are obviously index and Abbe number, if d- or e-wavelength (or relative to the wavelength specified in the header) unclear, difference is probably marginal. Choosing "d" here because it is probably historically prevalent.
+        # Item 1 can eb either 1 or 2, and item 5 may contain small numbers. No idea what they represent.
+        nd = float(glassname.split()[3].replace(',', '.'))
+        vd = glassname.split()[4]
+        # catch odd cases found in available .zmx examples
+        if vd == '?':
+            return nd
+        vd = float(vd.replace(',', '.'))
+        if vd == 0:
+            return nd
+        n = nAbbe_d(wl, [nd, vd])
+        return n
+
+    # print()
+    # print('SEARCHING FOR GLASS', glassname)
+
+    # Case 2: Check manufacturer catalogs
+    # Iterations are made to check for substitutes, e.g. N-prefixed glasses for Schott
+    SUBSTITUE_PREFIXES = [None,                     # Try first without substitution
+                          'N-', 'P-',               # Schott
+                          'S-', 'L-',               # Ohara
+                          'E-', 'M-', 'MC-', 'MP-', # Hoya
+                          'H-', 'D-',               # CDGM
+                          'J-', 'Q-',               # Hikari
+                          'K-',                     # Sumita
+                          ]
+    for substitute_prefix in SUBSTITUE_PREFIXES:
+        #print(f'Trying {glassname} with {substitute_prefix}')
+        n = _iteration_get_n(glassname, wl, catalog_order = catalog_order,
+                            substitute_prefix = substitute_prefix)
+        if n != -1:
+            if substitute_prefix is not None:
+                glassname = '_'.join(glassname.split('_')[1:])
+                print(f'Glas subsitution from {glassname} to {substitute_prefix + glassname}!')
             return n
-        else:
-            return -1
-    n = _iteration_get_n(gname, wl)
-    if n != -1:
-        return n
+
+    # Case 3: Material not found
+    if debug_glassname:
+        return glassname # for automatic analysis of missing glasses
     else:
-        gname_try = 'N-' + gname
-    n = _iteration_get_n(gname_try, wl)
-    if n != -1:
-        print('Glass substitution from', gname, 'to', gname_try)
-        return n
-    else:
-        gname_try = 'S-' + gname
-    n = _iteration_get_n(gname_try, wl)
-    if n != -1:
-        print('Glass substitution from', gname, 'to', gname_try)
-        return n
-    else:
-        pass
-    print(f'ERROR: Glass type {gname} not defined in any list! Defaulting to n=1.5...')
-    # return gname # for automatic analysis of missing glasses
-    return 1.5
+        print(f'ERROR: Glass type {glassname} not defined in any list! Defaulting to n={N_FALLBACK}...')
+        return N_FALLBACK
+
+    
+"""
+Section: Tests
+"""
+
+def test_catalog_duplicates():
+    glasses_checked = {}
+    duplicate_count = 0
+    for catalog in CATALOG_ORDER_DEFAULT:
+        current_coefficients = CATALOG_MAP[catalog]
+        for glassname in current_coefficients:
+            if glassname in glasses_checked:
+                print('Duplicate glass found: ', glassname, glasses_checked[glassname], catalog)
+                duplicate_count += 1
+            else:
+                glasses_checked[glassname] = catalog
+    print(f'test_catalog_duplicates() found {duplicate_count} duplicates.')
+
+if __name__ == '__main__':
+    test_catalog_duplicates()
