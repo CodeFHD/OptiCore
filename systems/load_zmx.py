@@ -495,6 +495,17 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if self.display_edit:
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
             bpy.ops.mesh.select_all(action='SELECT')
+
+        print('Lens import finished. For transfer to Blender materials,\nuse the following refractive indices')
+        print('Surface no.\tn_Blender')
+        for i in range(1, lens.num_surfaces):
+            n1 = lens.data['n'][i-1]
+            n2 = lens.data['n'][i]
+            if n2 > 1.1:
+                nratio = n2/n1
+            else:
+                nratio = n1/n2
+            print(f'{i}\t\t{nratio:.6f}')
         
         return {'FINISHED'}
 
