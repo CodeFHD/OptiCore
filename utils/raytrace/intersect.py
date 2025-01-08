@@ -52,19 +52,30 @@ def sphere_intersect(O, D, C, r, direction=1):
     N = (N.T/np.sqrt(np.einsum('ij,ij->i',N,N))).T
     return P, N
 
-def intersect_sphere(O, D, C, r, k):
+def intersect_cylinder(O, D, C, surf_rotation, r):
+    """
+    C is a point along the cylinder axis
+    surf_rotation is the angle the cylinder is rotated around the optical axis
+    b is the unit vector along the cylinder axis (built from surf_rotation)
+    r is the cylunder radius
+    # tb is the length along c so a point M which marks the circle center with the intersection point P.
+    
+    https://stackoverflow.com/questions/73866852/ray-cylinder-intersection-formula
+    """
     n_rays = O.shape[0]
     ones = np.ones(n_rays)
+    b_cyl = [np.cos(surf_rotation), np.sin(surf_rotation), 0]
+    b_cyl = np.array(b_cyl)
     
-    # Step 1: transform ray into local coordinate system 
+    # Step 1: transform ray into local coordinate system
     O = O - C
-    
+
     # Step 2: intersect
     Ox, Oy, Oz = O[:,0], O[:,1], O[:,2]
     Dx, Dy, Dz = D[:,0], D[:,1], D[:,2]
-    a = np.einsum('ij,ij->i', D, D)/r
-    b = 2.*(np.einsum('ij,ij->i', O, D)/r - Dz)
-    c = np.einsum('ij,ij->i', O, O)/r - 2*Oz
+    a = np.einsum('ij,ij->i', D, D) - np.einsum('ij,j->i', D, b_cyl)**2
+    b = 2*(np.einsum('ij,ij->i', D, O) - np.einsum('ij,j->i', D, b_cyl)*np.einsum('ij,j->i', O, b_cyl) -Dz*r)
+    c = np.einsum('ij,ij->i', O, O) - np.einsum('ij,j->i', O, b_cyl)**2- 2*Oz*r
     root2 = b*b - 4*a*c
     # get the two possible roots
     t1 = (-b - np.sqrt(root2)) / (2*a)
@@ -74,6 +85,59 @@ def intersect_sphere(O, D, C, r, k):
         idxa = a==0
         ta = -c/b
         t1[idxa] = ta[idxa]
+
+    # test both t-values and determine plausible intersection
+    # intersection closer to Origin (0, 0, 0) will win here because we are working in local coordinates    
+    # Get Points
+    td1 = (t1*D.T).T # The transpose here is because of the shapes of the arrays
+    P = O + td1 # intersection point
+    td2 = (t2*D.T).T # The transpose here is because of the shapes of the arrays
+    P2 = O + td2 # intersection point
+    # Distance to origin
+    absP1 = np.einsum('ij,ij->i',P,P)
+    absP2 = np.einsum('ij,ij->i',P2,P2)
+    idx = absP2 < absP1
+    P[idx] = P2[idx]
+    t1[idx] = t2[idx]
+
+    # Step 3: Calculate Normal
+    m = np.einsum('ij,j->i', D, b_cyl)*t1 + np.einsum('ij,j->i', O, b_cyl)
+    C2 = [0, 0, r] + (m*b_cyl[:,np.newaxis]).T
+    # C2 = [0, 0, r]
+    N = P - C2 # surface normal at intersection point
+    # Normalize the surface-normals
+    N = (N.T/np.sqrt(np.einsum('ij,ij->i',N,N))).T
+
+    # Step 4: Transform point and normal back into original coordiante system
+    P = P + C
+        
+    return P, N
+
+def intersect_sphere(O, D, C, r, k):
+    n_rays = O.shape[0]
+    ones = np.ones(n_rays)
+    
+    # Step 1: transform ray into local coordinate system 
+    O = O - C
+    
+    # Step 2: intersect
+    Oz = O[:,2]
+    Dz = D[:,2]
+    a = 1 # np.einsum('ij,ij->i', D, D) # This wokrs only because/when D is normalized
+    b = 2.*(np.einsum('ij,ij->i', O, D) - Dz*r)
+    c = np.einsum('ij,ij->i', O, O) - 2*Oz*r
+    root2 = b*b - 4*c # 4*a*c # remember a == 1
+    # get the two possible roots
+    t1 = (-b - np.sqrt(root2)) / 2 # (2*a)
+    t2 = (-b + np.sqrt(root2)) / 2 # (2*a)
+    # special case of a == 0 breaks quadratic roots
+    # doesn't apply here because a can't be zero
+    """
+    if np.any(a==0):
+        idxa = a==0
+        ta = -c/b
+        t1[idxa] = ta[idxa]
+    """
         
     # test both t-values and determine plausible intersection
     # intersection closer to Origin (0, 0, 0) will win here because we are working in local coordinates    
@@ -107,11 +171,11 @@ def intersect_conic(O, D, C, r, k):
     O = O - C
     
     # Step 2: intersect
-    Ox, Oy, Oz = O[:,0], O[:,1], O[:,2]
-    Dx, Dy, Dz = D[:,0], D[:,1], D[:,2]
-    a = 1./r*(Dx*Dx + Dy*Dy + (1+k)*Dz*Dz)
-    b = 2.*(1./r*(Ox*Dx + Oy*Dy + (1+k)*Oz*Dz) - Dz)
-    c = 1./r*(Ox*Ox + Oy*Oy + (1+k)*Oz*Oz) - 2*Oz
+    Oz = O[:,2]
+    Dz = D[:,2]
+    a = 1 + k*Dz*Dz
+    b = 2.*(np.einsum('ij,ij->i', O, D) - Dz*r + k*Oz*Dz)
+    c = np.einsum('ij,ij->i', O, O) - 2*Oz*r + k*Oz*Oz
     root2 = b*b - 4*a*c
     # get the two possible roots
     t1 = (-b - np.sqrt(root2)) / (2*a)
@@ -140,9 +204,9 @@ def intersect_conic(O, D, C, r, k):
     N0 = (1+k)*R2/r/r
     N1 = np.sqrt(1-N0)
     N2 = 1+N1
-    dz = 1./r*(2*N1*N2 + N0)/(N1*N2*N2)
+    dzdr = 1./r*(2*N1*N2 + N0)/(N1*N2*N2)
 
-    N = np.column_stack((-P[:,0]*dz, -P[:,1]*dz, ones))
+    N = np.column_stack((-P[:,0]*dzdr, -P[:,1]*dzdr, ones))
     N = (N.T/np.sqrt(np.einsum('ij,ij->i',N,N))).T # normalize the vector
     
     # Step 4: Transform point and normal back into original coordiante system
@@ -151,12 +215,13 @@ def intersect_conic(O, D, C, r, k):
     return P, N
     
 # Combine sphere_intersect with a check for aperture to create lens intersection
-def lens_intersect(O, D, C, r, rad, k=0, A=[0], surfshape='spherical', direction=1):#, surface=-1):
-    
+def lens_intersect(O, D, C, r, rad, k=0, A=[0], surf_rotation=0, surfshape='spherical', direction=1, ):#, surface=-1):
     if surfshape == 'flat':
         P , N, idx_fail = circle_intersect(O, D, C[2], rad)
-    elif surfshape == 'conic':
+    elif surfshape == 'conical':
         P, N = intersect_conic(O, D, C, r, k)
+    elif surfshape == 'cylindrical':
+        P, N = intersect_cylinder(O, D, C, surf_rotation, r)
     else:
         P, N = intersect_sphere(O, D, C, r, 0)
         #P, N = sphere_intersect(O, D, C, r, direction=direction)#, surface=surface)

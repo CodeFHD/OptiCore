@@ -241,6 +241,7 @@ def add_sqlens(self, context):
             dvert, dfac, normals2 = sfc.add_sqaspheric_surface(srad2, k2, A2, lwidth, N1, N2, -1, CT, nVerts=nVerts, cylindrical=self.cylindrical)
         #dvert, dfac = sfc.add_spherical_surface(srad2, lrad, N1, N2,-1, CT, nVerts=nVerts)
         dvert, dfac, normals2 = dvert[::-1], dfac[::-1], normals2[::-1]
+        normals2 = [(-n[0], -n[1], -n[2]) for n in normals2]
         
     verts = verts+dvert
     faces = faces+dfac

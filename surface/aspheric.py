@@ -48,13 +48,15 @@ def get_N(r, b, rad, k, A):
     N = np.column_stack((-dxdr*np.cos(b), -dxdr*np.sin(b), 1/adxdr))
     return N
 
-def add_aspheric_surface(rad, k, A, lrad, N1, N2, nsurf=1, xadd=0, nVerts=0, dshape=False, lrad_ext=0):
+def add_aspheric_surface(rad, k, A, lrad, N1, N2, xadd=0, nVerts=0, dshape=False, lrad_ext=0):
     """
     nsurf=1 for first surface,
     nsurf=-1 for second surface
     
     xadd has to be set for second surface (only)
     """
+
+    nsurf = 1
 
     verts = []
     faces = []

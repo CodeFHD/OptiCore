@@ -289,7 +289,8 @@ def add_mirror(self, context, paramdict=None):
             fi3 = j + lv - N2
             faces.append([fi1,fi2,fi3,fi4])
 
-        normalshole = sfc.get_ringnormals(N2, direction=-1)
+        normalshole = sfc.get_ringnormals(N2)
+        normalshole = [(-n[0], -n[1], -n[2]) for n in normalshole]
     
     normals = normals + normals2
 

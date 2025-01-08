@@ -39,7 +39,7 @@ filename = os.path.join(glasscatdir, r'glasscatalog_Hikari.pkl')
 with open(filename, 'rb') as inputfile:
     coefficients_Hikari = pickle.load(inputfile)
 
-filename = os.path.join(glasscatdir, r'glasscatalog_HOYA.pkl')
+filename = os.path.join(glasscatdir, r'glasscatalog_Hoya.pkl')
 with open(filename, 'rb') as inputfile:
     coefficients_Hoya = pickle.load(inputfile)
 
@@ -58,8 +58,12 @@ with open(filename, 'rb') as inputfile:
 
 """
 Section: Special definitions e.g. for legacy materials not included in known databases by manufacturers.
-Entries must contain the formula-name as the first entry, then coefficients in appropriate format.
+When using the coefficient_special dictionary, entries must contain the formula-name as the first element, then coefficients in appropriate format.
 """
+
+if not 'H-ZLAF55A' in coefficients_CDGM:
+    coefficients_CDGM['H-ZLAF55A'] = ['Poly-1-4'] + [3.2808637, -1.9066608e-2, 2.8540621e-2, 1.2586912e-3, -5.2847729e-5, 4.2263573e-6]
+
 coefficients_special = {}
 coefficients_special['Schott_F7'] = ['tabulated_n', [0.440, 0.4861, 0.5876, 0.6563, 0.700], [1.647073, 1.6378, 1.625358, 1.620207, 1.617707]]
 
@@ -87,16 +91,10 @@ Section: Refractive index formulas
 """
 
 def n_Air(wl):
-    # It is common that refrctive indices are specified relative to air instead of vacuum
-    # For now, treat n_air as 1
-    # More explicit confirmation for different sources/mateirals is needed.
-    return 1
-    """
     # Source of equation: https://www.nature.com/articles/srep46111
     B1, B2, C1, C2 = 0.05792105, 0.00167917, 238.0185, 57.362
     n = 1 + B1 / (C1 - wl**2) + B2 / (C2 - wl**2)
     return n
-    """
 
 def nSellmeier(wl, C, coefficientorder='sorted'):
     if not len(C)%2 == 0:
@@ -244,6 +242,11 @@ def get_n_Sumita(wl, C):
     n = nPolynominal(wl, C, npos=1, nneg=4)
     return n
 
+def get_n_tabulated(wl, C):
+    # TODO: Implement this when needed
+    print('WARNING: Tabulated refractive index not yet implemented!')
+    return -1
+
 CATALOG_RESOLVE_MAP = {'CDGM': get_n_CDGM,
                        'Hikari': get_n_Hikari,
                        'Hoya': get_n_Hoya,
@@ -260,8 +263,9 @@ def _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
     if substitute_prefix is not None:
         glassname = substitute_prefix + glassname
     if glassname in CATALOG_MAP[catalog_name]:
-        # print('FIND', catalog_name, glassname, substitute_prefix)
+        print('FIND', catalog_name, glassname, substitute_prefix)
         coefficients = CATALOG_MAP[catalog_name][glassname]
+        print(coefficients)
         n = CATALOG_RESOLVE_MAP[catalog_name](wl, coefficients)
         return n
     else:
@@ -271,8 +275,9 @@ def _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
 def _iteration_get_n(glassname, wl=0.5875618, substitute_prefix=None, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False):
     # Case 1: Check if glassname starts with manufacturer string, i.e. explicitly specified
     glassname_prefix = glassname.split('_')[0]
+    print('PREFIX:', glassname_prefix)
     if glassname_prefix in CATALOG_MAP:
-        #print(f'DIRECT CHECK FOR {glassname} with {substitute_prefix} IN {glassname_prefix}')
+        print(f'DIRECT CHECK FOR {glassname} with {substitute_prefix} IN {glassname_prefix}')
         glassname = '_'.join(glassname.split('_')[1:])
         n = _get_n_from_catalog(glassname, glassname_prefix, wl, substitute_prefix=substitute_prefix)
         if n != -1:
@@ -293,12 +298,19 @@ def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
     Wavelength is given in micrometers
     """
 
+    # catalogs are forced uppercase, do the same here
+    glassname = glassname.upper()
+
     # Case 1: Special cases outside of catalog handling
     if glassname == 'VACUUM':
         return 1./n_Air(wl) # Common practise in optics design to specify refractive index relative to (standard-)air rather than vacuum. TODO: Needs double-check if all manufacturers follow the same logic.
         # return 1. # Vacuum-based definition
     elif glassname == 'AIR':
-        return n_Air(wl)
+        # It is common that refrctive indices are specified relative to air instead of vacuum
+        # For now, treat n_air as 1
+        # More explicit confirmation for different sources/mateirals is needed.
+        return 1.
+        # return n_Air(wl)
     elif glassname.startswith('FIXVALUE_'):
         # fix refractive index
         return float(glassname.split('_')[1])
@@ -339,6 +351,7 @@ def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
             if substitute_prefix is not None:
                 glassname = '_'.join(glassname.split('_')[1:])
                 print(f'Glas subsitution from {glassname} to {substitute_prefix + glassname}!')
+            print(f'Found refractive index {n:.4f} for {glassname}')
             return n
 
     # Case 3: Material not found

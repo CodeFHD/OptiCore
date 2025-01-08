@@ -1,5 +1,7 @@
 *.pyc
 *.suo
 .vs/*
+*.py.bak
+*.bak
 
 systems/test_zemax_library.py

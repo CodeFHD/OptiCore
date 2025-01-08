@@ -72,12 +72,18 @@ class Lenssystem():
         # Data structure definition
         # This dictionary is what the ray tracer actually works thorugh
         self.data['type'] = [] # Surface type for specific functions
-        self.data['radius'] = [] # Spherical surface radius
-        self.data['asph'] = [] # Apsheric coefficients [[k, a4, a6, ...]]
+        self.data['radius'] = [] # Spherical surface radius [r0, r1, ...]. 
+        self.data['asph'] = [] # Apsheric coefficients [[k, a4, a6,...], ...].
+        self.data['radius2'] = [] # secondary radius list for toric lenses
+        self.data['asph2'] = [] # secondary aspheric list for toric lenses
+        # self.data['freeform_coeff'] = [] # coefficients for freeform-equation
         # self.data['CT'] = [] # Center thickness
         self.data['CT_sum'] = [] # Center thickness sum
         self.data['lrad'] = [] # Mechanical Lens radius
         self.data['rCA'] = [] # Clear aperture radius
+        self.data['rCA_short'] = [] # Clear aperture radius
+        self.data['surf_rotation'] = [] # angle by which surface is rotated around optical axis. E.g. for cylinder lenses.
+        self.data['CA_shape'] = [] # Shape of clear aperture: circular, square, or rectangular
         self.data['surf_decenter'] = [] # Surface lateral position error [[x, y]]
         self.data['surf_tilt'] = [] # Surface tilt error [[X, Y]]
         self.data['n'] = [] # Refractive index
@@ -96,10 +102,16 @@ class Lenssystem():
         self.data['type'].append('OBJECT')
         self.data['radius'].append(None)
         self.data['asph'].append([None, None])
+        self.data['radius2'].append(None)
+        self.data['asph2'].append([None, None])
+        # self.data['freeform_coeff'].append([None])
         # self.data['CT'].append(None)
         self.data['CT_sum'].append(None)
         self.data['lrad'].append(None)
         self.data['rCA'].append(None)
+        self.data['rCA_short'].append(None)
+        self.data['surf_rotation'].append(None)
+        self.data['CA_shape'].append(None)
         self.data['surf_decenter'].append(None)
         self.data['surf_tilt'].append(None)
         self.data['n'].append(n)
@@ -129,9 +141,14 @@ class Lenssystem():
                 self.data['type'].append(ele.data['type'][s])
                 self.data['radius'].append(ele.data['radius'][s])
                 self.data['asph'].append(ele.data['asph'][s])
+                self.data['radius2'].append(ele.data['radius2'][s])
+                self.data['asph2'].append(ele.data['asph2'][s])
+                # self.data['freeform_coeff'].append(ele.data['freeform_coeff'][s])
                 self.data['CT_sum'].append(CT_sum)
                 self.data['lrad'].append(max_rCA)
                 self.data['rCA'].append(ele.data['rCA'][s])
+                self.data['rCA_short'].append(ele.data['rCA_short'][s])
+                self.data['surf_rotation'].append(ele.data['surf_rotation'][s])
                 self.data['surf_decenter'].append(ele.data['surf_decenter'][s])
                 self.data['surf_tilt'].append(ele.data['surf_tilt'][s])
                 self.data['n'].append(n)
@@ -192,13 +209,17 @@ class Lenssystem():
     def reverse_system(self, build=True):
         pass
 
-    def trace_surfaces_sequential(self, y=1, u=0):
+    def trace_surfaces_paraxial(self, y=1, u=0, axis=0):
         if not self.isbuilt:
             return None, None
         direction = 1
         for i in range(1, self.num_surfaces-1): # minus last surface and first dummy surface
             # surface
-            r = self.data['radius'][i]
+            if axis == 0:
+                radius_use = 'radius'
+            else:
+                radius_use = 'radius2'
+            r = self.data[radius_use][i]
             n1 = self.data['n'][i]
             n0 = self.data['n'][i-1]
             CT = self.data['CT_sum'][i+1] - self.data['CT_sum'][i]
@@ -218,7 +239,7 @@ class Lenssystem():
             # thickness
             y, u = paraxial.transfer(y, u, CT*direction)
         # trace the final surface
-        r = self.data['radius'][i+1]
+        r = self.data[radius_use][i+1]
         n1 = self.data['n'][-1]
         n0 = self.data['n'][i]
         if self.data['ismirror'][i+1]:
@@ -239,6 +260,13 @@ class Lenssystem():
     def EFL_paraxial(self):
         if not self.isbuilt:
             return None
-        y, u = self.trace_surfaces_sequential(1, 0)
+        y, u = self.trace_surfaces_paraxial(1, 0)
         EFL = paraxial.calc_EFL(1, u)
         return EFL
+
+    def BFL_paraxial(self):
+        if not self.isbuilt:
+            return None
+        y, u = self.trace_surfaces_paraxial(1, 0)
+        BFL = paraxial.calc_BFL(y, u)
+        return BFL

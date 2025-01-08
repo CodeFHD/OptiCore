@@ -95,15 +95,21 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
             refract = -1
 
         # get surface parameters
-        r = ld['radius'][idx_s]
         rad = ld['rCA'][idx_s]
+        r = ld['radius'][idx_s]
         k = ld['asph'][idx_s][0]
         A = ld['asph'][idx_s][1:]
+        r2 = ld['radius2'][idx_s]
+        k2 = ld['asph2'][idx_s][0]
+        A2 = ld['asph2'][idx_s][1:]
         # determine the type of surface w.r.t. the intersection algorithms:
         hasrad = r != 0
         hasconic = k != 0 and k is not None
         haspoly = not (np.all(np.array(A) == 0) or np.all(np.array(A) == None) or A is None)
-        
+        # surface rotation for e.g. cylinder lenses
+        surf_rotation = ld['surf_rotation'][idx_s]
+
+        # TODO: surfshape and surftype could/should be united
         if not hasrad and not haspoly:
             surfshape = 'flat'
         elif not hasconic and not haspoly:
@@ -112,18 +118,8 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
             surfshape = 'aspheric'
         else:
             surfshape = 'conic'
-        """
-        elif not hasrad and haspoly:
-            surfshape = 'polynomic'
-        elif not hasconic and not haspoly:
-            surfshape = 'spherical'
-        elif hasrad and not haspoly and k == -1:
-            surfshape = 'parabolic'
-        elif hasconic and not haspoly:
-            surfshape = 'conic'
-        else: 
-            surfshape = 'aspheric'
-        """
+
+        surftype = ld['type'][idx_s]
 
         # set center of sphere coordinates
         # TODO: Add decenter and tilt
@@ -169,25 +165,14 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
 
         # trace rays
         # calculate lens intersection points
-        if surfshape == 'aspheric':
+        #if surfshape == 'aspheric':
+        if surftype == 'aspheric':
             P, N, idx_fail = rt_intersect_asph.intersect_asphere(O, D, C_CT, rad, r, k, A)
         else:
-            P, N, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, rad, k, A, surfshape, direction = direction)#*reflectionstate)
-        
-        """
-        if surfshape == 'flat':
-            # print('Intersection flat at idx_s', idx_s)
-            P , N, idx_fail = rt_intersect.circle_intersect(O, D, C[2], rad)
-        # elif surfshape == 'parabolic':
-        #     # print('Intersection parabolic at idx_s', idx_s)
-        #     P, N, idx_fail = rt_intersect_asph.parabola_intersect(O, D, C_CT, r, 0)
-        elif surfshape in ['spherical', 'parabolic', 'conic']:
-            # print('Intersection conic at idx_s', idx_s)
-            P, N, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, k)
-        else:
-            # print('Intersection lens at idx_s', idx_s)
-            P , N, idx_fail = rt_intersect.lens_intersect(O, D, C, r, rad, direction = direction*reflectionstate)
-        """
+            # P, N, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, rad,
+            # k=k, A=A, surf_rotation=surf_rotation, surfshape=surfshape, direction=direction)
+            P, N, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, rad,
+            k=k, A=A, surf_rotation=surf_rotation, surfshape=surftype, direction=direction)#*reflectionstate)
         
         # calculate new ray directions
         if refract == 1:

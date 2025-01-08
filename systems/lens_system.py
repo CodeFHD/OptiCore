@@ -29,6 +29,8 @@ class OBJECT_OT_lens_system(bpy.types.Operator, AddObjectHelper):
         #create individual lenses
         #and add name to empty custom property list
 
+
+
     def update_system():
         pass
         
@@ -36,3 +38,5 @@ class OBJECT_OT_lens_system(bpy.types.Operator, AddObjectHelper):
     def execute(self, context):
         create_system(self, context)
         return {'FINISHED'}
+
+def create_system(self, context):

@@ -39,27 +39,9 @@ def _fixN2(N2, maxb):
     else:
         return _fixN2(N2+1, maxb)
 
-def get_ringnormals(N, dshape=False, direction=1):
-    """
-    direction is a multiplier used for inverting the direction in the mirror-hole etc.
-    """
-    dtp = np.float64
-    normals = []
-
-    maxb = 2*np.pi
-    if dshape:
-        maxb = np.pi*N/(N-1)
-
-    for j in range(N):
-        b = maxb*j/N
-        normals.append((direction*0.,direction*np.sin(b, dtype=dtp),direction*np.cos(b, dtype=dtp)))
-
-    return normals
-
-def add_spherical_surface(rad,lrad,N1,N2,nsurfe=1,xadd=0,nVerts=0,hole=False,hrad=0,dshape=False,optiverts=False,lrad_ext=0):
+def add_spherical_surface(rad, lrad, N1, N2, xadd=0, nVerts=0, cylinderaxis=None,
+                          hole=False, hrad=0, dshape=False, lrad_ext=0):
     #TODO: Could parse arguments by kwargs-dict to keep function call short, then pop here
-
-    dtp = np.float64#for testing
 
     verts = []
     faces = []
@@ -73,80 +55,62 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurfe=1,xadd=0,nVerts=0,hole=False,hra
     if rad < 0:
         sig = -1
     nhole = not hole
-    rad = np.abs(rad, dtype=dtp)
-    ang = np.arcsin(lrad/rad, dtype=dtp)
-    
-    if optiverts:
-        #for calc of optimised distribution
-        N2 = _fixN2(N2, maxb)
-        alpha = maxb/N2
-        N1 = _fixN1(N1, alpha)
-        #create list of rs
-        optirs = [lrad]
-        for i in range(N1-1):
-            optirs.append((1-alpha)*optirs[-1])
-        optirs = optirs[::-1]
+    rad = np.abs(rad)
+    ang = np.arcsin(lrad/rad)
 
+    # central vertex only without hole
     if not hole:
         verts.append(Vector((-xadd,0,0)))
         normals.append((1,0,0))
-        if optiverts:
-            r = optirs[0]
-            a = np.arcsin(r/rad, dtype=dtp)
-        else:
-            a = ang/N1
-            r = rad*np.sin(a, dtype=dtp)
-        hang = 0
+        hang = 0 # angle where first ring is placed
     else:
-        hang = np.arcsin(hrad/rad, dtype=dtp)
-        r = hrad
-        a = hang
+        hang = np.arcsin(hrad/rad)
 
-    x = rad-np.sqrt(rad**2-r**2, dtype=dtp)
-    for j in range(N2):
-        b = maxb*j/N2
-        verts.append(Vector((-1.*x*sig-xadd,r*np.sin(b, dtype=dtp),r*np.cos(b, dtype=dtp))))
-        normals.append((np.cos(a, dtype=dtp),
-                        sig*np.sin(a, dtype=dtp)*np.sin(b, dtype=dtp),
-                        sig*np.sin(a, dtype=dtp)*np.cos(b, dtype=dtp)))
-        if not hole:
+    # create rings
+    for i in range(N1 - (lrad_ext > lrad)):
+        a = hang + (ang-hang)*(i+nhole)/(N1 - hole - (lrad_ext > lrad))
+        r0 = rad*np.sin(a)
+        for j in range(N2):
+            b = maxb*j/N2
+            y = r0*np.sin(b)
+            z = r0*np.cos(b)
+            if cylinderaxis == 'X':
+                r = y
+            elif cylinderaxis == 'Y':
+                r = z
+            else:
+                r = r0
+            x = rad-np.sqrt(rad**2-r**2)
+            verts.append(Vector((-1.*x*sig-xadd,y,z)))
+            normals.append((np.cos(a),
+                            sig*np.sin(a)*np.sin(b),
+                            sig*np.sin(a)*np.cos(b)))
             if dshape and j==N2-1:
                 pass
-            else:
+            elif i == 0:
                 fi1 = nVerts
                 fi2 = fi1 + ((j+1)%N2+1)
                 fi3 = fi1 + (j+1)
                 faces.append([fi1,fi2,fi3])
-    for i in range(1,N1 - (lrad_ext > lrad)):
-        if optiverts:
-            r = optirs[i]
-            a = np.arcsin(r/rad, dtype=dtp)
-        else:
-            a = hang + (ang-hang)*(i+nhole)/(N1-hole - (lrad_ext > lrad))
-            r = rad*np.sin(a, dtype=dtp)
-        x = rad-np.sqrt(rad**2-r**2, dtype=dtp)
-        for j in range(N2):
-            b = maxb*j/N2
-            verts.append(Vector((-1.*x*sig-xadd,r*np.sin(b, dtype=dtp),r*np.cos(b, dtype=dtp))))
-            normals.append((np.cos(a, dtype=dtp),
-                            sig*np.sin(a, dtype=dtp)*np.sin(b, dtype=dtp),
-                            sig*np.sin(a, dtype=dtp)*np.cos(b, dtype=dtp)))
-            if dshape and j==N2-1:
-                pass
             else:
                 fi1 = nVerts + j+nhole+i*N2
                 fi2 = nVerts + (j+1)%N2+nhole+i*N2
                 fi3 = fi2 - N2
                 fi4 = fi1 - N2
-                faces.append([fi4,fi3,fi2,fi1])
+                if cylinderaxis is not None:
+                    # in this case faces must be added as tris because 4 vertices will not lie in a plane in general
+                    faces.append([fi4, fi3, fi2])
+                    faces.append([fi4, fi2, fi1])
+                else:
+                    faces.append([fi4,fi3,fi2,fi1])
 
-    #if there is flat annulus
+    #if there is flat annulus, add the outer ring
     if lrad_ext > lrad:
         i = N1 - 2
         r = lrad_ext       
         for j in range(N2):
             b = maxb*j/N2
-            verts.append(Vector((-1.*x*sig - xadd,r*np.sin(b, dtype=dtp),r*np.cos(b, dtype=dtp))))
+            verts.append(Vector((-1.*x*sig - xadd,r*np.sin(b),r*np.cos(b))))
             normals.append((1,0,0))
             if dshape and j==N2-1:
                 pass
@@ -160,73 +124,121 @@ def add_spherical_surface(rad,lrad,N1,N2,nsurfe=1,xadd=0,nVerts=0,hole=False,hra
     return verts, faces, normals, N1, N2
 
 
-def add_sqspherical_surface(rad,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical=False):
+def add_sqspherical_surface(rad, lwidth, N1, N2, xadd=0,nVerts=0,
+                            cylinderaxis=None, dshape=False, lwidth_ext=0):
     """
-    nsurf=1 for first surface,
-    nsurf=-1 for second surface
-    
     xadd has to be set for second surface (only)
     """
 
-    dtp = np.float64
-
     verts = []
     faces = []
-    vertquads = []
     normals = []
-    
-    surfadd=0
+    vertquads = []
 
     sig = 1
     if rad < 0:
         sig = -1
     rad = np.abs(rad)
 
+    hasflangeY = (lwidth_ext > lwidth) and cylinderaxis == 'X'
+    hasflangeZ = (lwidth_ext > lwidth) and cylinderaxis == 'Y'
+
+    if cylinderaxis== 'X':
+        lwidthY = lwidth
+        lwidthZ = lwidth_ext
+    elif cylinderaxis== 'Y':
+        lwidthY = lwidth_ext
+        lwidthZ = lwidth
+    else:
+        lwidthY = lwidth
+        lwidthZ = lwidth
+
     for i in range(N1):
-        y = lwidth*(i/(N1-1) - 0.5)
+        if dshape:
+            if i==N1-1 and hasflangeY:
+                y = lwidth_ext
+            else:
+                y = (i/(N1 - 1))*lwidthY
+        else:
+            if i==0 and hasflangeY:
+                y = -lwidth_ext
+            elif i==N1-1 and hasflangeY:
+                y = lwidth_ext
+            else:
+                y = 2*(i/(N1 - 1) - 0.5)*lwidthY
         for j in range(N2):
-            z = lwidth*(j/(N2-1) - 0.5)
-            if cylindrical:
-                r = y
+            is_flangevert = False
+            if j==0 and hasflangeZ:
+                z = -lwidthZ
+            elif j==N2-1 and hasflangeZ:
+                z = lwidthZ
+            else:
+                z = 2*(j/(N2 - 1) - 0.5)*lwidthZ
+            if cylinderaxis == 'X':
+                if i==0 and hasflangeY and not dshape:
+                    r = 2*((i+1)/(N1 - 1) - 0.5)*lwidthY
+                    is_flangevert = True
+                elif i==N1-1 and hasflangeY:
+                    r = 2*((i-1)/(N1 - 1) - 0.5)*lwidthY
+                    is_flangevert = True
+                else:
+                    r = y
+            elif cylinderaxis == 'Y':
+                if j==0 and hasflangeZ:
+                    r = 2*((j+1)/(N2 - 1) - 0.5)*lwidthZ
+                    is_flangevert = True
+                elif j==N2-1 and hasflangeZ:
+                    r = 2*((j-1)/(N2 - 1) - 0.5)*lwidthZ
+                    is_flangevert = True
+                else:
+                    r = z
             else:
                 r = np.sqrt(y**2 + z**2)
-            x = rad-np.sqrt(rad**2-r**2)
-            verts.append(Vector((-1.*x*sig*nsurf-xadd,y,z)))
-            ang = np.arctan2(z+lwidth/(2*N2-2),y+lwidth/(2*N1-2))
-            a = np.arcsin(r/rad)
-            if cylindrical:
-                b = np.pi/2
+            x = rad - np.sqrt(rad**2 - r**2)
+            verts.append(Vector((-1.*x*sig - xadd, y, z)))
+            ang = np.arctan2(z + lwidth_ext/(N2-1), y + lwidth_ext/(N1-1))
+            # Normals
+            if is_flangevert:
+                normals.append((1., 0, 0))
             else:
-                b = np.arctan2(y,z)
-            normals.append((nsurf*np.cos(a, dtype=dtp),
-                            sig*np.sin(a, dtype=dtp)*np.sin(b, dtype=dtp),
-                            sig*np.sin(a, dtype=dtp)*np.cos(b, dtype=dtp)))
-            cond1 = N1%2 == 0
-            cond2 = j==int(N2/2 - 1) or i==int(N1/2 - 1)
+                a = np.arcsin(r/rad)
+                if cylinderaxis == 'X':
+                    b = np.pi/2
+                elif cylinderaxis == 'Y':
+                    b = 0
+                else:
+                    b = np.arctan2(y, z)
+                normals.append((np.cos(a),
+                                sig*np.sin(a)*np.sin(b),
+                                sig*np.sin(a)*np.cos(b)))
+            # marker for face generation
+            cond1 = N2%2 == 0
+            cond2 = j==int(N2/2 - 1) or (i==int(N1/2 - 1) and not dshape)
             if cond1 and cond2:
                 vertquads.append(-99)
             else:
                 vertquads.append(ang/np.pi*2)
 
+    # add the faces of the spherical portion
     for i in range(N1-1):
         for j in range(N2-1):
-            f1 = nVerts+surfadd+j+1 + N2*i
-            f2 = nVerts+surfadd+j+ N2*i
-            f3 = nVerts+surfadd+j + N2*(i+1)
-            f4 = nVerts+surfadd+j+1 + N2*(i+1)
+            f1 = nVerts + j + 1 + N2*i
+            f2 = nVerts + j + N2*i
+            f3 = nVerts + j + N2*(i+1)
+            f4 = nVerts + j + 1 + N2*(i+1)
             if vertquads[j+i*N2] >= 1:
-                faces.append([f1,f2,f4][::nsurf])
-                faces.append([f2,f3,f4][::nsurf])
+                faces.append([f1,f2,f4])
+                faces.append([f2,f3,f4])
             elif vertquads[j+i*N2] >= 0:
-                faces.append([f1,f2,f3][::nsurf])
-                faces.append([f1,f3,f4][::nsurf])
+                faces.append([f1,f2,f3])
+                faces.append([f1,f3,f4])
             elif vertquads[j+i*N2] >= -1:
-                faces.append([f1,f2,f4][::nsurf])
-                faces.append([f2,f3,f4][::nsurf])
+                faces.append([f1,f2,f4])
+                faces.append([f2,f3,f4])
             elif vertquads[j+i*N2] >= -2:
-                faces.append([f1,f2,f3][::nsurf])
-                faces.append([f1,f3,f4][::nsurf])
+                faces.append([f1,f2,f3])
+                faces.append([f1,f3,f4])
             else:
-                faces.append([f1,f2,f3,f4][::nsurf])
+                faces.append([f1,f2,f3,f4])
             
     return verts, faces, normals

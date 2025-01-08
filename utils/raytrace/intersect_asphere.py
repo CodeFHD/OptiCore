@@ -193,3 +193,15 @@ def intersect_asphere(O, D, C, lrad, rad, k, A):
     
     idx_fail = np.isnan(P[:,0])
     return P, N, idx_fail 
+
+def intersect_implicit(O, D, f_xy, N_x=None):
+    """
+    Intersection for a general implicit surface,
+    i.e. one that takes the form f(x,y,z) = 0.
+    This function needs to be supplied with a function reference
+    f_xy so that f_xy(x,y) = z, 
+    as well as a function N_xy that calculates the local surface normal.
+    TODO: Add option to numerically obtain N_xy from f_xy when there is no (known) analytic solution.
+    """
+    ACCURACY = 1e-5
+    MAX_ITERATIONS = 6
