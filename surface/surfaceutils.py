@@ -17,9 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .flat import *
-from .parabolic import *
-from .spherical import *
-from .aspheric import *
-#from .rim import *
-#from .toric import *
+def get_N1_sqsurface(N2, dshape):
+    # passing N2 and calculating N1, not the other way, for historical reasons
+    # TODO: Might be a good idea to restrict N2 to odd numbers? Particularly for dshape cases to retain square segments. Consider depending on results
+    if dshape:
+        N1 = N2//2 + 1
+    else:
+        N1 = N2
+    return N1
