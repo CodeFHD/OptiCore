@@ -258,6 +258,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if self.addlenses:
             CT_sum = 0
             radius_outer = 0
+            i0 = 0 # starting index for surface, relevant for split_cemented
             for ele, dz in lens.elements:
                 """
                 TODO: Possibly to be foreseen in this implementation:
@@ -293,106 +294,50 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                     bpy.ops.transform.translate(value=(-dz_this, 0, 0))
                     obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
                     created_objects.append(obj_name)
-                elif self.split_cemented and num_surfaces > 2:
-                    for i in range(num_surfaces - 1):
+                else:
+                    if self.split_cemented:
+                        n_loop = 2
+                    else:
+                        n_loop = num_surfaces
+                    while True:
+                        if self.split_cemented:
+                            i1 = i0 + 2
+                        else:
+                            i1 = num_surfaces+1
+                    
                         paramdict = get_default_paramdict_lens()
-                        paramdict[f'rad1'] = ele.data['radius'][i]
-                        paramdict[f'rad2'] = ele.data['radius'][i+1]
+                        for i in range(n_loop):
+                            rx = ele.data['radius'][i0+i]
+                            kx = ele.data['asph'][i0+i][0]
+                            Ax = ele.data['asph'][i0+i][1:]
+                            ltype = ele.data['lenstype'][i0+i]
+                            paramdict[f'ltype{i+1}'] = ltype
+                            paramdict[f'rad{i+1}'] = rx
+                            paramdict[f'k{i+1}'] = kx
+                            paramdict[f'A{i+1}'] = Ax
+                            if ele.data['rCA_short'][i0+i] < max(ele.data['rCA'][i0:i1]):
+                                paramdict[f'flangerad{i+1}'] = max(ele.data['rCA'][i0:i1]) - ele.data['rCA_short'][i0+i]
+                        for i in range(n_loop-1):
+                            paramdict[f'centerthickness{i+1}'] = ele.data['CT'][i0+i]
+                        paramdict['lensradius'] = max(ele.data['rCA'][i0:i1])
+                        paramdict['makedoublet'] = str(n_loop-1)
+                        # parameters completely independent of split_cemented
                         paramdict['num1'] = self.num1
                         paramdict['num2'] = self.num2
-                        paramdict['lensradius'] = max(ele.data['rCA'][i:i+2])
-                        if ele.data['rCA'][i] < max(ele.data['rCA'][i:i+2]):
-                            paramdict[f'flangerad1'] = max(ele.data['rCA'][i:i+2]) - ele.data['rCA'][i]
-                        if ele.data['rCA'][i+1] < max(ele.data['rCA'][i:i+2]):
-                            paramdict[f'flangerad2'] = max(ele.data['rCA'][i:i+2]) - ele.data['rCA'][i+1]
-                        paramdict[f'centerthickness1'] = ele.data['CT'][i]
-                        test_asph = [x in [0, None] for x in ele.data['asph'][i]]
-                        if not np.all(test_asph):
-                            paramdict[f'k1'] = ele.data['asph'][i][0]
-                            paramdict[f'A1'] = ele.data['asph'][i][1:]
-                            paramdict[f'ltype1'] = 'aspheric'
-                        test_asph = [x in [0, None] for x in ele.data['asph'][i+1]]
-                        if not np.all(test_asph):
-                            paramdict[f'k2'] = ele.data['asph'][i+1][0]
-                            paramdict[f'A2'] = ele.data['asph'][i+1][1:]
-                            paramdict[f'ltype2'] = 'aspheric'
-                        paramdict['makedoublet'] = '1'
                         paramdict['dshape'] = self.dshape
+                        if ele.outline_shape == 'square':
+                            paramdict['squarelens'] = True
                         add_lens(self, context, paramdict=paramdict)
                         bpy.ops.transform.translate(value=(-dz_this, 0, 0))
                         obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
                         created_objects.append(obj_name)
-                        dz_this = dz_this + ele.data['CT'][i]
-                else:
-                    paramdict = get_default_paramdict_lens()
-                    for i in range(num_surfaces):
-                        rx = ele.data['radius'][i]
-                        ry = ele.data['radius2'][i]
-                        kx = ele.data['asph'][i][0]
-                        ky = ele.data['asph2'][i][0]
-                        Ax = ele.data['asph'][i][1:]
-                        Ay = ele.data['asph2'][i][1:]
-                        ltype = ele.data['lenstype'][i]
-                        #ltype = surftype_zmx2ltype(rx, ry, kx, ky, Ax, Ay)
-                        paramdict[f'ltype{i+1}'] = ltype
-                        # the following could be compressed, but keeping the sepratate cases distinct for future updates
-                        # unset None for equality checking
-                        if rx is None: rx = 0
-                        if ry is None: ry = 0
-                        if kx is None: kx = 0
-                        if ky is None: ky = 0
-                        if np.all(np.array(Ax) == None): Ax = [0]
-                        if np.all(np.array(Ay) == None): Ay = [0]
-                        # saving this block for future reference
-                        if True: #ltype == 'rotational':
-                            paramdict[f'rad{i+1}'] = rx
-                            paramdict[f'k{i+1}'] = kx
-                            paramdict[f'A{i+1}'] = Ax
-                        """
-                        else:#elif ltype == 'cylindricX':
-                            paramdict[f'rad{i+1}'] = rx
-                            paramdict[f'k{i+1}'] = kx
-                            paramdict[f'A{i+1}'] = Ax
-                        elif ltype == 'cylindricY':
-                            paramdict[f'rad{i+1}'] = ry
-                            paramdict[f'k{i+1}'] = ky
-                            paramdict[f'A{i+1}'] = Ay
-                        """
-                        if ele.data['rCA_short'][i] < max(ele.data['rCA']):
-                            paramdict[f'flangerad{i+1}'] = max(ele.data['rCA']) - ele.data['rCA_short'][i]
-                        """
-                        if ele.data['type'] in ['toric', 'conitoric', 'polytoric', 'atoric']:#['BICONICX']:
-                            paramdict[f'rad{i+1}'] = [ele.data['radiusX'][i], ele.data['radius'][i]]
+
+                        if i1 >= num_surfaces+1:
+                            #last surface was included
+                            # check for >= and not == to be safe against accidental double increments creating infinite loops
+                            break
                         else:
-                            paramdict[f'rad{i+1}'] = ele.data['radius'][i]
-                        if ele.data['rCA'][i] < max(ele.data['rCA']):
-                            paramdict[f'flangerad{i+1}'] = max(ele.data['rCA']) - ele.data['rCA'][i]
-                        test_asph = [x in [0, None] for x in ele.data['asph'][i]]
-                        if not np.all(test_asph):
-                            paramdict[f'k{i+1}'] = ele.data['asph'][i][0]
-                            paramdict[f'A{i+1}'] = ele.data['asph'][i][1:]
-                            # paramdict[f'ltype{i+1}'] = 'aspheric'
-                        """
-                    for i in range(num_surfaces-1):
-                        paramdict[f'centerthickness{i+1}'] = ele.data['CT'][i]
-                    paramdict['num1'] = self.num1
-                    paramdict['num2'] = self.num2
-                    paramdict['lensradius'] = max(ele.data['rCA'])
-                    paramdict['makedoublet'] = str(num_surfaces - 1)
-                    paramdict['dshape'] = self.dshape
-                    if ele.outline_shape == 'square':
-                        paramdict['squarelens'] = True
-                    # paramdict['material_name'] = 
-                    # paramdict['material_name2'] = 
-                    # paramdict['material_name3'] = 
-                    # paramdict['shade_smooth'] = 
-                    # paramdict['smooth_type'] = 
-                    # paramdict['ior'] = 
-                    # paramdict['display_edit'] =
-                    add_lens(self, context, paramdict=paramdict)
-                    bpy.ops.transform.translate(value=(-dz_this, 0, 0))
-                    obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
-                    created_objects.append(obj_name)
+                            i1 = i0 + 1
                 radius_outer = max(radius_outer, max(ele.data['rCA']))
                 
         t2 = time.perf_counter()
