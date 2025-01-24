@@ -44,7 +44,7 @@ def surftype_zmx2ltype(rx, ry, kx, ky, Ax, Ay):
 
     # case : flat (return rotational as default)
     elif (s1None and s2flat) or (s2None and s1flat) or (s1flat and s2flat):
-        return 'rotational'
+        return 'flat'
 
     # case : rotational
     elif (not s1None and s2None) or (s1None and not s2None) or allequal:
@@ -68,18 +68,14 @@ def surftype_Lens2Element(ltype, surf_subtype):
     key = '_'.join((ltype, surf_subtype))
     LOOKUP = {'rotational_spherical': 'spherical',
               'rotational_conic': 'conical',
-              'rotational_polynomic': 'polynomic',
+              'rotational_polynominal': 'polynominal',
               'rotational_aspheric': 'aspheric',
-              'cylindricX_spherical': 'cylindrical',
-              'cylindricX_conic': 'conicylindric',
-              'cylindricX_polynomic': 'polycylindric',
-              'cylindricX_aspheric': 'acylindric',
-              'cylindricY_spherical': 'cylindrical',
-              'cylindricY_conic': 'conicylindric',
-              'cylindricY_polynomic': 'polycylindric',
-              'cylindricY_aspheric': 'acylindric',}
+              'cylindrical_spherical': 'cylindrical',
+              'cylindrical_conic': 'conicylindrical',
+              'cylindrical_polynominal': 'polycylindrical',
+              'cylindrical_aspheric': 'acylindrical',
+              'toric_spherical': 'toric'}
     """ # not yet implemented
-              '', 'toric',
               '', 'conitoric',
               '', 'polytoric',
               '', 'atoric',}
@@ -98,7 +94,7 @@ def get_surface_subtype(r, k, A):
     if not hasrad and not haspoly:
         surf_subtype = 'flat'
     elif not hasrad and haspoly:
-        surf_subtype = 'polynomic'
+        surf_subtype = 'flat' # 'polynominal' # pure polynominal not yet supported
     elif not hasconic and not haspoly:
         surf_subtype = 'spherical'
     #elif hasrad and not haspoly and k == -1:
@@ -110,35 +106,82 @@ def get_surface_subtype(r, k, A):
 
     return surf_subtype
 
+def check_surface(lrad, flrad, RX, kX, AX, RY, kY, AY, surftype, squarelens, rd=0):
+    # rd is short for recursiondepth
+    if rd > 2:
+        print("ERROR: check_surface() appears to be caught in a loop!!!")
+        return None
+    
+    # special case of flat surface will be used in multiple cases
+    returnvalues_flat = (lrad, 0, 0, 'flat', 'flat', 'flat', 0, 0, [0], 0)
 
-def check_surface(r, lrad, flrad, k, A, surftype, squarelens):
-    ssig = 1 - 2*(r < 0) # this ensures ssig == 1 for r == 0. Sign functions typically return 0.
+    if kX is None: kX = 0
+    if kY is None: kY = 0
+    if AX is None or AX == [] or np.all(np.array(AX) == [None]): AX = [0]
+    if AY is None or AY == [] or np.all(np.array(AY) == [None]): AY = [0]
+    surf_subtype_X = get_surface_subtype(RX, kX, AX)
+    surf_subtype_Y = get_surface_subtype(RY, kY, AY)
 
-    surf_subtype = get_surface_subtype(r, k, A)
+    # No flange unless explicitly confirmed
+    hasfl = 0
+    lrad_surf = lrad
+    # same for surface rotation offset
+    dSurfrot = 0
 
-    if k is None: k = 0
+    """ Case 1: Flat """
+    if surftype == 'flat' or (surf_subtype_X == 'flat' and surf_subtype_Y == 'flat'):
+        return returnvalues_flat
 
-    # get parameters depending on surface type
-    if surf_subtype == 'flat':
-        # no flange needed for a flat surface
-        hasfl = 0
-        lrad_surf = lrad
-    elif (surftype == 'rotational' and not squarelens) or (surftype != 'rotational' and squarelens):
-        hasfl = flrad > 0.01*lrad
-        if flrad > 0.99*lrad: flrad = 0.99*lrad
-        lrad_surf = lrad - flrad if hasfl else lrad
-        if k <= -1:
-            # in this case 1+k is smaller than 1 and the situation is safe anyways
-            pass
-        elif lrad_surf > abs(r)/np.sqrt(1+k):
-            lrad_surf = 0.9999*abs(r)/np.sqrt(1+k)
-            flrad = lrad - lrad_surf
-            hasfl = 1
-    else:
-        # Flange for other combinations would have non-trivial outline.
-        # TODO: This would need significantly more implementation
-        # Questioable if this is ever practical
-        hasfl = 0
-        lrad_surf = lrad
-            
-    return lrad_surf, hasfl, flrad, ssig, surf_subtype
+    """ Case 2: Rotational """
+    # all Y values are ignored for this case
+    if surftype == 'rotational':
+        if surf_subtype_X == 'flat':
+            return returnvalues_flat
+        if not squarelens:
+            if flrad > 0.99*lrad: # maximum flange width
+                return returnvalues_flat
+            hasfl = flrad > 0.01*lrad # minimum flange width
+            lrad_surf = lrad - flrad if hasfl else lrad
+            if kX <= -1: # for k<-1, the argument in the sqrt of the conic term is always positive, i.e. well-defined
+                pass
+            elif lrad_surf > abs(RX)/np.sqrt(1+kX): # automatic flange to maximum of well-defined radius
+                lrad_surf = 0.9999*abs(RX)/np.sqrt(1+kX)
+                flrad = lrad - lrad_surf
+                hasfl = 1
+
+    """ Case 3: Cylindrical """
+    # all Y values are ignored for this case
+    if surftype == 'cylindrical':
+        if surf_subtype_X == 'flat':
+            return returnvalues_flat
+        if squarelens:
+            if flrad > 0.99*lrad: # maximum flange width
+                return returnvalues_flat
+            hasfl = flrad > 0.01*lrad # minimum flange width
+            lrad_surf = lrad - flrad if hasfl else lrad
+            if kX <= -1: # for k<-1, the argument in the sqrt of the conic term is always positive, i.e. well-defined
+                pass
+            elif lrad_surf > abs(RX)/np.sqrt(1+kX): # automatic flange to maximum of well-defined radius
+                lrad_surf = 0.9999*abs(RX)/np.sqrt(1+kX)
+                flrad = lrad - lrad_surf
+                hasfl = 1
+
+    """ Case 4: Toric """
+    if surftype == 'toric':
+        if surf_subtype_X == 'flat' and surf_subtype_Y == 'flat':
+            return returnvalues_flat
+        if surf_subtype_Y == 'flat' and not surf_subtype_X == 'flat':
+            # equivalent to a cylinder, X-axis already valid
+            surftype = 'cylindrical'
+            # perform a recursion because this will resolve the proper evaluation of the cylinder surface
+            # return check_surface(lrad, flrad, RX, kX, AX, RY, kY, AY, surftype, squarelens, rd=rd+1)
+        elif surf_subtype_X == 'flat' and not surf_subtype_Y == 'flat':
+            # equivalent to a cylinder, flip parameters
+            surftype = 'cylindrical'
+            surf_subtype_X, surf_subtype_Y = surf_subtype_Y, surf_subtype_X
+            RX, kX, AX, RY, kY, AY = RY, kY, AY, RX, kX, AX
+            dSurfrot = np.pi/2
+            # return check_surface(lrad, flrad, RX, kX, AX, RY, kY, AY, surftype, squarelens, rd=rd+1)
+
+    """ Default return case """
+    return lrad_surf, hasfl, flrad, surftype, surf_subtype_X, surf_subtype_Y, RX, kX, AX, dSurfrot

@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024, Johannes Hinrichs
+Copyright 2019-2025, Johannes Hinrichs
 
 This file is part of OptiCore.
 
@@ -21,6 +21,7 @@ import numpy as np
 
 from mathutils import Vector
 
+"""
 def get_squarefacenormals(n1, n2):
     normals = []
 
@@ -32,23 +33,28 @@ def get_squarefacenormals(n1, n2):
 
     return normals
 
-def add_flat_surface(lrad,N1,N2,xadd=0,yadd=0,nVerts=0,hole=False,hrad=0,dshape=False):
+"""
+
+def add_flat_surface(lrad, N1, N2, zadd=0, xadd=0, nVerts=0, hole=False, hrad=0, dshape=False):
     """Flat surface with circular cross-section"""
     
     verts = []
     faces = []
 
+    minb = 0
     maxb = 2*np.pi
     if dshape:
+        minb = -np.pi/2
         maxb = np.pi*N2/(N2-1)
+
     
     if hole:
         for j in range(N2):
-            b = maxb*j/N2
-            verts.append(Vector((-1.*xadd,hrad*np.sin(b)+yadd,hrad*np.cos(b))))
+            b = maxb*j/N2 + minb
+            verts.append(Vector((hrad*np.cos(b) + xadd, hrad*np.sin(b), -zadd)))
     for j in range(N2):
-        b = maxb*j/N2
-        verts.append(Vector((-1.*xadd,lrad*np.sin(b)+yadd,lrad*np.cos(b))))
+        b = maxb*j/N2 + minb
+        verts.append(Vector((lrad*np.cos(b) + xadd, lrad*np.sin(b), -zadd)))
 
     if hole:
         for j in range(N2):
@@ -58,17 +64,15 @@ def add_flat_surface(lrad,N1,N2,xadd=0,yadd=0,nVerts=0,hole=False,hrad=0,dshape=
             fi3 = fi2 + N2
             faces.append([fi4,fi3,fi2,fi1])
     else:
-        faces.append([int(nVerts + x) for x in range(N2)[::-1]])
-
-    fc = np.array(faces).ravel()
+        faces.append([int(nVerts + x) for x in range(N2)])
 
     #define normals
-    normals = (N2*(1+hole))*[[1,0,0]]
+    normals = (N2*(1+hole))*[[0, 0, 1]]
 
     return verts, faces, normals
 
 
-def add_sqflat_surface(lwidth, N1, N2, xadd=0,yadd=0,nVerts=0,dshape=False):
+def add_sqflat_surface(lwidth, N1, N2, zadd=0, xadd=0, nVerts=0, dshape=False):
     """Flat surface with square cross-section"""
 
     verts = []
@@ -76,38 +80,27 @@ def add_sqflat_surface(lwidth, N1, N2, xadd=0,yadd=0,nVerts=0,dshape=False):
     N_tot = 2*(N1+N2) - 4 #number of points around the outline
 
     if dshape:
-        y0 = 0
+        x0 = 0
     else:
-        y0 = -lwidth
+        x0 = -lwidth
 
     """Vertices added in same order as for sqspherical, but outline only"""
     # left side
     for i in range(N2):
-        z = 2*(i/(N2-1) - 0.5)*lwidth
-        verts.append(Vector((-1.*xadd, y0, z)))
+        y = 2*(i/(N2-1) - 0.5)*lwidth
+        verts.append(Vector((x0, y, -zadd)))
     # bottom and top, alternating
     for i in range(1, N1-1):
         if dshape:
-            y = (i/(N1-1))*lwidth
+            x = (i/(N1-1))*lwidth
         else:
-            y = 2*(i/(N1-1) - 0.5)*lwidth
-        verts.append(Vector((-1.*xadd, y, -lwidth)))
-        verts.append(Vector((-1.*xadd, y, lwidth)))
+            x = 2*(i/(N1-1) - 0.5)*lwidth
+        verts.append(Vector((x, -lwidth, -zadd)))
+        verts.append(Vector((x, lwidth, -zadd)))
     # right side
     for i in range(N2):
-        z = 2*(i/(N2-1) - 0.5)*lwidth
-        verts.append(Vector((-1.*xadd, lwidth, z)))
-
-    """
-    if dshape:
-        verts.append(Vector((-1.*xadd, 0, -lwidth)))
-        verts.append(Vector((-1.*xadd, 0, lwidth)))
-    else:
-        verts.append(Vector((-1.*xadd, -lwidth, -lwidth)))
-        verts.append(Vector((-1.*xadd, -lwidth, lwidth)))
-    verts.append(Vector((-1.*xadd, lwidth, lwidth)))
-    verts.append(Vector((-1.*xadd, lwidth, -lwidth)))
-    """
+        y = 2*(i/(N2-1) - 0.5)*lwidth
+        verts.append(Vector((lwidth, y, -zadd)))
 
     # Face construction: left-b2t + top-l2r + right-t2b + bottom-r2l
     faces = [i for i in range(N2)] + [2*i + 1 + N2 for i in range(N1-2)] + [i + N2 + 2*(N1 - 2) for i in range(N2)[::-1]] + [2*i + N2 for i in range(N1-2)[::-1]]
@@ -117,10 +110,6 @@ def add_sqflat_surface(lwidth, N1, N2, xadd=0,yadd=0,nVerts=0,dshape=False):
     faces = [[x + nVerts for x in faces]]
 
     #define normals
-    normals = N_tot*[[1,0,0]]
+    normals = N_tot*[[0, 0, 1]]
 
     return verts, faces, normals
-
-def add_rectflat_surface():
-    """Flat surface with rectangular cross-section"""
-    pass

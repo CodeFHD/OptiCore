@@ -21,7 +21,7 @@ bl_info = {
     "name": "OptiCore",
     "author": "Johannes Hinrichs (CodeFHD)",
     "version": (2, 0),
-    "blender": (4, 2, 1),
+    "blender": (4, 2, 5),
     "location": "View3D > Add > Mesh",
     "description": "Adds a new optical element",
     "warning": "",
@@ -58,7 +58,7 @@ class OBJECT_MT_opticsmenu(bpy.types.Menu):
 
     def draw(self, context):
         self.layout.operator(OBJECT_OT_add_lens.bl_idname)
-        self.layout.operator(OBJECT_OT_add_sqlens.bl_idname)
+        # self.layout.operator(OBJECT_OT_add_sqlens.bl_idname)
         self.layout.operator(OBJECT_OT_add_mirror.bl_idname)
         self.layout.operator(OBJECT_OT_add_CCretro.bl_idname)
         self.layout.operator(OBJECT_OT_add_siemens.bl_idname)
@@ -86,11 +86,13 @@ def add_lens_button(self, context):
         OBJECT_OT_add_lens.bl_idname,
         text="Add Lens",
         icon='PLUGIN')
+"""
 def add_lsqens_button(self, context):
     self.layout.operator(
         OBJECT_OT_add_sqlens.bl_idname,
         text="Add Square Lens",
         icon='PLUGIN')
+"""
 def add_mirror_button(self, context):
     self.layout.operator(
         OBJECT_OT_add_mirror.bl_idname,
@@ -136,7 +138,7 @@ def add_mirror_manual_map():
 """
 
 classes = (OBJECT_OT_reset_performance_variables,
-           OBJECT_OT_add_lens, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro,
+           OBJECT_OT_add_lens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro, # , OBJECT_OT_add_sqlens
            OBJECT_OT_add_siemens, OBJECT_OT_load_zmx, # OBJECT_OT_test_zmx,
           OBJECT_OT_add_table,OBJECT_OT_add_post)
 menus = (OBJECT_MT_opticsmenu, OBJECT_MT_optomechmenu)

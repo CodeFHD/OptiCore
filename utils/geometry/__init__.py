@@ -19,6 +19,14 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
+"""
+To apply rotation matrix R to a vector V of shape (3,):
+np.matmul(R, V)
+
+to apply to a multiple vector U of shape (N, 3)
+np.matmul(R, U.T).T
+"""
+
 def get_rotmat_x(phi):
     R = [[1, 0, 0],
          [0, np.cos(phi),-np.sin(phi)],
@@ -34,5 +42,70 @@ def get_rotmat_y(phi):
 def get_rotmat_z(phi):
     R = [[np.cos(phi), -np.sin(phi), 0],
          [np.sin(phi), np.cos(phi), 0],
-         [1, 0, 1]]
+         [0, 0, 1]]
     return np.array(R)
+
+def rotate_vector_x(V, surf_rotation):
+    input_is_array = isinstance(V, np.ndarray)
+    R_z = get_rotmat_x(surf_rotation)
+    if input_is_array:
+        V = np.matmul(R_z, V.T).T
+    else:
+        V = np.array(V)
+        V = np.matmul(R_z, V)
+        V = [V[0], V[1], V[2]]
+    return V
+
+def rotate_vector_y(V, surf_rotation):
+    input_is_array = isinstance(V, np.ndarray)
+    R_z = get_rotmat_y(surf_rotation)
+    if input_is_array:
+        V = np.matmul(R_z, V.T).T
+    else:
+        V = np.array(V)
+        V = np.matmul(R_z, V)
+        V = [V[0], V[1], V[2]]
+    return V
+
+def rotate_vector_z(V, surf_rotation):
+    input_is_array = isinstance(V, np.ndarray)
+    R_z = get_rotmat_z(surf_rotation)
+    if input_is_array:
+        V = np.matmul(R_z, V.T).T
+    else:
+        V = np.array(V)
+        V = np.matmul(R_z, V)
+        V = [V[0], V[1], V[2]]
+    return V
+
+
+""" TEST """
+
+if __name__ == '__main__':
+    print()
+    testvector = np.arange(3)
+    print('Testvector:')
+    print(testvector)
+    print()
+    R = get_rotmat_z(np.pi/4)
+    print('Rotmat:')
+    print(R)
+    print()
+    result = np.matmul(R, testvector)
+    print('Result:')
+    print(result)
+    print()
+    print('-'*60)
+    print()
+    testvector = np.arange(5*3).reshape((5,3))
+    print('Testvector (long):')
+    print(testvector)
+    print()
+    R = get_rotmat_z(np.pi/4)
+    print('Rotmat:')
+    print(R)
+    print()
+    result = np.matmul(R, testvector.T).T
+    print('Result:')
+    print(result)
+    print()

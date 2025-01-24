@@ -64,7 +64,10 @@ def intersect_cylinder(O, D, C, surf_rotation, r):
     """
     n_rays = O.shape[0]
     ones = np.ones(n_rays)
-    b_cyl = [np.cos(surf_rotation), np.sin(surf_rotation), 0]
+    # Explanation of surfrot: at 0 deg rotation the curvature is along the x-axis (y-axis displayed in Blender)
+    # The axis perpendicular to this, i.e. along the y-axis
+    # surfrot is defined to rotate counterclockwise , ending 
+    b_cyl = [np.sin(-surf_rotation), np.cos(-surf_rotation), 0]
     b_cyl = np.array(b_cyl)
     
     # Step 1: transform ray into local coordinate system

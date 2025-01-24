@@ -21,25 +21,29 @@ import numpy as np
 
 from mathutils import Vector
 
+"""
+This _fixN1, _fixN2 mechanic seems to not have been needed
+rest of code would have broken due to implementation if it had been used.
+Commented out for now, see what happens for some time then delete.
+
 def _fixN1(N1, alpha):
-    """
-    recursive function to test and reduce N1 until condition is met
-    """
+    # recursive function to test and reduce N1 until condition is met
     if (1 - alpha)**(N1 - 2) > 0.01:
         return N1
     else:
         return _fixN1(N1-1, alpha)
 
 def _fixN2(N2, maxb):
-    """
-    recursive function to test and increase N2 until condition is met
-    """
+    # recursive function to test and increase N2 until condition is met
     if maxb/N2 < 1:
         return N2
     else:
         return _fixN2(N2+1, maxb)
+"""
 
-def add_spherical_surface(rad, lrad, N1, N2, xadd=0, nVerts=0, cylinderaxis=None,
+
+
+def add_spherical_surface(rad, lrad, N1, N2, zadd=0, nVerts=0, cylinderaxis=None,
                           hole=False, hrad=0, dshape=False, lrad_ext=0):
     #TODO: Could parse arguments by kwargs-dict to keep function call short, then pop here
 
@@ -47,8 +51,10 @@ def add_spherical_surface(rad, lrad, N1, N2, xadd=0, nVerts=0, cylinderaxis=None
     faces = []
     normals = []
 
+    minb = 0
     maxb = 2*np.pi
     if dshape:
+        minb = -np.pi/2
         maxb = np.pi*N2/(N2-1)
 
     sig = 1
@@ -60,8 +66,8 @@ def add_spherical_surface(rad, lrad, N1, N2, xadd=0, nVerts=0, cylinderaxis=None
 
     # central vertex only without hole
     if not hole:
-        verts.append(Vector((-xadd,0,0)))
-        normals.append((1,0,0))
+        verts.append(Vector((0, 0, -zadd)))
+        normals.append((0, 0, 1))
         hang = 0 # angle where first ring is placed
     else:
         hang = np.arcsin(hrad/rad)
@@ -71,27 +77,27 @@ def add_spherical_surface(rad, lrad, N1, N2, xadd=0, nVerts=0, cylinderaxis=None
         a = hang + (ang-hang)*(i+nhole)/(N1 - hole - (lrad_ext > lrad))
         r0 = rad*np.sin(a)
         for j in range(N2):
-            b = maxb*j/N2
+            b = maxb*j/N2 + minb
+            x = r0*np.cos(b)
             y = r0*np.sin(b)
-            z = r0*np.cos(b)
             if cylinderaxis == 'X':
-                r = y
+                r = x
             elif cylinderaxis == 'Y':
-                r = z
+                r = y
             else:
                 r = r0
-            x = rad-np.sqrt(rad**2-r**2)
-            verts.append(Vector((-1.*x*sig-xadd,y,z)))
-            normals.append((np.cos(a),
+            z = rad-np.sqrt(rad**2-r**2)
+            verts.append(Vector((x, y, -z*sig-zadd)))
+            normals.append((sig*np.sin(a)*np.cos(b),
                             sig*np.sin(a)*np.sin(b),
-                            sig*np.sin(a)*np.cos(b)))
+                            np.cos(a)))
             if dshape and j==N2-1:
                 pass
             elif i == 0:
                 fi1 = nVerts
                 fi2 = fi1 + ((j+1)%N2+1)
                 fi3 = fi1 + (j+1)
-                faces.append([fi1,fi2,fi3])
+                faces.append([fi3,fi2,fi1])
             else:
                 fi1 = nVerts + j+nhole+i*N2
                 fi2 = nVerts + (j+1)%N2+nhole+i*N2
@@ -99,19 +105,20 @@ def add_spherical_surface(rad, lrad, N1, N2, xadd=0, nVerts=0, cylinderaxis=None
                 fi4 = fi1 - N2
                 if cylinderaxis is not None:
                     # in this case faces must be added as tris because 4 vertices will not lie in a plane in general
-                    faces.append([fi4, fi3, fi2])
-                    faces.append([fi4, fi2, fi1])
+                    faces.append([fi2, fi3, fi4])
+                    faces.append([fi1, fi2, fi4])
                 else:
-                    faces.append([fi4,fi3,fi2,fi1])
+                    faces.append([fi1,fi2,fi3,fi4])
+                    #faces.append([fi4,fi3,fi2,fi1])
 
     #if there is flat annulus, add the outer ring
     if lrad_ext > lrad:
         i = N1 - 2
         r = lrad_ext       
         for j in range(N2):
-            b = maxb*j/N2
-            verts.append(Vector((-1.*x*sig - xadd,r*np.sin(b),r*np.cos(b))))
-            normals.append((1,0,0))
+            b = maxb*j/N2 + minb
+            verts.append(Vector((r*np.cos(b), r*np.sin(b), -z*sig - zadd)))
+            normals.append((0, 0, 1))
             if dshape and j==N2-1:
                 pass
             else:
@@ -119,15 +126,16 @@ def add_spherical_surface(rad, lrad, N1, N2, xadd=0, nVerts=0, cylinderaxis=None
                 fi2 = nVerts + ((j+1)%N2+nhole+i*N2) + N2
                 fi3 = fi2 - N2
                 fi4 = fi1 - N2
-                faces.append([fi4,fi3,fi2,fi1])
+                faces.append([fi1,fi2,fi3,fi4])
+                #faces.append([fi4,fi3,fi2,fi1])
             
-    return verts, faces, normals, N1, N2
+    return verts, faces, normals#, N1, N2
 
 
-def add_sqspherical_surface(rad, lwidth, N1, N2, xadd=0,nVerts=0,
+def add_sqspherical_surface(rad, lwidth, N1, N2, zadd=0, nVerts=0,
                             cylinderaxis=None, dshape=False, lwidth_ext=0):
     """
-    xadd has to be set for second surface (only)
+    zadd has to be set for second surface (only)
     """
 
     verts = []
@@ -195,11 +203,11 @@ def add_sqspherical_surface(rad, lwidth, N1, N2, xadd=0,nVerts=0,
             else:
                 r = np.sqrt(y**2 + z**2)
             x = rad - np.sqrt(rad**2 - r**2)
-            verts.append(Vector((-1.*x*sig - xadd, y, z)))
+            verts.append(Vector((y, z, -x*sig - zadd)))
             ang = np.arctan2(z + lwidth_ext/(N2-1), y + lwidth_ext/(N1-1))
             # Normals
             if is_flangevert:
-                normals.append((1., 0, 0))
+                normals.append((0, 0, 1))
             else:
                 a = np.arcsin(r/rad)
                 if cylinderaxis == 'X':
@@ -208,9 +216,9 @@ def add_sqspherical_surface(rad, lwidth, N1, N2, xadd=0,nVerts=0,
                     b = 0
                 else:
                     b = np.arctan2(y, z)
-                normals.append((np.cos(a),
-                                sig*np.sin(a)*np.sin(b),
-                                sig*np.sin(a)*np.cos(b)))
+                normals.append((sig*np.sin(a)*np.sin(b),
+                                sig*np.sin(a)*np.cos(b),
+                                np.cos(a)))
             # marker for face generation
             cond1 = N2%2 == 0
             cond2 = j==int(N2/2 - 1) or (i==int(N1/2 - 1) and not dshape)

@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024, Johannes Hinrichs
+Copyright 2019-2025, Johannes Hinrichs
 
 This file is part of OptiCore.
 
@@ -19,6 +19,7 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 
 from urllib.request import proxy_bypass
 import bpy
+from bpy.types import SEQUENCER_PT_sequencer_overlay_strips
 import numpy as np
 
 from mathutils import Vector
@@ -60,6 +61,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
         default = "default",
         description="Select which settings are displayed in this window.",
            )
+    """Optical layout"""
     makedoublet : EnumProperty(
         name="Lens configuration",
         items = {("1", "Singlet", ""),
@@ -71,78 +73,178 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             name="Square Lens",
             default=False,
            )
+    ltype_options = {("flat", "Flat", ""),
+                    ("rotational","Standard",""),
+                    ("cylindrical","Cylindrical",""),
+                    #("cylindricY","Cylindrical (Y)",""),
+                    ("toric", "Toric", "")}
     ltype1 : EnumProperty(
-           name="Surface 1 Type",
-           items = {("rotational","Standard",""),
-                    ("cylindricX","Cylindrical (X)",""),
-                    ("cylindricY","Cylindrical (Y)","")},
+           name="",
+           items = ltype_options,
            default = "rotational",
            description="Shape of Surface 1",
            #options={'HIDDEN'},
            )
     ltype2 : EnumProperty(
-           name="Surface 2 Type",
-           items = {("rotational","Standard",""),
-                    ("cylindricX","Cylindrical (X)",""),
-                    ("cylindricY","Cylindrical (Y)","")},
+           name="",
+           items = ltype_options,
            default = "rotational",
            description="Shape of Surface 2",
            #options={'HIDDEN'},
            )
     ltype3 : EnumProperty(
-           name="Surface 3 Type",
-           items = {("rotational","Standard",""),
-                    ("cylindricX","Cylindrical (X)",""),
-                    ("cylindricY","Cylindrical (Y)","")},
+           name="",
+           items = ltype_options,
            default = "rotational",
            description="Shape of Surface 3",
            #options={'HIDDEN'},
            )
     ltype4 : EnumProperty(
-           name="Surface 4 Type",
-           items = {("rotational","Standard",""),
-                    ("cylindricX","Cylindrical (X)",""),
-                    ("cylindricY","Cylindrical (Y)","")},
+           name="",
+           items = ltype_options,
            default = "rotational",
            description="Shape of Surface 4",
            #options={'HIDDEN'},
            )
-    rad1 : FloatProperty(
-           name="Surface 1 Radius",
+    """Surface parameters (optical)"""
+    # primary radius
+    RY1 : FloatProperty(
+           name="",
            default = 61.47,
-           description="Radius of Curvature of Surface 1",
+           description="Radius of Curvature",
            unit = "LENGTH",
            )
-    rad2 : FloatProperty(
-           name="Surface 2 Radius",
+    RY2 : FloatProperty(
+           name="",
            default = -44.64,
            description="Radius of Curvature of Surface 2",
            unit = "LENGTH",
            )
-    rad3 : FloatProperty(
-           name="Surface 3 Radius",
+    RY3 : FloatProperty(
+           name="",
            default = -129.94,
            description="Radius of Curvature of Surface 3",
            unit = "LENGTH",
            )
-    rad4 : FloatProperty(
-           name="Surface 4 Radius",
+    RY4 : FloatProperty(
+           name="",
            default = -126.,
            description="Radius of Curvature of Surface 4",
            unit = "LENGTH",
            )
-    num1 : IntProperty(
-           name="N1",
-           default = 32,
-           description="Number of radial vertices",
-           min=6,
+    # secondary radius
+    RZ1 : FloatProperty(
+           name="",
+           default = 61.47,
+           description="Second radius of curvature (for cylindric/toric lenses)",
+           unit = "LENGTH",
            )
-    num2 : IntProperty(
-           name="N2",
-           default = 64,
-           description="Number of angular vertices",
-           min=6,
+    RZ2 : FloatProperty(
+           name="",
+           default = 61.47,
+           description="Second radius of curvature (for cylindric/toric lenses)",
+           unit = "LENGTH",
            )
+    RZ3 : FloatProperty(
+           name="",
+           default = 61.47,
+           description="Second radius of curvature (for cylindric/toric lenses)",
+           unit = "LENGTH",
+           )
+    RZ4 : FloatProperty(
+           name="",
+           default = 61.47,
+           description="Second radius of curvature (for cylindric/toric lenses)",
+           unit = "LENGTH",
+           )
+    # surface rotation
+    surfrot1 : FloatProperty(
+           name="",
+           default = 0,
+           min = -2*np.pi,
+           max = 2*np.pi,
+           description="Rotation of surface around x-axis",
+           unit = "ROTATION",
+           )
+    surfrot2 : FloatProperty(
+           name="",
+           default = 0,
+           min = -2*np.pi,
+           max = 2*np.pi,
+           description="Rotation of surface around x-axis",
+           unit = "ROTATION",
+           )
+    surfrot3 : FloatProperty(
+           name="",
+           default = 0,
+           min = -2*np.pi,
+           max = 2*np.pi,
+           description="Rotation of surface around x-axis",
+           unit = "ROTATION",
+           )
+    surfrot4 : FloatProperty(
+           name="",
+           default = 0,
+           min = -2*np.pi,
+           max = 2*np.pi,
+           description="Rotation of surface around x-axis",
+           unit = "ROTATION",
+           )
+    # aspheric coefficients
+    #THIS DIDN'T WORK
+    #ASPDEG : IntProperty(
+    #       name='ASPDEG',
+    #       default = 3,
+    #       description = "Maximum Degree of Aspheric Coefficients to be Displayed",
+    #       min = 3,
+    #       max = 12,
+    #       )
+    ASPDEG = 3
+    k1 : FloatProperty(
+           name="",
+           default = 0.,
+           description="Conic constant",
+           )
+    A1 : FloatVectorProperty(
+           name="",
+           default = list([0. for i in range(ASPDEG)]),
+           description="Aspheric correction coefficients",
+           size = ASPDEG,
+           )
+    k2 : FloatProperty(
+           name="",
+           default = 0.,
+           description="Aspheric conical constant",
+           )
+    A2 : FloatVectorProperty(
+           name="",
+           default = list([0. for i in range(ASPDEG)]),
+           description="Aspheric correction coefficients",
+           size = ASPDEG,
+           )
+    k3 : FloatProperty(
+           name="",
+           default = 0.,
+           description="Aspheric conical constant",
+           )
+    A3 : FloatVectorProperty(
+           name="",
+           default = list([0. for i in range(ASPDEG)]),
+           description="Aspheric correction coefficients",
+           size = ASPDEG,
+           )
+    k4 : FloatProperty(
+           name="",
+           default = 0.,
+           description="Aspheric conical constant",
+           )
+    A4 : FloatVectorProperty(
+           name="",
+           default = list([0. for i in range(ASPDEG)]),
+           description="Aspheric correction coefficients",
+           size = ASPDEG,
+           )
+    """Surface parameters (mechanical)"""
     lensradius : FloatProperty(
            name="Lens Radius",
            default = 12.5,
@@ -150,35 +252,35 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            unit = "LENGTH",
            )
     flangerad1 : FloatProperty(
-           name="Flange Width Surface 1",
+           name="",
            default = 0.,
-           description="Flange Width Surface 1",
+           description="Flange Width",
            unit = "LENGTH",
            min = 0,
            )
     flangerad2 : FloatProperty(
-           name="Flange Width Surface 2",
+           name="",
            default = 0.,
            description="Flange Width Surface 2",
            unit = "LENGTH",
            min = 0,
            )
     flangerad3 : FloatProperty(
-           name="Flange Width Surface 3",
+           name="",
            default = 0.,
            description="Flange Width Surface 3",
            unit = "LENGTH",
            min = 0,
            )
     flangerad4 : FloatProperty(
-           name="Flange Width Surface 4",
+           name="",
            default = 0.,
            description="Flange Width Surface 4",
            unit = "LENGTH",
            min = 0,
            )
     centerthickness1 : FloatProperty(
-           name="Center Thickness",
+           name="Center Thickness 1",
            default = 6.,
            description="Center thickness of lens",
            unit = "LENGTH",
@@ -195,116 +297,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            description="Center thickness of lens segment 3",
            unit = "LENGTH",
            )
-    #THIS DIDN'T WORK
-    #ASPDEG : IntProperty(
-    #       name='ASPDEG',
-    #       default = 3,
-    #       description = "Maximum Degree of Aspheric Coefficients to be Displayed",
-    #       min = 3,
-    #       max = 12,
-    #       )
-    ASPDEG = 3
-    k1 : FloatProperty(
-           name="k",
-           default = 0.,
-           description="Aspheric conical constant",
-           )
-    A1 : FloatVectorProperty(
-           name="A",
-           # default = (1e-5,0.,0.), # for testing
-           default = list([0. for i in range(ASPDEG)]),
-           description="Aspheric correction coefficients",
-           size = ASPDEG,
-           )
-    k2 : FloatProperty(
-           name="k2",
-           default = 0.,
-           description="Aspheric conical constant",
-           )
-    A2 : FloatVectorProperty(
-           name="A2",
-           default = list([0. for i in range(ASPDEG)]),
-           description="Aspheric correction coefficients",
-           size = ASPDEG,
-           )
-    k3 : FloatProperty(
-           name="k3",
-           default = 0.,
-           description="Aspheric conical constant",
-           )
-    A3 : FloatVectorProperty(
-           name="A3",
-           default = list([0. for i in range(ASPDEG)]),
-           description="Aspheric correction coefficients",
-           size = ASPDEG,
-           )
-    k4 : FloatProperty(
-           name="k4",
-           default = 0.,
-           description="Aspheric conical constant",
-           )
-    A4 : FloatVectorProperty(
-           name="A4",
-           default = list([0. for i in range(ASPDEG)]),
-           description="Aspheric correction coefficients",
-           size = ASPDEG,
-           )
-    material_name1 : StringProperty(
-            name="Material1",
-            description="Material Surface 1",
-            default="",
-           )
-    material_name2 : StringProperty(
-            name="Material2",
-            description="Material Surface 2",
-            default="",
-           )
-    material_name3 : StringProperty(
-            name="Material3",
-            description="Material Surface 3",
-            default="",
-           )
-    material_name4 : StringProperty(
-            name="Material4",
-            description="Material Surface 4",
-            default="",
-           )
-    shade_smooth : BoolProperty(
-            name="Smooth Shading",
-            default=True,
-           )
-    smooth_type : BoolProperty(
-            name="Use Custom Normals",
-            default=True,
-           )
-    dshape : BoolProperty(
-            name="Cross-section Model",
-            default=False,
-           )
-    display_edit : BoolProperty(
-            name="Display Edit Mode",
-            default=False,
-           )
-    wavelength : StringProperty(
-            name="Wavelengths",
-            default="e;F';C'",
-            description="Wavelengths for calculations and ray tracing. Values are separated by semicolon. The first value is taken as the primary wavelength. Values can either be entered in nanometers or using Fraunhofer line letters ",
-           )
-    ior1 : FloatProperty(
-           name="IOR 1",
-           default = 1.5168, # N-BK7 Schott
-           description="Index of Refraction of first lens section. Not transferred to material, only for paraxial infromations.",
-           )
-    ior2 : FloatProperty(
-           name="IOR 2",
-           default = 1.67271, # N-SF5 Schott
-           description="Index of Refraction of second lens section. Not transferred to material, only for paraxial infromations.",
-           )
-    ior3 : FloatProperty(
-           name="IOR 3",
-           default = 1.62005, # N-F2 Schott
-           description="Index of Refraction of third lens section. Not transferred to material, only for paraxial infromations.",
-           )
+    """System analysis (output only)"""
     def get_flen(self):
         return self.flen_intern
     flen_intern : FloatProperty(
@@ -331,6 +324,27 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            description="RMS spot size of the ray trace in the sensor plane",
            get=get_rmsspotsize,
            )
+    """Sequential ray tracing"""
+    wavelength : StringProperty(
+            name="Wavelengths",
+            default="e;F';C'",
+            description="Wavelengths for calculations and ray tracing. Values are separated by semicolon. The first value is taken as the primary wavelength. Values can either be entered in nanometers or using Fraunhofer line letters ",
+           )
+    ior1 : FloatProperty(
+           name="IOR 1",
+           default = 1.5168, # N-BK7 Schott
+           description="Index of Refraction of first lens section. Not transferred to material, only for paraxial infromations.",
+           )
+    ior2 : FloatProperty(
+           name="IOR 2",
+           default = 1.67271, # N-SF5 Schott
+           description="Index of Refraction of second lens section. Not transferred to material, only for paraxial infromations.",
+           )
+    ior3 : FloatProperty(
+           name="IOR 3",
+           default = 1.62005, # N-F2 Schott
+           description="Index of Refraction of third lens section. Not transferred to material, only for paraxial infromations.",
+           )
     addrayfan : BoolProperty(
             name="Add Ray Fan",
             default=False,
@@ -352,8 +366,9 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
                     ("3D_square","3D square",""),
                     ("3D_tri","3D tris",""),
                     ("3D_random","3D random",""),
-                    ("2D_finite","2D Finite",""),
-                    ("3D_rings", "3D rings", ""),},
+                    ("2D_finite","2D - finite",""),
+                    ("3D_rings", "3D rings", ""),
+                    ("3D_rings_finite", "3D rings - finite", ""),},
            default = "2D",
            description="Ray Fan Type",
            #options={'HIDDEN'},
@@ -381,6 +396,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             name="Trace Ray Fan to Scene",
             default=False,
            )
+    """Optimization parameters"""
     autofocus : BoolProperty(
             name="RMS-Focus",
             description='Attempt to autofocus by ray tracing and evaluating the RMS spot size',
@@ -408,6 +424,55 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            description="Paraxial EFL of the lens used in autosolver.",
            min=1.,
            )
+    """Mesh options"""
+    material_name1 : StringProperty(
+            name="Material1",
+            description="Material Surface 1",
+            default="",
+           )
+    material_name2 : StringProperty(
+            name="Material2",
+            description="Material Surface 2",
+            default="",
+           )
+    material_name3 : StringProperty(
+            name="Material3",
+            description="Material Surface 3",
+            default="",
+           )
+    material_name4 : StringProperty(
+            name="Material4",
+            description="Material Surface 4",
+            default="",
+           )
+    num1 : IntProperty(
+           name="N1",
+           default = 32,
+           description="Number of radial vertices",
+           min=6,
+           )
+    num2 : IntProperty(
+           name="N2",
+           default = 64,
+           description="Number of angular vertices",
+           min=6,
+           )
+    shade_smooth : BoolProperty(
+            name="Smooth Shading",
+            default=True,
+           )
+    smooth_type : BoolProperty(
+            name="Use Custom Normals",
+            default=True,
+           )
+    dshape : BoolProperty(
+            name="Cross-section Model",
+            default=False,
+           )
+    display_edit : BoolProperty(
+            name="Display Edit Mode",
+            default=False,
+           )
 
     def draw(self, context):
         md = self.makedoublet
@@ -419,10 +484,10 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col.prop(self, 'flen')
             col.prop(self, 'rmsspotsize')
             col.prop(self, 'lensradius')
-            col.prop(self, 'rad1')
-            col.prop(self, 'rad2')
-            col.prop(self, 'rad3')
-            col.prop(self, 'rad4')
+            col.prop(self, 'RY1')
+            col.prop(self, 'RY2')
+            col.prop(self, 'RY3')
+            col.prop(self, 'RY4')
             col.prop(self, 'centerthickness1')
             col.prop(self, 'centerthickness2')
             col.prop(self, 'centerthickness3')
@@ -434,29 +499,108 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col.prop(self, 'flen')
             col.prop(self, 'rmsspotsize')
             col.prop(self, 'lensradius')
+            #
+            box = col.box()
+            lrow = box.row()
+            lrow.alignment="CENTER"
+            lrow.label(text="Surface 1")
+            brow = box.split(factor=0.2)
+            bcol1 = brow.column(align=True)
+            bcol1.label(text="Shape")
+            bcol1.label(text="Rotation")
+            bcol1.label(text="Radius")
+            bcol1.label(text="\u03BA")
+            bcol1.label(text="A4")
+            bcol1.label(text="A6")
+            bcol1.label(text="A8")
+            bcol1.label(text="Flange")
+            bcol2 = brow.column(align=True)
+            bcol2.prop(self, 'ltype1')
+            bcol2.prop(self, 'surfrot1', emboss=self.ltype1 in ['cylindrical', 'toric'])
+            radrow = bcol2.row()
+            radrow.prop(self, 'RY1')
+            radrow.prop(self, 'RZ1', emboss=self.ltype1 in ['toric'])
+            bcol2.prop(self, 'k1')
+            bcol2.prop(self, 'A1')
+            bcol2.prop(self, 'flangerad1')
+            #
             col.prop(self, 'centerthickness1')
+            #
+            box = col.box()
+            lrow = box.row()
+            lrow.alignment="CENTER"
+            lrow.label(text="Surface 2")
+            brow = box.split(factor=0.2)
+            bcol1 = brow.column(align=True)
+            bcol1.label(text="Shape")
+            bcol1.label(text="Rotation")
+            bcol1.label(text="Radius")
+            bcol1.label(text="\u03BA")
+            bcol1.label(text="A4")
+            bcol1.label(text="A6")
+            bcol1.label(text="A8")
+            bcol1.label(text="Flange")
+            bcol2 = brow.column(align=True)
+            bcol2.prop(self, 'ltype2')
+            bcol2.prop(self, 'surfrot2', emboss=self.ltype2 in ['cylindrical', 'toric'])
+            radrow = bcol2.row()
+            radrow.prop(self, 'RY2')
+            radrow.prop(self, 'RZ2', emboss=self.ltype2 in ['toric'])
+            bcol2.prop(self, 'k2')
+            bcol2.prop(self, 'A2')
+            bcol2.prop(self, 'flangerad2')
+            #
             col.prop(self, 'centerthickness2')
+            #
+            box = col.box()
+            lrow = box.row()
+            lrow.alignment="CENTER"
+            lrow.label(text="Surface 3")
+            brow = box.split(factor=0.2)
+            bcol1 = brow.column(align=True)
+            bcol1.label(text="Shape")
+            bcol1.label(text="Rotation")
+            bcol1.label(text="Radius")
+            bcol1.label(text="\u03BA")
+            bcol1.label(text="A4")
+            bcol1.label(text="A6")
+            bcol1.label(text="A8")
+            bcol1.label(text="Flange")
+            bcol2 = brow.column(align=True)
+            bcol2.prop(self, 'ltype3')
+            bcol2.prop(self, 'surfrot3', emboss=self.ltype3 in ['cylindrical', 'toric'])
+            radrow = bcol2.row()
+            radrow.prop(self, 'RY3')
+            radrow.prop(self, 'RZ3', emboss=self.ltype3 in ['toric'])
+            bcol2.prop(self, 'k3')
+            bcol2.prop(self, 'A3')
+            bcol2.prop(self, 'flangerad3')
+            #
             col.prop(self, 'centerthickness3')
-            col.prop(self, 'ltype1')
-            col.prop(self, 'rad1')
-            col.prop(self, 'k1')
-            col.prop(self, 'A1')
-            col.prop(self, 'flangerad1')
-            col.prop(self, 'ltype2')
-            col.prop(self, 'rad2')
-            col.prop(self, 'k2')
-            col.prop(self, 'A2')
-            col.prop(self, 'flangerad2')
-            col.prop(self, 'ltype3')
-            col.prop(self, 'rad3')
-            col.prop(self, 'k3')
-            col.prop(self, 'A3')
-            col.prop(self, 'flangerad3')
-            col.prop(self, 'ltype4')
-            col.prop(self, 'rad4')
-            col.prop(self, 'k4')
-            col.prop(self, 'A4')
-            col.prop(self, 'flangerad4')
+            #
+            box = col.box()
+            lrow = box.row()
+            lrow.alignment="CENTER"
+            lrow.label(text="Surface 4")
+            brow = box.split(factor=0.2)
+            bcol1 = brow.column(align=True)
+            bcol1.label(text="Shape")
+            bcol1.label(text="Rotation")
+            bcol1.label(text="Radius")
+            bcol1.label(text="\u03BA")
+            bcol1.label(text="A4")
+            bcol1.label(text="A6")
+            bcol1.label(text="A8")
+            bcol1.label(text="Flange")
+            bcol2 = brow.column(align=True)
+            bcol2.prop(self, 'ltype4')
+            bcol2.prop(self, 'surfrot4', emboss=self.ltype4 in ['cylindrical', 'toric'])
+            radrow = bcol2.row()
+            radrow.prop(self, 'RY4')
+            radrow.prop(self, 'RZ4', emboss=self.ltype4 in ['toric'])
+            bcol2.prop(self, 'k4')
+            bcol2.prop(self, 'A4')
+            bcol2.prop(self, 'flangerad4')
         if disp == 'geometry':
             # Location
             col.label(text="Location")
@@ -465,7 +609,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col.label(text="Rotation")
             col.prop(self, 'rotation', text="")
             col.label(text="Modelling Parameters")
-            col.prop(self, 'num1')
+            col.prop(self, 'num1', emboss=not self.squarelens)
             col.prop(self, 'num2')
             col.prop_search(self, "material_name1", bpy.data, "materials", icon="NONE")
             col.prop_search(self, "material_name2", bpy.data, "materials", icon="NONE")
@@ -516,32 +660,90 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
         # cls.centerthickness1 = cls.__annotations__['centerthickness1'].default
    
 
-def add_surface():
+def add_surface(ltype, surf_subtype, squarelens, N1, N2, lrad,
+                srad, k=None, A=None, RY2=None, k2=None, A2=None,
+                surf_rotation=0,
+                zadd=0, nVerts=0,
+                dshape=False, lrad_ext=None):
     """
     This function is a wrapper for the different surface shapes
     and returns the corresponding vertices, surface index lists and normals
+
+    to keep the code short observe the following variable names:
+    v, f, n == verts, faces, normals
     """
-    # This may need to be revised
-    N12, N22 = None, None
 
-    if srad == 0:#flat surface case
-        verts, faces, normals = sfc.add_flat_surface(lrad, N1, N2, +1, CT, nVerts=nVerts_tot, dshape=dshape)
-    elif ltype0 == 'spherical':
-        dvert, dfac, dnormals, N12, N22 = sfc.add_spherical_surface(srad, lrad, N1, N2, +1, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad_ext)
-    elif ltype0 == 'aspheric':
-        verts, faces, normals = sfc.add_aspheric_surface(srad, k, A, lrad, N1, N2, +1, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad_ext)
-    elif ltype0 == 'cylindrical':
-        pass
-    elif ltype0 == 'acylindrical':
-        pass
-    elif ltype0 == 'toric':
-        pass
-    elif ltype0 == 'atoric':
-        pass
-    elif ltype0 == 'freeform':
-        pass
+    """Rectangular cutout"""
+    if squarelens:
+        if ltype == 'flat' or surf_subtype == 'flat':
+            # flat surface
+            v, f, n = sfc.add_sqflat_surface(lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape)
+        elif ltype == 'rotational' and surf_subtype == 'spherical':
+            # normal spherical surface
+            v, f, n = sfc.add_sqspherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lwidth_ext=lrad_ext)
+        elif ltype == 'rotational' and surf_subtype != 'spherical':
+            # normal aspheric surface
+            v, f, n = sfc.add_sagsurface_rectangular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='aspheric', dshape=dshape, lrad_ext=lrad_ext)
+        elif ltype == 'cylindrical' and surf_subtype == 'spherical':
+            # normal aspheric surface
+            v, f, n = sfc.add_sagsurface_rectangular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='cylindrical', dshape=dshape, lrad_ext=lrad_ext)
+        elif ltype == 'cylindrical' and surf_subtype != 'spherical':
+            # normal aspheric surface
+            v, f, n = sfc.add_sagsurface_rectangular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='acylindrical', dshape=dshape, lrad_ext=lrad_ext)
+            """
+        elif ltype == 'cylindricX' and surf_subtype == 'spherical':
+            # X-cylinder spherical
+            v, f, n = sfc.add_sqspherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lwidth_ext=lrad_ext, cylinderaxis='X')
+        elif ltype == 'cylindricY' and surf_subtype == 'spherical':
+            # Y-cylinder spherical
+            v, f, n = sfc.add_sqspherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lwidth_ext=lrad_ext, cylinderaxis='Y')
+            """
+        elif ltype == 'toric' and surf_subtype == 'spherical':
+            v, f, n = sfc.add_sagsurface_rectangular(srad, k, A, lrad, N1, N2, zadd=zadd, nVerts=nVerts,
+                    rad2=RY2, k2=None, A2=None,
+                    surf_rotation=surf_rotation, surftype='toric',dshape=dshape, lrad_ext=lrad_ext)
+        else:
+            # in case of anything not covered by the above
+            print("This surface combination is not implemented:", ltype, surf_subtype, squarelens)
+            return None
+    else:
+        if ltype == 'flat' or surf_subtype == 'flat': #flat surface case
+            v, f, n = sfc.add_flat_surface(lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape)
+        elif ltype == 'rotational' and surf_subtype == 'spherical':
+            v, f, n = sfc.add_spherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lrad_ext=lrad_ext)
+        elif ltype == 'rotational' and surf_subtype != 'spherical':
+            v, f, n = sfc.add_sagsurface_circular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='aspheric', dshape=dshape, lrad_ext=lrad_ext)
+        elif ltype == 'cylindrical' and surf_subtype == 'spherical':
+            v, f, n = sfc.add_sagsurface_circular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='cylindrical', dshape=dshape, lrad_ext=lrad_ext)
+        elif ltype == 'cylindrical' and surf_subtype != 'spherical':
+            v, f, n = sfc.add_sagsurface_circular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='acylindrical', dshape=dshape, lrad_ext=lrad_ext)
+            """
+        elif ltype == 'cylindricX' and surf_subtype == 'spherical':
+            v, f, n = sfc.add_spherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lrad_ext=lrad_ext, cylinderaxis='X')
+        elif ltype == 'cylindricY' and surf_subtype == 'spherical':
+            v, f, n = sfc.add_spherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lrad_ext=lrad_ext, cylinderaxis='Y')
+            """
+        elif ltype == 'toric' and surf_subtype == 'spherical':
+            v, f, n = sfc.add_sagsurface_circular(srad, k, A, lrad, N1, N2, zadd=zadd, nVerts=nVerts,
+                    rad2=RY2, k2=None, A2=None,
+                    surf_rotation=surf_rotation, surftype='toric',dshape=dshape, lrad_ext=lrad_ext)
+        else:
+            print("This surface combination is not implemented:", ltype, surf_subtype, squarelens)
+            return None
 
-    verts, faces, normals, N12, N22
+    N_inside_sq = 'this_will_fail' # variable should later be overwritten, this way i will catch errors more easily
+    if squarelens:
+        # this variable is used later for side face generation
+        if ltype == 'flat' or surf_subtype == 'flat':
+            N_inside_sq = 2
+        else:
+            N_inside_sq = N2
+
+    # reorder the coordinate system to Blender covnention
+    v = [[t[2], t[0], t[1]] for t in v]
+    n = [[t[2], t[0], t[1]] for t in n]
+
+    return v, f, n, N_inside_sq
 
 def get_default_paramdict_lens():
     """
@@ -555,10 +757,18 @@ def get_default_paramdict_lens():
     paramdict['ltype2'] = "rotational"
     paramdict['ltype3'] = "rotational"
     paramdict['ltype4'] = "rotational"
-    paramdict['rad1'] = 12.
-    paramdict['rad2'] = 24.
-    paramdict['rad3'] = 24.
-    paramdict['rad4'] = 24.
+    paramdict['RY1'] = 12.
+    paramdict['RY2'] = 24.
+    paramdict['RY3'] = 24.
+    paramdict['RY4'] = 24.
+    paramdict['RZ1'] = 12.
+    paramdict['RZ2'] = 24.
+    paramdict['RZ3'] = 24.
+    paramdict['RZ4'] = 24.
+    paramdict['surfrot1'] = 0.
+    paramdict['surfrot2'] = 0.
+    paramdict['surfrot3'] = 0.
+    paramdict['surfrot4'] = 0.
     paramdict['num1'] = 32
     paramdict['num2'] = 64
     paramdict['lensradius'] = 3.
@@ -599,10 +809,18 @@ def add_lens(self, context, paramdict=None):
         ltype2 = self.ltype2
         ltype3 = self.ltype3
         ltype4 = self.ltype4
-        srad1 = self.rad1
-        srad2 = self.rad2
-        srad3 = self.rad3
-        srad4 = self.rad4
+        RY1 = self.RY1
+        RY2 = self.RY2
+        RY3 = self.RY3
+        RY4 = self.RY4
+        RZ1 = self.RZ1
+        RZ2 = self.RZ2
+        RZ3 = self.RZ3
+        RZ4 = self.RZ4
+        surfrot1 = self.surfrot1
+        surfrot2 = self.surfrot2
+        surfrot3 = self.surfrot3
+        surfrot4 = self.surfrot4
         N1 = self.num1
         N2 = self.num2
         lrad = self.lensradius
@@ -639,10 +857,18 @@ def add_lens(self, context, paramdict=None):
         ltype2 = paramdict['ltype2']
         ltype3 = paramdict['ltype3']
         ltype4 = paramdict['ltype4']
-        srad1 = paramdict['rad1']
-        srad2 = paramdict['rad2']
-        srad3 = paramdict['rad3']
-        srad4 = paramdict['rad4']
+        RY1 = paramdict['RY1']
+        RY2 = paramdict['RY2']
+        RY3 = paramdict['RY3']
+        RY4 = paramdict['RY4']
+        RZ1 = paramdict['RZ1']
+        RZ2 = paramdict['RZ2']
+        RZ3 = paramdict['RZ3']
+        RZ4 = paramdict['RZ4']
+        surfrot1 = paramdict['surfrot1']
+        surfrot2 = paramdict['surfrot2']
+        surfrot3 = paramdict['surfrot3']
+        surfrot4 = paramdict['surfrot4']
         N1 = paramdict['num1']
         N2 = paramdict['num2']
         lrad = paramdict['lensradius']
@@ -676,25 +902,38 @@ def add_lens(self, context, paramdict=None):
 
     """
     Verification of the geometry
+    and resolving of degenerate cases
     """
+    ret_dummy = utils.check_surface(lrad, flrad1, RY1, k1, A1, RZ1, None, None, ltype1, squarelens)
+    lrad1, hasfl1, flrad1, ltype1, surf_subtype_X1, surf_subtype_Y1, RY1, k1, A1, dSurfrot1 = ret_dummy
+    ret_dummy = utils.check_surface(lrad, flrad2, RY2, k2, A2, RZ2, None, None, ltype2, squarelens)
+    lrad2, hasfl2, flrad2, ltype2, surf_subtype_X2, surf_subtype_Y2, RY2, k2, A2, dSurfrot2 = ret_dummy
+    ret_dummy = utils.check_surface(lrad, flrad3, RY3, k3, A3, RZ3, None, None, ltype3, squarelens)
+    lrad3, hasfl3, flrad3, ltype3, surf_subtype_X3, surf_subtype_Y3, RY3, k3, A3, dSurfrot3 = ret_dummy
+    ret_dummy = utils.check_surface(lrad, flrad4, RY4, k4, A4, RZ4, None, None, ltype4, squarelens)
+    lrad4, hasfl4, flrad4, ltype4, surf_subtype_X4, surf_subtype_Y4, RY4, k4, A4, dSurfrot4 = ret_dummy
 
-    lrad1, hasfl1, flrad1, ssig1, surf_subtype1 = utils.check_surface(srad1, lrad, flrad1, k1, A1, ltype1, squarelens)
-    lrad2, hasfl2, flrad2, ssig2, surf_subtype2 = utils.check_surface(srad2, lrad, flrad2, k2, A2, ltype2, squarelens)
-    lrad3, hasfl3, flrad3, ssig3, surf_subtype3 = utils.check_surface(srad3, lrad, flrad3, k3, A3, ltype3, squarelens)
-    lrad4, hasfl4, flrad4, ssig4, surf_subtype4 = utils.check_surface(srad4, lrad, flrad4, k4, A4, ltype4, squarelens)
-        
+    surfrot1 = surfrot1 + dSurfrot1
+    surfrot2 = surfrot2 + dSurfrot2
+    surfrot3 = surfrot3 + dSurfrot3
+    surfrot4 = surfrot4 + dSurfrot4
+
     """
     prepare some variables
     """
     num_sides = int(md)       
     num_surfaces = int(md) + 1
     if squarelens:
+        if N2%2 == 0:
+            N2 = N2 + 1
         N1 = get_N1_sqsurface(N2, dshape)
     
     # collect into lists for looping
     ltype_list = [ltype1, ltype2, ltype3, ltype4]
-    lsubtype_list = [surf_subtype1, surf_subtype2, surf_subtype3, surf_subtype4]
-    srad_list = [srad1, srad2, srad3, srad4]
+    lsubtype_list = [surf_subtype_X1, surf_subtype_X2, surf_subtype_X3, surf_subtype_X4]
+    srad_list = [RY1, RY2, RY3, RY4]
+    RZ_list = [RZ1, RZ2, RZ3, RZ4]
+    surfrot_list = [surfrot1, surfrot2, surfrot3, surfrot4]
     k_list = [k1, k2, k3, k4]
     A_list = [A1, A2, A3, A4]
     lrad_list = [lrad1, lrad2, lrad3, lrad4]
@@ -711,53 +950,13 @@ def add_lens(self, context, paramdict=None):
     """
     Generating the vertices and faces
     """
-    
-    # keeping the separate generator algorithms for consistency testing and efficiency
-    #if k1 == 0 and np.all(np.array(A1) == 0):
-    #    ltype1 = 'spherical'
 
-    #add surface1
-    N_inside_sq_prev = 'this_will_fail' # variable should always be overwritten, this way i will catch errors more easily
-    N_inside_sq_here = 'this_fails_also'
-    if squarelens:
-        N_inside_sq_prev = N2
-        if surf_subtype1 == 'flat': #flat surface case
-            verts, faces, normals = sfc.add_sqflat_surface(lrad1, N1, N2, dshape=dshape)
-            N_inside_sq_prev = 2
-        elif ltype1 == 'rotational':
-            if surf_subtype1 == 'spherical':
-                verts, faces, normals = sfc.add_sqspherical_surface(srad1, lrad1, N1, N2, dshape=dshape, lwidth_ext=lrad)
-            else:
-                verts, faces, normals = sfc.add_aspheric_surface(srad1, k1, A1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad)
-        elif ltype1 == 'cylindricX':
-            if surf_subtype1 == 'spherical':
-                verts, faces, normals = sfc.add_sqspherical_surface(srad1, lrad1, N1, N2, dshape=dshape, lwidth_ext=lrad, cylinderaxis='X')
-            else:
-                verts, faces, normals = sfc.add_aspheric_surface(srad1, k1, A1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad)
-        elif ltype1 == 'cylindricY':
-            if surf_subtype1 == 'spherical':
-                verts, faces, normals = sfc.add_sqspherical_surface(srad1, lrad1, N1, N2, dshape=dshape, lwidth_ext=lrad, cylinderaxis='Y')
-            else:
-                verts, faces, normals = sfc.add_aspheric_surface(srad1, k1, A1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad)
-    else:
-        if surf_subtype1 == 'flat': #flat surface case
-            verts, faces, normals = sfc.add_flat_surface(lrad1,N1,N2, dshape=dshape)
-        elif ltype1 == 'rotational':
-            if surf_subtype1 == 'spherical':
-                verts, faces, normals, N1, N2 = sfc.add_spherical_surface(srad1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad)
-            else:
-                verts, faces, normals = sfc.add_aspheric_surface(srad1, k1, A1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad)
-        elif ltype1 == 'cylindricX':
-            if surf_subtype1 == 'spherical':
-                verts, faces, normals, N1, N2 = sfc.add_spherical_surface(srad1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad, cylinderaxis='X')
-            else:
-                verts, faces, normals = sfc.add_aspheric_surface(srad1, k1, A1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad)
-        elif ltype1 == 'cylindricY':
-            if surf_subtype1 == 'spherical':
-                verts, faces, normals, N1, N2 = sfc.add_spherical_surface(srad1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad, cylinderaxis='Y')
-            else:
-                verts, faces, normals = sfc.add_aspheric_surface(srad1, k1, A1, lrad1, N1, N2, dshape=dshape, lrad_ext=lrad)
-    
+    verts, faces, normals, N_inside_sq_prev = add_surface(ltype1, surf_subtype_X1, squarelens, N1, N2, lrad1,
+                                                          RY1, k=k1, A=A1,
+                                                          RY2=RZ1, k2=None, A2=None,
+                                                          surf_rotation=surfrot1,
+                                                          dshape=dshape, lrad_ext=lrad)
+
     nVerts1 = len(verts)
     nFacs1 = len(faces)
     nVerts_at_segment.append(len(verts))
@@ -768,65 +967,37 @@ def add_lens(self, context, paramdict=None):
         normalsside = sfc.get_sqringnormals(N1, N2, dshape=dshape)
     else:
         normalsside = sfc.get_ringnormals(N2, dshape=dshape)
+    normalsside = [[t[2], t[0], t[1]] for t in normalsside]
     nFacSide = N2
     
     # add further surfaces
     CT_sum = 0
-    srad_prev = srad1
+    srad_prev = RY1
     nVerts_tot = nVerts1
     nVerts_prev = nVerts1 # N2
     for i in range(1, int(md)+1):
         # get parameters for this surface
         # they are named with index 0 to avoid confusion with globals without number where that exists, e.g. lrad
         srad0 = srad_list[i]
+        srad0Z = RZ_list[i]
         lrad0 = lrad_list[i]
         CT_sum = CT_sum + CT_list[i]
         ltype0 = ltype_list[i]
         surf_subtype0 = lsubtype_list[i]
         k0 = k_list[i]
         A0 = A_list[i]
+        surfrot0 = surfrot_list[i]
         # if k0 == 0 and np.all(np.array(A0) == 0):
         #     ltype0 = 'spherical'
         
         # get the new surface and append
-        if squarelens:
-            N_inside_sq_here = N2
-            if surf_subtype0 == 'flat': #flat surface case
-                dvert, dfac, dnormals = sfc.add_sqflat_surface(lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape)
-                N_inside_sq_here = 2
-            elif ltype0 == 'rotational':
-                if surf_subtype0 == 'spherical':
-                    dvert, dfac, dnormals = sfc.add_sqspherical_surface(srad0, lrad0, N1, N2, CT_sum, nVerts = nVerts_tot, dshape=dshape, lwidth_ext=lrad)
-                else:
-                    dvert, dfac, dnormals = sfc.add_aspheric_surface(srad0, k0, A0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad)
-            elif ltype0 == 'cylindricX':
-                if surf_subtype0 == 'spherical':
-                    dvert, dfac, dnormals = sfc.add_sqspherical_surface(srad0, lrad0, N1, N2, CT_sum, nVerts = nVerts_tot, dshape=dshape, lwidth_ext=lrad, cylinderaxis='X')
-                else:
-                    dvert, dfac, dnormals = sfc.add_aspheric_surface(srad0, k0, A0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad)
-            elif ltype0 == 'cylindricY':
-                if surf_subtype0 == 'spherical':
-                    dvert, dfac, dnormals = sfc.add_sqspherical_surface(srad0, lrad0, N1, N2, CT_sum, nVerts = nVerts_tot, dshape=dshape, lwidth_ext=lrad, cylinderaxis='Y')
-                else:
-                    dvert, dfac, dnormals = sfc.add_aspheric_surface(srad0, k0, A0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad)
-        else:
-            if surf_subtype0 == 'flat': #flat surface case
-                dvert, dfac, dnormals = sfc.add_flat_surface(lrad0,N1,N2, CT_sum, nVerts=nVerts_tot, dshape=dshape)
-            elif ltype0 == 'rotational':
-                if surf_subtype0 == 'spherical':
-                    dvert, dfac, dnormals, N1, N2 = sfc.add_spherical_surface(srad0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad)
-                else:
-                    dvert, dfac, dnormals = sfc.add_aspheric_surface(srad0, k0, A0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad)
-            elif ltype0 == 'cylindricX':
-                if surf_subtype0 == 'spherical':
-                    dvert, dfac, dnormals, N1, N2 = sfc.add_spherical_surface(srad0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad, cylinderaxis='X')
-                else:
-                    dvert, dfac, dnormals = sfc.add_aspheric_surface(srad0, k0, A0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad)
-            elif ltype0 == 'cylindricY':
-                if surf_subtype0 == 'spherical':
-                    dvert, dfac, dnormals, N1, N2 = sfc.add_spherical_surface(srad0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad, cylinderaxis='Y')
-                else:
-                    dvert, dfac, dnormals = sfc.add_aspheric_surface(srad0, k0, A0, lrad0, N1, N2, CT_sum, nVerts=nVerts_tot, dshape=dshape, lrad_ext=lrad)
+
+        dvert, dfac, dnormals, N_inside_sq_here = add_surface(ltype0, surf_subtype0, squarelens, N1, N2, lrad0,
+                                                          srad0, k=k0, A=A0,
+                                                          RY2=srad0Z, k2=None, A2=None,
+                                                          surf_rotation=surfrot0,
+                                                          zadd=CT_sum, nVerts=nVerts_tot,
+                                                          dshape=dshape, lrad_ext=lrad)
 
         # flip normals for last surface
         if i==int(md):
@@ -856,12 +1027,6 @@ def add_lens(self, context, paramdict=None):
             for j in range(N2):
                 face_tmp1.append(len(verts) - j - 1)
                 face_tmp2.append(len(verts) - j - 1 - nVerts_this)
-            #for j in range(N2 - 1):
-            #    fi1 = len(verts) - j - 2
-            #    fi2 = len(verts) - j - 1
-            #    fi3 = fi2 - nVerts_this
-            #    fi4 = fi1 - nVerts_this
-            #    faces.append([fi1, fi2, fi3, fi4])
             faces.append(face_tmp1[::-1] + face_tmp2)
             # top
             face_tmp1 = []
@@ -869,20 +1034,9 @@ def add_lens(self, context, paramdict=None):
             for j in range(N1-1):
                 face_tmp1.append(nVerts_tot + (N2-1) + N_inside_sq_here*j)
                 face_tmp2.append(nVerts_tot + (N2-1) + N_inside_sq_prev*j - nVerts_prev)
-            #for j in range(N1 - 2):
-            #    fi1 = nVerts_tot + (N2-1) + N_inside_sq_here*(j+1)
-            #    fi2 = nVerts_tot + (N2-1) + N_inside_sq_here*j
-            #    fi3 = nVerts_tot + (N2-1) + N_inside_sq_prev*j - nVerts_prev
-            #    fi4 = nVerts_tot + (N2-1) + N_inside_sq_prev*(j+1)- nVerts_prev
-            #    faces.append([fi1, fi2, fi3, fi4])
             # last face needs special treatment, because row is always full even for flat surface
             face_tmp1.append(nVerts_tot + (N2-1) + N_inside_sq_here*j + N2)
             face_tmp2.append(nVerts_tot + (N2-1) + N_inside_sq_prev*j + N2 - nVerts_prev)
-            #fi1 = nVerts_tot + (N2-1) + N_inside_sq_here*(j+1) + N2
-            #fi2 = nVerts_tot + (N2-1) + N_inside_sq_here*(j+1)
-            #fi3 = nVerts_tot + (N2-1) + N_inside_sq_prev*(j+1) - nVerts_prev
-            #fi4 = nVerts_tot + (N2-1) + N_inside_sq_prev*(j+1) + N2 - nVerts_prev
-            #faces.append([fi1, fi2, fi3, fi4])
             faces.append(face_tmp1[::-1] + face_tmp2)
             # bottom
             face_tmp1 = []
@@ -890,20 +1044,9 @@ def add_lens(self, context, paramdict=None):
             # first face needs special treatment, because row is always full even for flat surface
             face_tmp1.append(nVerts_tot)
             face_tmp2.append(nVerts_tot - nVerts_prev)
-            #fi1 = nVerts_tot
-            #fi2 = nVerts_tot + N2
-            #fi3 = nVerts_tot + N2 - nVerts_prev
-            #fi4 = nVerts_tot - nVerts_prev
-            #faces.append([fi1, fi2, fi3, fi4])
             for j in range(N1-1):
                 face_tmp1.append(nVerts_tot + N2 + N_inside_sq_here*j)
                 face_tmp2.append(nVerts_tot + N2 + N_inside_sq_prev*j - nVerts_prev)
-            #for j in range(N1 - 2):
-            #    fi1 = nVerts_tot + N2 + N_inside_sq_here*j
-            #    fi2 = nVerts_tot + N2 + N_inside_sq_here*(j+1)
-            #    fi3 = nVerts_tot + N2 + N_inside_sq_prev*(j+1) - nVerts_prev
-            #    fi4 = nVerts_tot + N2 + N_inside_sq_prev*j - nVerts_prev
-            #    faces.append([fi1, fi2, fi3, fi4])
             faces.append(face_tmp1 + face_tmp2[::-1])
 
         else:
@@ -912,7 +1055,7 @@ def add_lens(self, context, paramdict=None):
                 fi2 = len(verts) - N2 + j
                 fi3 = fi2 - nVerts_this
                 fi4 = fi1 - nVerts_this
-                faces.append([fi1,fi2,fi3,fi4])
+                faces.append([fi4,fi3,fi2,fi1])
             if dshape:
                 if srad_prev==0:
                     ptss1 = [nVerts_tot - 1, nVerts_tot - N2]
@@ -924,7 +1067,9 @@ def add_lens(self, context, paramdict=None):
                 else:
                     p0 = len(verts) - nVerts_this
                     ptss2 = [p0 + 1 + x*N2 for x in range(N1)][::-1] + [p0] + [p0 + (x+1)*N2 for x in range(N1)]
-                faces.append(ptss1 + ptss2)
+                dface = ptss1 + ptss2
+                dface = dface[::-1]
+                faces.append(dface)
         
         # update needed carry-over-parameters after this surface
         nVerts_prev = nVerts_this
@@ -1072,7 +1217,7 @@ def add_lens(self, context, paramdict=None):
             if surf_subtype0 == 'flat':
                 nloops1 = N2 # when radius == 0, the face is flat circle, only one loop line going around
                 nloops1_fl = N2 # flange has no impact for a flat face
-            elif ltype0 == 'rotational':
+            elif ltype0 in ['rotational']:
                 nloops1 = (N2-dshape)*(3 + 4*(N1-1)) # center of lens has triangular faces, hence the 3. Rest quads, hence the 4. N-1 because of the innter triangle section.
                 nloops1_fl = nloops1 - hasfl[i_surf]*4*(N2-dshape) # 2*hasfl[i_surf]*(3 + 4*(N1-1)+1)
             else:
@@ -1155,10 +1300,18 @@ def add_rayfan(self, context):
     ltype2 = self.ltype2
     ltype3 = self.ltype3
     ltype4 = self.ltype4
-    srad1 = self.rad1
-    srad2 = self.rad2
-    srad3 = self.rad3
-    srad4 = self.rad4
+    RY1 = self.RY1
+    RY2 = self.RY2
+    RY3 = self.RY3
+    RY4 = self.RY4
+    RZ1 = self.RZ1
+    RZ2 = self.RZ2
+    RZ3 = self.RZ3
+    RZ4 = self.RZ4
+    surfrot1 = self.surfrot1
+    surfrot2 = self.surfrot2
+    surfrot3 = self.surfrot3
+    surfrot4 = self.surfrot4
     N1 = self.num1
     N2 = self.num2
     lrad = self.lensradius
@@ -1189,15 +1342,25 @@ def add_rayfan(self, context):
     ior3 =  self.ior3
     display_edit = self.display_edit
 
-    lrad1, hasfl1, flrad1, ssig1, surf_subtype1 = utils.check_surface(srad1, lrad, flrad1, k1, A1, ltype1, squarelens)
-    lrad2, hasfl2, flrad2, ssig2, surf_subtype2 = utils.check_surface(srad2, lrad, flrad2, k2, A2, ltype2, squarelens)
-    lrad3, hasfl3, flrad3, ssig3, surf_subtype3 = utils.check_surface(srad3, lrad, flrad3, k3, A3, ltype3, squarelens)
-    lrad4, hasfl4, flrad4, ssig4, surf_subtype4 = utils.check_surface(srad4, lrad, flrad4, k4, A4, ltype4, squarelens)
+    ret_dummy = utils.check_surface(lrad, flrad1, RY1, k1, A1, RZ1, None, None, ltype1, squarelens)
+    lrad1, hasfl1, flrad1, ltype1, surf_subtype_X1, surf_subtype_Y1, RY1, k1, A1, dSurfrot1 = ret_dummy
+    ret_dummy = utils.check_surface(lrad, flrad2, RY2, k2, A2, RZ2, None, None, ltype2, squarelens)
+    lrad2, hasfl2, flrad2, ltype2, surf_subtype_X2, surf_subtype_Y2, RY2, k2, A2, dSurfrot2 = ret_dummy
+    ret_dummy = utils.check_surface(lrad, flrad3, RY3, k3, A3, RZ3, None, None, ltype3, squarelens)
+    lrad3, hasfl3, flrad3, ltype3, surf_subtype_X3, surf_subtype_Y3, RY3, k3, A3, dSurfrot3 = ret_dummy
+    ret_dummy = utils.check_surface(lrad, flrad4, RY4, k4, A4, RZ4, None, None, ltype4, squarelens)
+    lrad4, hasfl4, flrad4, ltype4, surf_subtype_X4, surf_subtype_Y4, RY4, k4, A4, dSurfrot4 = ret_dummy
+    
+    surfrot1 = surfrot1 + dSurfrot1
+    surfrot2 = surfrot2 + dSurfrot2
+    surfrot3 = surfrot3 + dSurfrot3
+    surfrot4 = surfrot4 + dSurfrot4
 
-    surftype1 = surftype_Lens2Element(ltype1, surf_subtype1)
-    surftype2 = surftype_Lens2Element(ltype2, surf_subtype2)
-    surftype3 = surftype_Lens2Element(ltype3, surf_subtype3)
-    surftype4 = surftype_Lens2Element(ltype4, surf_subtype4)
+
+    surftype1 = surftype_Lens2Element(ltype1, surf_subtype_X1)
+    surftype2 = surftype_Lens2Element(ltype2, surf_subtype_X2)
+    surftype3 = surftype_Lens2Element(ltype3, surf_subtype_X3)
+    surftype4 = surftype_Lens2Element(ltype4, surf_subtype_X4)
 
     # if not aspehric, unset k values
     # if not ltype1 == 'aspheric': k1 = 0
@@ -1205,12 +1368,14 @@ def add_rayfan(self, context):
     # if not ltype3 == 'aspheric': k3 = 0
     # if not ltype4 == 'aspheric': k4 = 0
     ##################
-    srad_list = [srad1, srad2, srad3, srad4]
+    srad_list = [RY1, RY2, RY3, RY4]
+    RZ_list = [RZ1, RZ2, RZ3, RZ4]
     lrad_list = [lrad1, lrad2, lrad3, lrad4]
     CT_list = [0, CT1, CT2, CT3, None] # Add None for handling in Element.add_surface()
     ltype_list = [ltype1, ltype2, ltype3, ltype4]
-    lsubtype_list = [surf_subtype1, surf_subtype2, surf_subtype3, surf_subtype4]
+    lsubtype_list = [surf_subtype_X1, surf_subtype_X2, surf_subtype_X3, surf_subtype_X4]
     surftype_list = [surftype1, surftype2, surftype3, surftype4]
+    surfrot_list = [surfrot1, surfrot2, surfrot3, surfrot4]
     k_list = [k1, k2, k3, k4]
     A_list = [A1, A2, A3, A4]
     n_list = [ior1, ior2, ior3]
@@ -1228,15 +1393,9 @@ def add_rayfan(self, context):
     ele = Element()
     if squarelens: ele.outline_shape = 'square'
     for i in range(n_surfaces):
-        if ltype_list[i] == 'cylindricX':
-            surf_rotation = np.pi/2
-        elif ltype_list[i] == 'cylindricY':
-            surf_rotation = 0
-        else:
-            surf_rotation = 0
-        #lrad1, hasfl1, flrad1, ssig1, surf_subtype1 = utils.check_surface(srad1, lrad, flrad1, k1, A1, ltype1)
-        ele.add_surface(surftype_list[i], radius=srad_list[i], asph=[k_list[i]] + A_list[i],
-                        rCA = lrad_list[i], CT=CT_list[i+1], surf_rotation=surf_rotation,
+        #lrad1, hasfl1, flrad1, ssig1, surf_subtype1 = utils.check_surface(RY1, lrad, flrad1, k1, A1, ltype1)
+        ele.add_surface(surftype_list[i], radius=srad_list[i], radius2=RZ_list[i], asph=[k_list[i]] + A_list[i],
+                        rCA = lrad_list[i], CT=CT_list[i+1], surf_rotation=surfrot_list[i],
                         material = 'FIXVALUE_' + str(n_list2[i+1]))
 
    # create lens from element
@@ -1254,7 +1413,7 @@ def add_rayfan(self, context):
     lens.detector['pixelpitch'] = 1 # default
     lens.build(0.586)
     # set up the rays
-    if self.fantype in ["2D_finite"]:
+    if self.fantype in ["2D_finite", "3D_rings_finite"]:
         rayfany = self.fandist*np.tan(self.fanangle*np.pi/180)
         initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, 1.*rayfany]
     else:# self.fantype in ["2D"]:

@@ -24,6 +24,7 @@ import numpy as np
 from . import rayfan
 from . import intersect as rt_intersect
 from . import intersect_asphere as rt_intersect_asph
+from ...surface.toric import get_z_toric, get_N_toric
 
 import bpy
 
@@ -168,6 +169,10 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
         #if surfshape == 'aspheric':
         if surftype == 'aspheric':
             P, N, idx_fail = rt_intersect_asph.intersect_asphere(O, D, C_CT, rad, r, k, A)
+        elif surftype == 'toric':
+            z_fun_params = [r, r2, surf_rotation]
+            P, N, idx_fail = rt_intersect_asph.intersect_implicit(O, D, C_CT, rad, get_z_toric, z_fun_params,
+                                                                  N_fun=get_N_toric)
         else:
             # P, N, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, rad,
             # k=k, A=A, surf_rotation=surf_rotation, surfshape=surfshape, direction=direction)

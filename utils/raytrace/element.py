@@ -28,10 +28,10 @@ In other words, the Element is defined in its local coordinates and does not sto
 The separate class Lenssystem forms a complete system based on a list of Elements and their geometric arrangement. 
 """
 
-ALLOWED_SURFTYPES = ['flat',                                        # flat shapes
-    'spherical',   'conical',       'polynomic',     'aspheric',    # axial symmetry
-    'cylindrical', 'conicylindric', 'polycylindric', 'acylindric',  # cylinder symmtry
-    'toric',       'conitoric',     'polytoric',     'atoric']      # toric shape
+ALLOWED_SURFTYPES = ['flat',                                                 # flat shapes
+    'spherical',    'conical',          'polynominal',      'aspheric',      # axial symmetry
+    'cylindrical',  'conicylindrical',  'polycylindrical',  'acylindrical',  # cylinder symmtry
+    'toric',        'conitoric',        'polytoric',        'atoric']        # toric shape
 
 class Element():
     def __init__(self, name='NONAME'):
@@ -82,7 +82,7 @@ class Element():
 
     def add_surface(self, surftype, lenstype='rotational', radius=None, asph=[None, None], radius2=None, asph2=[None, None],
                     coating=None, rCA=None, rCA_short = None, lrad=None, CT=None, material=None,
-                    surf_decenter=None, surf_tilt=None, surf_rotation=None):
+                    surf_decenter=None, surf_tilt=None, surf_rotation=0):
         """
         function to append appropriately to the data structure
         """
@@ -114,14 +114,14 @@ class Element():
             self.data['asph'].append([None, None])
             self.data['radius2'].append(None)
             self.data['asph2'].append([None, None])
-            self.data['surf_rotation'].append(None)
-        elif surftype in ['spherical', 'conical', 'polynomic', 'aspheric']:
+            self.data['surf_rotation'].append(0)
+        elif surftype in ['spherical', 'conical', 'polynominal', 'aspheric']:
             self.data['radius'].append(radius)
             self.data['asph'].append(asph)
             self.data['radius2'].append(None)
             self.data['asph2'].append([None, None])
-            self.data['surf_rotation'].append(None)
-        elif surftype in ['cylindrical', 'conicylindric', 'polycylindric', 'acylindric',
+            self.data['surf_rotation'].append(0)
+        elif surftype in ['cylindrical', 'conicylindrical', 'polycylindrical', 'acylindrical',
                           'toric', 'conitoric', 'polytoric', 'atoric']:
             """
             Also for cylindric lenses, second variables have to be specified explicitly because cylinder might be along x- or y-axis.

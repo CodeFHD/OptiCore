@@ -22,4 +22,5 @@ from .parabolic import *
 from .spherical import *
 from .aspheric import *
 from .rim import *
-#from .toric import *
+from .toric import *
+from .sagsurface import *

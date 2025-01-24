@@ -25,22 +25,17 @@ import numpy as np
 
 from mathutils import Vector
 
+from ..utils import debugprint
 from ..utils.raytrace.element import Element
 from ..utils.raytrace.lenssystem import Lenssystem
 from ..utils.raytrace.trace_sequential import exec_trace, trace_to_scene
 from ..utils.raytrace import rayfan
-from ..utils.check_surface import surftype_zmx2ltype
 from ..elements import add_lens, add_mirror, get_default_paramdict_lens, get_default_paramdict_mirror, add_circular_aperture
+from .zmx import split_zmx_file, parse_zmx_surface, get_stop
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
-
-
-DEBUGPRINT = False
-def debugprint(*messages):
-    if len(messages) == 0: messages = ''
-    if DEBUGPRINT: print(*messages)
 
 
 def reset_loadzmx_faults():
@@ -144,7 +139,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                     ("3D_tri","3D tris",""),
                     ("3D_random","3D random",""),
                     ("2D_finite","2D Finite",""),
-                    ("3D_rings", "3D rings", ""),},
+                    ("3D_rings", "3D rings", ""),
+                    ("3D_rings_finite", "3D rings - finite", ""),},
            default = "2D",
            description="Ray Fan Type",
            #options={'HIDDEN'},
@@ -258,8 +254,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if self.addlenses:
             CT_sum = 0
             radius_outer = 0
-            i0 = 0 # starting index for surface, relevant for split_cemented
             for ele, dz in lens.elements:
+                i0 = 0 # starting index for surface, relevant for split_cemented
                 """
                 TODO: Possibly to be foreseen in this implementation:
                 In case of a multi-bounce system, i.e. where the same surface is used multiple times,
@@ -299,7 +295,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         n_loop = 2
                     else:
                         n_loop = num_surfaces
+                    lc = 0
                     while True:
+                        lc = lc+1
+                        print('LOOP!', lc)
                         if self.split_cemented:
                             i1 = i0 + 2
                         else:
@@ -312,9 +311,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                             Ax = ele.data['asph'][i0+i][1:]
                             ltype = ele.data['lenstype'][i0+i]
                             paramdict[f'ltype{i+1}'] = ltype
-                            paramdict[f'rad{i+1}'] = rx
+                            paramdict[f'RY{i+1}'] = rx
                             paramdict[f'k{i+1}'] = kx
                             paramdict[f'A{i+1}'] = Ax
+                            paramdict[f'surfrot{i+1}'] = ele.data['surf_rotation'][i0+i]
                             if ele.data['rCA_short'][i0+i] < max(ele.data['rCA'][i0:i1]):
                                 paramdict[f'flangerad{i+1}'] = max(ele.data['rCA'][i0:i1]) - ele.data['rCA_short'][i0+i]
                         for i in range(n_loop-1):
@@ -332,12 +332,13 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
                         created_objects.append(obj_name)
 
-                        if i1 >= num_surfaces+1:
+                        if i1 >= num_surfaces:
                             #last surface was included
                             # check for >= and not == to be safe against accidental double increments creating infinite loops
                             break
                         else:
-                            i1 = i0 + 1
+                            dz_this = dz_this + ele.data['CT'][i0]
+                            i0 = i0 + 1
                 radius_outer = max(radius_outer, max(ele.data['rCA']))
                 
         t2 = time.perf_counter()
@@ -493,287 +494,6 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         
         return {'FINISHED'}
 
-def split_file(f):
-    lines = f.readlines()
-    headerlines = []
-    surflines = {} # dict, for each surface index, a list of the lines
-    footerlines = []
-    lc = 0 # linecounter
-
-    # loop over header
-    for line in lines:
-        line = line.strip()
-        if line.startswith('SURF'):
-            break
-        headerlines.append(line)
-        lc += 1
-
-    # loop over surfaces
-    surfidx = -1
-    for line in lines[lc:]:
-        if re.match(r'\w', line) and not line.startswith('SURF'):
-            # break when something else than a surf comes up
-            break
-        line = line.strip()
-        lc += 1
-        if line.startswith('SURF'):
-            if surfidx > -1:
-                surflines[surfidx] = curlines 
-            surfidx = int(line.split()[1])
-            curlines = []
-        else:
-            curlines.append(line)
-    # finish last surface
-    surflines[surfidx] = curlines 
-
-    # loop over footer
-    for line in lines[lc:]:
-        line = line.strip()
-        footerlines.append(line)
-
-    return headerlines, surflines, footerlines
-
-def determine_OC_surftype(radX, kX, AX, radY=None, kY=None, AY=None):
-    """
-    This function takes surface coefficients
-    and determines the corresponding surface shape type for further processing.
-    The result does not depend on the order of X- and Y-coefficients, but either input is allowed.
-    """
-    # first, check that either any radius or A coefficients are defined, else return undefined
-    noRadX = radX is None
-    noRadY = radY is None
-    noConicX = kX is None
-    noConicY = kY is None
-    noPolyX = np.all(np.array(AX) == None) or AX == [] or AX is None
-    noPolyY = np.all(np.array(AY) == None) or AY == [] or AY is None
-    XisNone = noRadX and noPolyX
-    YisNone = noRadY and noPolyY
-
-    # Initial check that anything was passed at all
-    if XisNone and YisNone:
-        return 'UNDEFINED'
-
-    # In case Y was supplied and X not, flip around.
-    # This will simplify case evaluation below
-    # because XisNone does not have to be rechecked
-    if XisNone:
-        noRadX, noConicX, noPolyX, XisNone, noRadY, noConicY, noPolyY, YisNone = noRadY, noConicY, noPolyY, YisNone, noRadX, noConicX, noPolyX, XisNone
-        radX, kX, AX, radY, kY, AY = radY, kY, AY, radX, kX, AX
-
-    hasradX = radX != 0 and radX is not None
-    hasradY = radY != 0 and radY is not None
-    hasconicX = kX != 0 and kX is not None
-    hasconicY = kY != 0 and kY is not None
-    haspolyX = not (np.all(np.array(AX) == 0) or np.all(np.array(AX) == None) or AX is None)
-    haspolyY = not (np.all(np.array(AY) == 0) or np.all(np.array(AY) == None) or AY is None)
-
-    """
-    determine flat, rotational, cylindric, or toric case,
-      and then subdivide further depending ona vailable coefficients
-    flat: flat definition for one or both directions (radius == 0 and no aspheric coefficients)
-    rotational: definition given only for one direction, rest is None
-    cylindric: any non-flat definition for one direction, flat for the other
-    toric: non-flat definition for both
-    TODO: freeform
-
-    return types of the above categories:
-    flat,
-    spherical,   conical,       polynomic,     aspheric,
-    cylindrical, conicylindric, polycylindric, acylindric,
-    toric,       conitoric,     polytoric,     atoric       # TODO: Potential for mix cases causing issues, but probably unrealistic to be found in real world examples. Ignore for now.
-    """
-
-    # first test for flat case
-    XisFlat = radX == 0 and not haspolyX
-    YisFlat = radY == 0 and not haspolyY
-    Surfisflat = (XisFlat and YisFlat) or (XisFlat and YisNone)
-    if Surfisflat:
-        return 'flat'
-
-    # second test for rotational case
-    # remember: due to intial check-and-flip, XisNone == False is guaranteed here
-    IsRotational = YisNone
-    if IsRotational:
-        if (hasradX and not hasconicX and not haspolyX):
-            return 'spherical'
-        elif (hasradX and hasconicX and not haspolyX):
-            return 'conical'
-        elif (not hasradX and haspolyX):
-            return 'polynomic'
-        else:
-            return 'aspheric'
-
-    # third test for cylindric
-    isCylindric = YisFlat or (not YisNone and XisFlat)
-    # remember: hasradX == True implies XisFlat == False
-    if isCylindric:
-        if (hasradX and not hasconicX and not haspolyX) or (hasradY and not hasconicY and not haspolyY):
-            return 'cylindrical'
-        elif (hasradX and hasconicX and not haspolyX) or (hasradY and hasconicY and not haspolyY):
-            return 'conicylindric'
-        elif (not hasradX and haspolyX) or (not hasradY and haspolyY):
-            return 'polycylindric'
-        else:
-            return 'acylindric'
-
-    # fourth test for toric
-    isToric =  (not XisFlat) and (not YisNone and not YisFlat)
-    if isToric:
-        if (hasradX and not hasconicX and not haspolyX) and (hasradY and not hasconicY and not haspolyY):
-            return 'toric'
-        elif (hasradX and hasconicX and not haspolyX) and (hasradY and hasconicY and not haspolyY):
-            return 'conitoric'
-        elif (not hasradX and haspolyX) and (not hasradY and haspolyY):
-            return 'polytoric'
-        else:
-            # TODO: currently this covers mixed cases
-            return 'atoric'
-
-    # Final case (UNDEFINED) that something odd slipped past the above tests
-    print('Error in function "determine_OC_surftype". Coefficients do not match any implemented surface shape')
-    return 'UNDEFINED'
-
-    """
-    OLD CODE DUMP
-
-    ###############################
-
-    anyX = radX is not None and not (np.all(np.array(AX) == None or AX is None))
-    anyY = radY is not None and not (np.all(np.array(AY) == None or AY is None))
-
-    anyX = radX is not None
-    anyY = radY is not None
-    if anyX + anyY == 0:
-        # at least one radius should be specified explicitly, even if it is equal to 0
-        return 'UNDEFINED'
-    elif anyX + anyY == 1:
-        pass
-    elif anyX + anyY == 2:
-        pass
-
-    #################################
-
-    if not hasrad and not haspoly:
-        surftype = 'flat'
-    elif not hasrad and haspoly:
-        if dualpoly:
-            pass
-        else:
-            surftype = 'polynomic'
-    elif not hasconic and not haspoly:
-        surftype = 'spherical'
-    elif hasconic and not haspoly:
-        surftype = 'conic'
-    else: 
-        surftype = 'aspheric'
-
-    return surftype
-    """
-
-def parse_surface(surflines):
-    surf_info = {} # store in one dictionary for not passing too many variables
-    # defaults if parameters not given for this surface
-    surftype = None
-    isstop = False
-    radiusX = None
-    kX = None
-    AX = []
-    radiusY = None
-    kY = None
-    AY = []
-    CT = None
-    hasglass = False
-    ismirror = False
-    outline_shape = 'circular'
-    glass = None
-    rCA = None
-    rCA_short = None
-    lrad = None
-    # search the parameters
-    for line in surflines:
-        if line.startswith('TYPE'):
-            surftype = line.split()[1]
-            # had some files where XASPHERE was used in addition to EVENASPH
-            # It seems that in those cases, EVENASPH only goes up to 8th-order coefficients and XASPHERE also to higher ones. Otehr differences I did not find reference to online.
-            # For that reason, treating them as the same here. TODO
-            if surftype == 'XASPHERE': type = 'EVENASPH'
-        elif line.startswith('STOP'):
-            isstop = True
-        elif line.startswith('CURV'):
-            curv = float(line.split()[1])
-            radiusX = 0 if curv == 0 else 1./curv
-        elif line.startswith('DISZ'):
-            CT = float(line.split()[1])
-        elif line.startswith('GLAS'):
-            hasglass = True
-            glass = line.split()[1]
-            if glass == '___BLANK':
-                glass = ' '.join(line.split()[1:])
-            if glass == 'MIRROR':
-                ismirror = True
-                hasglass = False
-        elif line.startswith('DIAM'):
-            rCA = float(line.split()[1])
-        elif line.startswith('MEMA'):
-            lrad = float(line.split()[1])
-        elif line.startswith('CONI'):
-            kX = float(line.split()[1])
-        elif line.startswith('PARM'):
-            iparm = int(line.split()[1])
-            if surftype == 'EVENASPH':
-                if iparm == 1:
-                    # I have yet to see a file that has a power-2 coefficient
-                    # (assuming iparm == 1 is for power 2 coefficient)
-                    # The OptiCore-geometry function currently starts at power-4, therefore ignoring this for the moment. TODO
-                    pass
-                else:
-                    AX.append(float(line.split()[2]))
-            elif surftype == 'BICONICX':
-                if iparm == 1:
-                    radiusY = float(line.split()[2])
-        elif line.startswith('SQAP'):
-            outline_shape = 'square'
-            rCA_short = float(line.split()[1])
-            rCA = float(line.split()[2])
-        # TODO: parse aspheric surface
-    
-    # determine the surface type in the OptiCore scheme
-    surftype = determine_OC_surftype(radiusX, kX, AX, radiusY, kY, AY)
-
-    # fill dict and return
-    if AX == []: AX = [None]
-    if AY == []: AY = [None]
-    if rCA_short is None: rCA_short = rCA
-
-    ltype = surftype_zmx2ltype(radiusX, radiusY, kX, kY, AX, AY)
-    if ltype == 'cylindricX':
-        surf_rotation = np.pi/2
-    elif ltype == 'cylindricY':
-        radiusX, kX, AX, radiusY, kY, AY = radiusY, kY, AY, radiusX, kX, AX
-        surf_rotation = 0
-    else:
-        surf_rotation = 0
-
-    surf_info['type'] = surftype # 'type' is teh OptiCore surftype, i.e. base shape types w/o direction
-    surf_info['ltype'] = ltype # ltype is for the Lens class, may include directions, like cylindricalX
-    surf_info['isstop'] = isstop
-    surf_info['radius'] = radiusX
-    surf_info['asph'] = [kX] + AX
-    surf_info['radius2'] = radiusY
-    surf_info['asph2'] = [kY] + AY
-    surf_info['surf_rotation'] = surf_rotation
-    #surf_info['radiusX'] = radiusX
-    #surf_info['asphX'] = [kX] + AX
-    surf_info['CT'] = CT
-    surf_info['hasglass'] = hasglass
-    surf_info['ismirror'] = ismirror
-    surf_info['glass'] = glass
-    surf_info['rCA'] = rCA
-    surf_info['rCA_short'] = rCA_short
-    surf_info['lrad'] = lrad
-    surf_info['outline_shape'] = outline_shape
-    return surf_info
-
 # Because of FLoat rounding, values are rounded to these digits for comparison
 EPSILON_DIGITS = 3
 
@@ -910,31 +630,6 @@ def identify_elements(surf_infos):
         
     return idx_elements, idx_order, CT_cumulative
 
-
-def get_stop(surf_infos, idx_first=0):
-    stopidx = 1
-    for idx, surf in surf_infos.items():
-        if idx == 1:
-            if surf['rCA'] is not None:
-                stoprad = surf['rCA']
-            elif surf['lrad'] is not None:
-                stoprad = surf['lrad']
-            break
-    for idx, surf in surf_infos.items():
-        if surf['isstop']:
-            stopidx = idx
-            if surf['rCA'] is not None:
-                stoprad = surf['rCA']
-            elif surf['lrad'] is not None:
-                stoprad = surf['lrad']
-    if idx_first > stopidx:
-        CT_list = [surf_infos[i]['CT'] for i in range(stopidx, idx_first)]
-        z_stop = -sum(CT_list)
-    else:
-        CT_list = [surf_infos[i]['CT'] for i in range(idx_first, stopidx)]
-        z_stop = sum(CT_list)
-    return stopidx, stoprad, z_stop
-
 def create_elements(surf_infos, idx_elements, CT_cumulative):
     elements = []
     # firstElement = True
@@ -957,22 +652,7 @@ def create_elements(surf_infos, idx_elements, CT_cumulative):
             asph1 = surf_infos[idx]['asph']
             asph2 = surf_infos[idx]['asph2']
             surf_rotation = surf_infos[idx]['surf_rotation']
-            
-            """
-            kx = asph1[0]
-            ky = asph2[0]
-            Ax = asph1[1:]
-            Ay = asph2[1:]
-            ltype = surftype_zmx2ltype(r1, r2, kx, ky, Ax, Ay)
-            if ltype == 'cylindricX':
-                surf_rotation = np.pi/2
-            elif ltype == 'cylindricY':
-                surf_rotation = 0
-            else:
-                surf_rotation = 0
-            """
 
-            #surftype = surftype_zmx2Element(r1, r2, asph1, asph2)
             surftype = surf_infos[idx]['type']
             lenstype = surf_infos[idx]['ltype']
             ele.outline_shape = surf_infos[idx]['outline_shape'] # TODO: Assumption that there is no mix between sufaces for one element
@@ -1000,23 +680,13 @@ def create_elements(surf_infos, idx_elements, CT_cumulative):
     return elements, dz_sensor
 
 def load_from_zmx(filename, testmode=False, logfile=None):
-    # check encoding of file
-    f = open(filename, 'rb')
-    data = f.read(2)
-    if data == b'\xff\xfe':
-        encoding = 'utf-16-le'
-    else:
-        encoding = 'utf-8'
-    f.close()
-
     # split he(ader), su(rfaces), fo(oter)
-    with open (filename, 'r', encoding=encoding) as f:    
-        he, su, fo = split_file(f)
+    he, su, fo = split_zmx_file(filename)
 
     # parse each surface and extract its parameters
     surf_infos = {}
     for idx, surface in su.items():
-        surf_info = parse_surface(surface)
+        surf_info = parse_zmx_surface(surface)
         surf_infos[idx] = surf_info
 
     # identify elements, or groups, i.e. cemented pieces

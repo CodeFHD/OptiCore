@@ -22,14 +22,16 @@ import numpy as np
 def get_ringnormals(N, dshape=False):
     normals = []
     
+    minb = 0
+    maxb = 2*np.pi
     if dshape:
+        minb = -np.pi/2
         maxb = np.pi*N/(N-1)
-    else:
-        maxb = 2*np.pi
 
     for j in range(N):
-        b = maxb*j/N
-        normals.append((0., np.sin(b), np.cos(b)))
+        b = maxb*j/N + minb
+        normals.append((np.cos(b), np.sin(b), 0))
+        # normals.append((0., np.sin(b), np.cos(b)))
 
     return normals
 
@@ -39,13 +41,13 @@ def get_sqringnormals(N1, N2, dshape=False):
     """Vertices added in same order as for sqspherical, but outline only"""
     # left side
     for i in range(N2):
-        normals.append((0., -1., 0.))
+        normals.append((-1, 0, 0))
     # bottom and top, alternating
     for i in range(N1 - 2):
-        normals.append((0., 0., -1.))
-        normals.append((0., 0., 1.))
+        normals.append((0, -1, 0))
+        normals.append((0, 1, 0))
     # right side
     for i in range(N2):
-        normals.append((0., 1., 0.))
+        normals.append((1, 0, 0))
 
     return normals

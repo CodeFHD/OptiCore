@@ -21,16 +21,6 @@ import numpy as np
 
 from .. import geometry
 
-def rayfan2D_finite(Nrays, rad, rayfanz=-20, rayfany=0):
-    #init ray fan (2D plot)
-    O1 = [[0, i, 0] for i in np.linspace(-rad, rad, Nrays)]
-    O = [[0, rayfany, rayfanz] for i in np.linspace(-rad, rad, Nrays)]
-    O, O1 = np.array(O), np.array(O1)
-    D = O1 - O
-    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
-    D = D.T
-    return O, D
-
 def rayfan2D(Nrays, rad, rayfanz=-20, angle=0):
     #init ray fan (2D plot)
     O = [[0,i, rayfanz] for i in np.linspace(-rad, rad, Nrays)]
@@ -41,6 +31,57 @@ def rayfan2D(Nrays, rad, rayfanz=-20, angle=0):
         O_0 = np.array([[0,i, 0] for i in np.linspace(-rad, rad, Nrays)])
         O = np.matmul(rotmat, (O-O_0).T).T + O_0
         D = np.matmul(rotmat, D.T).T
+    return O, D
+
+def rayfan2D_finite(Nrays, rad, rayfanz=-20, rayfany=0):
+    #init ray fan (2D plot)
+    O1 = [[0, i, 0] for i in np.linspace(-rad, rad, Nrays)]
+    O = [[0, rayfany, rayfanz] for i in np.linspace(-rad, rad, Nrays)]
+    O, O1 = np.array(O), np.array(O1)
+    D = O1 - O
+    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
+    D = D.T
+    return O, D
+
+def rayfan3D_rings(Nrays, rad, rayfanz=-20, angle=0):
+    O = []
+    N2 = 8 # fixedthe value so that the first ring has 8 points
+    N1 = int((1 + np.sqrt(Nrays))/ 2)
+    if N1 < 4: N1 = 4 # minimum number of rays for a 3D-distribution
+    # center point
+    O.append([0, 0, rayfanz])
+    for i in range(1, N1):
+        r = rad*i/(N1 - 1)
+        for j in range(i*N2):
+            theta = 2*np.pi*j/(i*N2)
+            O.append([r*np.sin(theta),r*np.cos(theta), rayfanz])
+    D = [[0,0,1.] for i in range(len(O))]
+    O, D = np.array(O), np.array(D)
+    if angle != 0:
+        rotmat = geometry.get_rotmat_x(angle)
+        O_0 = np.array([[0, O[i,1], 0] for i in range(O.shape[0])])
+        # O_0 = np.array([[0,i, 0] for i in np.linspace(-rad, rad, Nrays)])
+        O = np.matmul(rotmat, (O-O_0).T).T + O_0
+        D = np.matmul(rotmat, D.T).T
+    return O, D
+
+def rayfan3D_rings_finite(Nrays, rad, rayfanz=-20, rayfany=0):
+    N2 = 8 # fixedthe value so that the first ring has 8 points
+    N1 = int((1 + np.sqrt(Nrays))/ 2)
+    if N1 < 4: N1 = 4 # minimum number of rays for a 3D-distribution
+    N_total = 1 + int(N1*(N1 - 1)*N2/2)
+    O = [[0, rayfany, rayfanz] for i in range(N_total)] # actual origin, all at the same point
+    O1 = []
+    O1.append([0, 0, 0]) # on-axis ray
+    for i in range(1, N1):
+        r = rad*i/(N1 - 1)
+        for j in range(i*N2):
+            theta = 2*np.pi*j/(i*N2)
+            O1.append([r*np.sin(theta),r*np.cos(theta), 0])
+    O, O1 = np.array(O), np.array(O1)
+    D = O1 - O
+    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
+    D = D.T
     return O, D
 
 def rayfan3D(Nrays, rad, rayfanz=-20, angle=0):
@@ -90,14 +131,21 @@ def rayfan3D_square(Nrays, rad, rayfanz=-20, angle=0):
         D = np.matmul(rotmat, D.T).T
     return O, D
 
-def rayfan3D_tri(Nrays,rad, rayfanz=-20, angle=0):
-    Nrays = int(np.sqrt(Nrays))
+def rayfan3D_tri(Nrays, rad, rayfanz=-20, angle=0):
+    # sample lens with equilateral triangles
+    Nrays_y = int(np.sqrt(Nrays)) # numhber of rays along x-axis
+    Nrays_y = Nrays_y + 1 - Nrays_y%2 # make sure it is an off number
+    a = 2*rad/(Nrays_y - 1) # length of triangle, sampling along x-axis
+    h = np.sqrt(3)/2*a # height of triangle, sampling along y-axis
+    Nrays_x = int(2*rad//h) + 1 # number of rays along y-axis
+    Nrays_x = Nrays_x + 1 - Nrays_x%2 # make sure it is an off number
+    W_half = h*(Nrays_x - 1)/2
     O = []
-    for i in range(Nrays):
-        x = rad*(2*i/(Nrays-1) - 1)
-        for j in range(Nrays - i%2):
-            y = rad*(2*j/(Nrays-1) - 1) + i%2*rad/(Nrays-1)
-            O.append([x,y, rayfanz])
+    for i in range(Nrays_x):
+        x = i*h - W_half
+        for j in range(Nrays_y - i%2):
+            y = j*a - rad + i%2*a/2
+            O.append([x, y, rayfanz])
     D = [[0,0,1.] for i in range(len(O))]
     O, D = np.array(O), np.array(D)
     if angle != 0:
@@ -108,27 +156,7 @@ def rayfan3D_tri(Nrays,rad, rayfanz=-20, angle=0):
         D = np.matmul(rotmat, D.T).T
     return O, D
 
-def rayfan3D_rings(Nrays,rad, rayfanz=-20, angle=0):
-    O = []
-    N2 = 8 # fixedthe value so that the first ring has 8 points
-    N1 = int((1 + np.sqrt(Nrays))/ 2)
-    if N1 < 4: N1 = 4 # minimum number of rays for a 3D-distribution
-    # center point
-    O.append([0,0,rayfanz])
-    for i in range(1, N1):
-        r = rad*i/(N1 - 1)
-        for j in range(i*N2):
-            theta = 2*np.pi*j/(i*N2)
-            O.append([r*np.sin(theta),r*np.cos(theta), rayfanz])
-    D = [[0,0,1.] for i in range(len(O))]
-    O, D = np.array(O), np.array(D)
-    if angle != 0:
-        rotmat = geometry.get_rotmat_x(angle)
-        O_0 = np.array([[0, O[i,1], 0] for i in range(O.shape[0])])
-        # O_0 = np.array([[0,i, 0] for i in np.linspace(-rad, rad, Nrays)])
-        O = np.matmul(rotmat, (O-O_0).T).T + O_0
-        D = np.matmul(rotmat, D.T).T
-    return O, D
+
 
 # List of implemented distributions
 # See in the functions below, to whiuch they correspond
@@ -142,6 +170,7 @@ DISTRIBUTIONS = {'2D': rayfan2D,
                  '3D_square': rayfan3D_square,
                  '3D_random': rayfan3D_uniformdiskrandom,
                  '3D_rings': rayfan3D_rings,
+                 '3D_rings_finite': rayfan3D_rings_finite,
                  }
 
 

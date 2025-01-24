@@ -21,92 +21,69 @@ import numpy as np
 
 from mathutils import Vector
 
-def _check_k(k, rad, lrad):
+from .radialprofiles import get_z_evenasphere, get_N_evenasphere, get_dzdr_evenasphere
+
+def _check_k(k, r, lrad):
     #check if k is too large, else crop
-    comp = (rad/lrad)**2 - 1
+    comp = (r/lrad)**2 - 1
     if k > comp*0.9999:
         k = comp*0.9999
     return k
 
-def getdxdr(rad, r, k, A):
-    sqt = np.sqrt(1-(1+k)*(r**2/rad**2))
-    t1 = 2*r/rad/(1+sqt)
-    t2 = (1+k) * r**3
-    t22 = rad**3 * sqt * (1 + sqt)**2
-    t3 = sum([2*(i+2)*A[i]*r**(2*(i+2) - 1) for i in range(len(A))])
-    return t1 + t2/t22 + t3
 
-def getz(rad, r2, k, A):
-    f1 = (r2/rad)/(1+np.sqrt(1-(1+k)*(r2/rad**2))) # conic term
-    f2 = sum([A[i]*r2**(i+2) for i in range(len(A))]) # polynomic term
-    return f1+f2
 
-def get_N(r, b, rad, k, A):
-    dxdr = getdxdr(rad, r, k, A)
-    adxdr = np.sqrt(dxdr**2 + 1)
-    dxdr = dxdr/adxdr
-    N = np.column_stack((-dxdr*np.cos(b), -dxdr*np.sin(b), 1/adxdr))
-    return N
-
-def add_aspheric_surface(rad, k, A, lrad, N1, N2, xadd=0, nVerts=0, dshape=False, lrad_ext=0):
+def add_aspheric_surface(R, k, A, lrad, N1, N2, zadd=0, nVerts=0, dshape=False, lrad_ext=0):
     """
-    nsurf=1 for first surface,
-    nsurf=-1 for second surface
+    zadd has to be set for second surface (only)
+    """
+
+    """
+    return add_sagsurface_circular(rad, k, A, lrad, N1, N2,
+                                   surftype="aspheric",
+                                   zadd=zadd, nVerts=nVerts, dshape=dshape, lrad_ext=lrad_ext)
+    """
     
-    xadd has to be set for second surface (only)
-    """
-
-    nsurf = 1
-
     verts = []
     faces = []
     normals = []
-    
-    surfadd=0
-    if nsurf == -1:
-        surfadd = N2*N1
 
     maxb = 2*np.pi
     if dshape:
         maxb = np.pi*N2/(N2-1)
 
-    k = _check_k(k, rad, lrad)
+    k = _check_k(k, R, lrad)
 
-    verts.append(Vector((-xadd,0,0)))
-    normals.append((nsurf,0,0))
-    r = lrad/N1
-    x = getz(rad,r**2,k,A)
-    for j in range(N2)[::nsurf]:
+    verts.append(Vector((-zadd,0,0)))
+    normals.append((1,0,0))
+    r = lrad/(N1- (lrad_ext > lrad))
+    x = get_z_evenasphere(r**2, R, k, A)
+    for j in range(N2):
         b = maxb*j/N2
-        verts.append(Vector((-1.*x*nsurf-xadd,r*np.sin(b),r*np.cos(b))))
-        dxdr = getdxdr(rad, r, k, A)
-        adxdr = np.sqrt(dxdr**2 + 1)
-        dxdr = dxdr/adxdr
-        normals.append((nsurf/adxdr, dxdr*np.sin(b), dxdr*np.cos(b)))
+        verts.append(Vector((-1.*x-zadd, r*np.sin(b), r*np.cos(b))))
+        N = get_N_evenasphere(r, b, R, k, A)
+        normals.append(N)
         if dshape and j==N2-1:
             pass
         else:
-            fi1 = nVerts+surfadd
-            fi2 = fi1+nsurf*((j+1)%N2+1)
-            fi3 = fi1+nsurf*(j+1)
-            faces.append([fi1,fi2,fi3])
+            fi1 = nVerts
+            fi2 = fi1 + ((j+1)%N2 + 1)
+            fi3 = fi1 + (j + 1)
+            faces.append([fi1, fi2, fi3])
     for i in range(1,N1 - (lrad_ext > lrad)):
         r = lrad*(i+1)/(N1 - (lrad_ext > lrad))
-        x = getz(rad,r**2,k,A)
-        for j in range(N2)[::nsurf]:
+        x = get_z_evenasphere(r**2, R, k, A)
+        for j in range(N2):
             b = maxb*j/N2
-            verts.append(Vector((-1.*x*nsurf-xadd,r*np.sin(b),r*np.cos(b))))
-            dxdr = getdxdr(rad, r, k, A)
-            adxdr = np.sqrt(dxdr**2 + 1)
-            dxdr = dxdr/adxdr
-            normals.append((nsurf/adxdr, dxdr*np.sin(b), dxdr*np.cos(b)))
+            verts.append(Vector((-1.*x-zadd,r*np.sin(b),r*np.cos(b))))
+            N = get_N_evenasphere(r, b, R, k, A)
+            normals.append(N)
             if dshape and j==N2-1:
                 pass
             else:
-                fi1 = nVerts+surfadd+nsurf*(j+1+i*N2)
-                fi2 = nVerts+surfadd+nsurf*((j+1)%N2+1+i*N2)
-                fi3 = fi2-nsurf*N2
-                fi4 = fi1-nsurf*N2
+                fi1 = nVerts + ((j+1) + i*N2)
+                fi2 = nVerts + ((j+1)%N2 + 1 + i*N2)
+                fi3 = fi2 - N2
+                fi4 = fi1 - N2
                 faces.append([fi4,fi3,fi2,fi1])
                 
     #if there is flat annulus
@@ -115,7 +92,7 @@ def add_aspheric_surface(rad, k, A, lrad, N1, N2, xadd=0, nVerts=0, dshape=False
         r = lrad_ext
         for j in range(N2):
             b = maxb*j/N2
-            verts.append(Vector((-1.*x - xadd,r*np.sin(b),r*np.cos(b))))
+            verts.append(Vector((-1.*x - zadd,r*np.sin(b),r*np.cos(b))))
             normals.append((1,0,0))
             if dshape and j==N2-1:
                 pass
@@ -128,26 +105,24 @@ def add_aspheric_surface(rad, k, A, lrad, N1, N2, xadd=0, nVerts=0, dshape=False
             
     return verts, faces, normals
 
-def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindrical=False):
+def add_sqaspheric_surface(R, k, A, lwidth, N1, N2, nsurf=1, zadd=0, nVerts=0, cylindrical=False):
     """
     nsurf=1 for first surface,
     nsurf=-1 for second surface
     
-    xadd has to be set for second surface (only)
+    zadd has to be set for second surface (only)
     """
 
     verts = []
     faces = []
     vertquads = []
     normals = []
-    
-    surfadd=0
 
     if cylindrical:
         testrad = lwidth/2
     else:
         testrad = lwidth/2*np.sqrt(2)
-    k = _check_k(k, rad, testrad)
+    k = _check_k(k, R, testrad)
 
     for i in range(N1):
         y = lwidth*(i/(N1-1) - 0.5)
@@ -157,9 +132,9 @@ def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindri
                 r = y
             else:
                 r = np.sqrt(y**2 + z**2)
-            x = getz(rad,r**2,k,A)
-            verts.append(Vector((-1.*x*nsurf-xadd,y,z)))
-            dxdr = getdxdr(rad, r, k, A)
+            x = get_z_evenasphere(r**2, R, k, A)
+            verts.append(Vector((-1.*x*nsurf-zadd,y,z)))
+            dxdr = get_dzdr_evenasphere(r, R, k, A)
             adxdr = np.sqrt(dxdr**2 + 1)
             dxdr = dxdr/adxdr
             if cylindrical:
@@ -177,10 +152,10 @@ def add_sqaspheric_surface(rad,k,A,lwidth,N1,N2,nsurf=1,xadd=0,nVerts=0,cylindri
 
     for i in range(N1-1):
         for j in range(N2-1):
-            f1 = nVerts+surfadd+j+1 + N2*i
-            f2 = nVerts+surfadd+j+ N2*i
-            f3 = nVerts+surfadd+j + N2*(i+1)
-            f4 = nVerts+surfadd+j+1 + N2*(i+1)
+            f1 = nVerts + j + 1 + N2*i
+            f2 = nVerts + j + N2*i
+            f3 = nVerts + j + N2*(i+1)
+            f4 = nVerts + j + 1 + N2*(i+1)
             if vertquads[j+i*N2] >= 1:
                 faces.append([f1,f2,f4][::nsurf])
                 faces.append([f2,f3,f4][::nsurf])
