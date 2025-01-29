@@ -396,6 +396,11 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             name="Trace Ray Fan to Scene",
             default=False,
            )
+    ghost_order : StringProperty(
+            name="Ghost sequence",
+            description="Specify two indices, seprated by a comma, between which surfaces a ghost reflection shall be traced. First surface has index 1.",
+            default="",
+           )
     """Optimization parameters"""
     autofocus : BoolProperty(
             name="RMS-Focus",
@@ -627,6 +632,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col.prop(self, 'fandiam')
             col.prop(self, 'tracetoscene')
             col.prop(self, 'autofocus')
+            col.prop(self, 'ghost_order')
         if disp == 'paraxial':
             col.label(text="Optical Parameters")
             # col.prop(self, 'wavelength')
@@ -1341,6 +1347,7 @@ def add_rayfan(self, context):
     ior2 =  self.ior2
     ior3 =  self.ior3
     display_edit = self.display_edit
+    ghost_order = self.ghost_order
 
     ret_dummy = utils.check_surface(lrad, flrad1, RY1, k1, A1, RZ1, None, None, ltype1, squarelens)
     lrad1, hasfl1, flrad1, ltype1, surf_subtype_X1, surf_subtype_Y1, RY1, k1, A1, dSurfrot1 = ret_dummy
@@ -1421,7 +1428,29 @@ def add_rayfan(self, context):
     #else:
     #    initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist]    
     rays = rayfan.RayFan(self.fantype, initparams, store_history=True)
-    surflist = [i for i in range(1, lens.num_optical_surfaces + 1)] # standard surface list for non-ghost trace
+    # try to parse ghost_oder
+    ghost_order = self.ghost_order
+    nos = lens.num_optical_surfaces
+    custom_surflist_valid = False
+    if not ghost_order == '':
+        try:
+            surflist = [int(_) for _ in ghost_order.split(',')]
+            if np.any(np.array(surflist) > nos) or np.any(np.array(surflist) < 1): 
+                print("Warning: Custom ghost list invalid. Tracing default!")
+            elif surflist[0] == surflist[1]:
+                pass 
+            else:
+                s0 = min(surflist[:2])
+                s1 = max(surflist[:2])
+                seq1 = [_ for _ in range(1, s1 + 1)] 
+                seq2 = [_ for _ in range(s0 + 1, s1)][::-1]
+                seq3 = [_ for _ in range(s0, nos + 1)] 
+                surflist = seq1 + seq2 + seq3
+                custom_surflist_valid = True
+        except:
+            print("Warning: Custom ghost list invalid. Tracing default!")
+    if not custom_surflist_valid:
+        surflist = [i for i in range(1, nos + 1)] # standard surface list for non-ghost trace
     trace_detector = not self.tracetoscene
     rays = exec_trace(lens, rays, surflist, trace_detector=trace_detector)
     if trace_detector and self.autofocus:
