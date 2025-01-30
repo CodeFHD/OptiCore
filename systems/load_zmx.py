@@ -32,6 +32,7 @@ from ..utils.raytrace.trace_sequential import exec_trace, trace_to_scene
 from ..utils.raytrace import rayfan
 from ..elements import add_lens, add_mirror, get_default_paramdict_lens, get_default_paramdict_mirror, add_circular_aperture
 from .zmx import split_zmx_file, parse_zmx_surface, get_stop
+from ..materials import glass_from_Element_cycles, clear_all_materials
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
@@ -301,15 +302,15 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         n_loop = 2
                     else:
                         n_loop = num_surfaces
-                    lc = 0
+                    # get materials
+                    if bpy.context.scene.render.engine == 'CYCLES':
+                        clear_all_materials()
+                        materials_bulk, materials_interface = glass_from_Element_cycles(ele, self.wl)
                     while True:
-                        lc = lc+1
-                        print('LOOP!', lc)
                         if self.split_cemented:
                             i1 = i0 + 2
                         else:
                             i1 = num_surfaces+1
-                    
                         paramdict = get_default_paramdict_lens()
                         for i in range(n_loop):
                             rx = ele.data['radius'][i0+i]
@@ -323,8 +324,16 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                             paramdict[f'surfrot{i+1}'] = ele.data['surf_rotation'][i0+i]
                             if ele.data['rCA_short'][i0+i] < max(ele.data['rCA'][i0:i1]):
                                 paramdict[f'flangerad{i+1}'] = max(ele.data['rCA'][i0:i1]) - ele.data['rCA_short'][i0+i]
+                            if bpy.context.scene.render.engine == 'CYCLES':
+                                if i == 0:
+                                    paramdict[f'material_name{i+1}'] = materials_bulk[i]
+                                elif i == n_loop-1:
+                                    paramdict[f'material_name{i+1}'] = materials_bulk[i-1]
+                                else:
+                                    paramdict[f'material_name{i+1}'] = materials_interface[i-1]
                         for i in range(n_loop-1):
                             paramdict[f'centerthickness{i+1}'] = ele.data['CT'][i0+i]
+
                         paramdict['lensradius'] = max(ele.data['rCA'][i0:i1])
                         paramdict['makedoublet'] = str(n_loop-1)
                         # parameters completely independent of split_cemented
@@ -755,7 +764,6 @@ def load_from_zmx(filename, testmode=False, logfile=None):
 
     if testmode:
         lens.detector['distance'] = 5000
-        # build the lens, raytrace, and get the rays for plotting
         lens.build(0.586)
 
     return lens
