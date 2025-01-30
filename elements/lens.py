@@ -795,10 +795,12 @@ def get_default_paramdict_lens():
     paramdict['A4'] = list([0. for i in range(3)])
     paramdict['makedoublet'] = "1"
     paramdict['dshape'] = False
-    paramdict['material_name1'] = ""
-    paramdict['material_name2'] = ""
-    paramdict['material_name3'] = ""
-    paramdict['material_name4'] = ""
+    paramdict['material_name1'] = ''
+    paramdict['material_name2'] = ''
+    paramdict['material_name3'] = ''
+    paramdict['material_name4'] = ''
+    paramdict['material_edge'] = ''
+    paramdict['material_dface'] = ''
     paramdict['shade_smooth'] = True
     paramdict['smooth_type'] = True
     paramdict['ior1'] = 1.5
@@ -851,6 +853,8 @@ def add_lens(self, context, paramdict=None):
         material_name2 = self.material_name2
         material_name3 = self.material_name3
         material_name4 = self.material_name4
+        material_edge = ''
+        material_dface = ''
         shade_smooth = self.shade_smooth
         smooth_type = self.smooth_type
         ior1 =  self.ior1
@@ -899,6 +903,8 @@ def add_lens(self, context, paramdict=None):
         material_name2 = paramdict['material_name2']
         material_name3 = paramdict['material_name3']
         material_name4 = paramdict['material_name4']
+        material_edge = paramdict['material_edge']
+        material_dface = paramdict['material_dface']
         shade_smooth = paramdict['shade_smooth']
         smooth_type = paramdict['smooth_type']
         ior1 =  paramdict['ior1']
@@ -923,6 +929,11 @@ def add_lens(self, context, paramdict=None):
     surfrot2 = surfrot2 + dSurfrot2
     surfrot3 = surfrot3 + dSurfrot3
     surfrot4 = surfrot4 + dSurfrot4
+
+    if material_edge == '':
+        material_edge = material_name1
+    if material_dface == '':
+        material_dface = material_edge
 
     """
     prepare some variables
@@ -1112,26 +1123,29 @@ def add_lens(self, context, paramdict=None):
         bpy.context.tool_settings.mesh_select_mode = [False, False, True] # face select mode
     
     # apend the materials to the objects material list
-    dummy = 0 # keep track of the material index in the list if there is a gap
+    #dummy = 0 # keep track of the material index in the list if there is a gap
     if hasmat1:
         mat1 = bpy.data.materials[material_name1]
-        obj.data.materials.append(mat1)
-        mat_idx_1 = dummy
-        dummy = dummy + 1
+        obj.data.materials.append(mat1) # material 1 is always added since it is the first
+        #mat_idx_1 = dummy
+        #dummy = dummy + 1
     if hasmat2:
         mat2 = bpy.data.materials[material_name2]
-        obj.data.materials.append(mat2)
-        mat_idx_2 = dummy
-        dummy = dummy + 1
+        if obj.data.materials.find(material_name2) < 0:
+            obj.data.materials.append(mat2)
+        #mat_idx_2 = dummy
+        #dummy = dummy + 1
     if hasmat3:
         mat3 = bpy.data.materials[material_name3]
-        obj.data.materials.append(mat3)
-        mat_idx_3 = dummy
-        dummy = dummy + 1
+        if obj.data.materials.find(material_name3) < 0:
+            obj.data.materials.append(mat3)
+        #mat_idx_3 = dummy
+        #dummy = dummy + 1
     if hasmat4:
         mat4 = bpy.data.materials[material_name4]
-        obj.data.materials.append(mat4)
-        mat_idx_4 = dummy
+        if obj.data.materials.find(material_name4) < 0:
+            obj.data.materials.append(mat4)
+        #mat_idx_4 = dummy
         
     # S1
     if hasmat1:    
@@ -1145,7 +1159,7 @@ def add_lens(self, context, paramdict=None):
             mesh.polygons[i].select=True
         # assign the material
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        obj.active_material_index = mat_idx_1
+        obj.active_material_index = obj.data.materials.find(material_name1)
         bpy.ops.object.material_slot_assign()
     
     # S2
@@ -1160,7 +1174,7 @@ def add_lens(self, context, paramdict=None):
             mesh.polygons[i + nFaces_at_segment[1]].select=True
         # assign the material
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        obj.active_material_index = mat_idx_2
+        obj.active_material_index = obj.data.materials.find(material_name2)
         bpy.ops.object.material_slot_assign()
     
     # S3
@@ -1175,7 +1189,7 @@ def add_lens(self, context, paramdict=None):
             mesh.polygons[i + nFaces_at_segment[3]].select=True
         # assign the material
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        obj.active_material_index = mat_idx_3
+        obj.active_material_index = obj.data.materials.find(material_name3)
         bpy.ops.object.material_slot_assign()
     
     # S4
@@ -1190,7 +1204,7 @@ def add_lens(self, context, paramdict=None):
             mesh.polygons[i + nFaces_at_segment[5]].select=True
         # assign the material
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        obj.active_material_index = mat_idx_4
+        obj.active_material_index = obj.data.materials.find(material_name4)
         bpy.ops.object.material_slot_assign()
     
     # side
