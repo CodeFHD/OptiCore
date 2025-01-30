@@ -1113,7 +1113,9 @@ def add_lens(self, context, paramdict=None):
     hasmat2 = material_name2 in bpy.data.materials
     hasmat3 = material_name3 in bpy.data.materials
     hasmat4 = material_name4 in bpy.data.materials
-    hasmat_any = hasmat1 or hasmat2 or hasmat3 or hasmat4
+    hasmat_edge = material_edge in bpy.data.materials
+    hasmat_dface = material_dface in bpy.data.materials
+    hasmat_any = hasmat1 or hasmat2 or hasmat3 or hasmat4 # not testing edge an dface because they are supplemental
     
     # initially change to edit mode
     if hasmat_any:
@@ -1123,29 +1125,30 @@ def add_lens(self, context, paramdict=None):
         bpy.context.tool_settings.mesh_select_mode = [False, False, True] # face select mode
     
     # apend the materials to the objects material list
-    #dummy = 0 # keep track of the material index in the list if there is a gap
     if hasmat1:
         mat1 = bpy.data.materials[material_name1]
-        obj.data.materials.append(mat1) # material 1 is always added since it is the first
-        #mat_idx_1 = dummy
-        #dummy = dummy + 1
+        if obj.data.materials.find(material_name1) < 0: # technically the check is unneccessary for material1, but added for consistency
+            obj.data.materials.append(mat1) 
     if hasmat2:
         mat2 = bpy.data.materials[material_name2]
         if obj.data.materials.find(material_name2) < 0:
             obj.data.materials.append(mat2)
-        #mat_idx_2 = dummy
-        #dummy = dummy + 1
     if hasmat3:
         mat3 = bpy.data.materials[material_name3]
         if obj.data.materials.find(material_name3) < 0:
             obj.data.materials.append(mat3)
-        #mat_idx_3 = dummy
-        #dummy = dummy + 1
     if hasmat4:
         mat4 = bpy.data.materials[material_name4]
         if obj.data.materials.find(material_name4) < 0:
             obj.data.materials.append(mat4)
-        #mat_idx_4 = dummy
+    if hasmat_edge:
+        mat5 = bpy.data.materials[material_edge]
+        if obj.data.materials.find(material_edge) < 0:
+            obj.data.materials.append(mat5)
+    if hasmat_dface and dshape:
+        mat6 = bpy.data.materials[material_dface]
+        if obj.data.materials.find(material_dface) < 0:
+            obj.data.materials.append(mat6)
         
     # S1
     if hasmat1:    
@@ -1208,10 +1211,52 @@ def add_lens(self, context, paramdict=None):
         bpy.ops.object.material_slot_assign()
     
     # side
-    # TODO implement if requested
+    if hasmat_edge:  
+        # deselect all
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.select_all(action='DESELECT')
+        # select the relevant faces
+        # side 1
+        nfaces = nFaces_at_segment[3] - nFaces_at_segment[2] - dshape
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        for i in range(nfaces):
+            mesh.polygons[i + nFaces_at_segment[2]].select=True
+        # side 2
+        if md in ['2', '3']:
+            nfaces = nFaces_at_segment[5] - nFaces_at_segment[4] - dshape
+            for i in range(nfaces):
+                mesh.polygons[i + nFaces_at_segment[4]].select=True
+        # side 3
+        if md in ['3']:
+            nfaces = nFaces_at_segment[5] - nFaces_at_segment[4] - dshape
+            for i in range(nfaces):
+                mesh.polygons[i + nFaces_at_segment[4]].select=True
+            for i in range(nfaces):
+                mesh.polygons[i + nFaces_at_segment[5]].select=True
+        # assign the material
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        obj.active_material_index = obj.data.materials.find(material_edge)
+        bpy.ops.object.material_slot_assign()
     
-    # d-shaoe
-    # TODO implement if requested
+    # d-shape
+    if hasmat_dface and dshape:  
+        # deselect all
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        bpy.ops.mesh.select_all(action='DESELECT')
+        # select the relevant faces
+        # side 1
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        mesh.polygons[nFaces_at_segment[3] - 1].select=True
+        # side 2
+        if md in ['2', '3']:
+            mesh.polygons[nFaces_at_segment[5] - 1].select=True
+        # side 3
+        if md in ['3']:
+            mesh.polygons[nFaces_at_segment[7] - 1].select=True
+        # assign the material
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+        obj.active_material_index = obj.data.materials.find(material_dface)
+        bpy.ops.object.material_slot_assign()
     
     """
     Creating split edge normals for smooth shading

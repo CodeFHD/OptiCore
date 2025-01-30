@@ -32,7 +32,7 @@ from ..utils.raytrace.trace_sequential import exec_trace, trace_to_scene
 from ..utils.raytrace import rayfan
 from ..elements import add_lens, add_mirror, get_default_paramdict_lens, get_default_paramdict_mirror, add_circular_aperture
 from .zmx import split_zmx_file, parse_zmx_surface, get_stop
-from ..materials import glass_from_Element_cycles, clear_all_materials
+from ..materials import glass_from_Element_cycles, clear_all_materials, add_edgematerial_cycles, add_dfacematerial_cycles
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
@@ -306,6 +306,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                     if bpy.context.scene.render.engine == 'CYCLES':
                         clear_all_materials()
                         materials_bulk, materials_interface = glass_from_Element_cycles(ele, self.wl)
+                        add_edgematerial_cycles()
+                        add_dfacematerial_cycles()
                     while True:
                         if self.split_cemented:
                             i1 = i0 + 2
@@ -333,7 +335,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                                     paramdict[f'material_name{i+1}'] = materials_interface[i-1]
                         for i in range(n_loop-1):
                             paramdict[f'centerthickness{i+1}'] = ele.data['CT'][i0+i]
-
+                        
+                        if bpy.context.scene.render.engine == 'CYCLES':
+                            paramdict[f'material_edge'] = 'OC_LensEdge_cycles'
+                            paramdict[f'material_dface'] = 'OC_LensDface_cycles'
                         paramdict['lensradius'] = max(ele.data['rCA'][i0:i1])
                         paramdict['makedoublet'] = str(n_loop-1)
                         # parameters completely independent of split_cemented
