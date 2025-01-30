@@ -252,7 +252,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         print()
         print(f'Now importing {fname}')
         # load the lens
-        lens = load_from_zmx(self.path)
+        lens = load_from_zmx(bpy.path.abspath(self.path))
         lens.apertures[0]['radius'] = lens.apertures[0]['radius']*self.aperturediam
         created_objects = [] # list of the individual objects that were created
         t1 = time.perf_counter()
