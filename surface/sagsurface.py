@@ -89,7 +89,9 @@ def add_sagsurface_circular(R, k, A, lrad, N1, N2,
         i = N1 - 2
         r = lrad_ext
         for j in range(N2):
-            # phi = maxb*j/N2
+            phi = maxb*j/N2 + minb
+            x = r*np.cos(phi)
+            y = r*np.sin(phi)
             verts.append(Vector((x, y, -z - zadd)))
             normals.append((0, 0, 1))
             if dshape and j==N2-1:
