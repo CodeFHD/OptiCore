@@ -259,6 +259,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         
         # create meshes from the elements
         if self.addlenses:
+            if bpy.context.scene.render.engine == 'CYCLES':
+                clear_all_materials()
             CT_sum = 0
             radius_outer = 0
             for ele, dz in lens.elements:
@@ -304,7 +306,6 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         n_loop = num_surfaces
                     # get materials
                     if bpy.context.scene.render.engine == 'CYCLES':
-                        clear_all_materials()
                         materials_bulk, materials_interface = glass_from_Element_cycles(ele, self.wl)
                         add_edgematerial_cycles()
                         add_dfacematerial_cycles()
@@ -315,14 +316,16 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                             i1 = num_surfaces+1
                         paramdict = get_default_paramdict_lens()
                         for i in range(n_loop):
-                            rx = ele.data['radius'][i0+i]
-                            kx = ele.data['asph'][i0+i][0]
-                            Ax = ele.data['asph'][i0+i][1:]
+                            ry = ele.data['radius'][i0+i]
+                            ky = ele.data['asph'][i0+i][0]
+                            Ay = ele.data['asph'][i0+i][1:]
+                            rz = ele.data['radius2'][i0+i]
                             ltype = ele.data['lenstype'][i0+i]
                             paramdict[f'ltype{i+1}'] = ltype
-                            paramdict[f'RY{i+1}'] = rx
-                            paramdict[f'k{i+1}'] = kx
-                            paramdict[f'A{i+1}'] = Ax
+                            paramdict[f'RY{i+1}'] = ry
+                            paramdict[f'k{i+1}'] = ky
+                            paramdict[f'A{i+1}'] = Ay
+                            paramdict[f'RZ{i+1}'] = rz
                             paramdict[f'surfrot{i+1}'] = ele.data['surf_rotation'][i0+i]
                             if ele.data['rCA_short'][i0+i] < max(ele.data['rCA'][i0:i1]):
                                 paramdict[f'flangerad{i+1}'] = max(ele.data['rCA'][i0:i1]) - ele.data['rCA_short'][i0+i]

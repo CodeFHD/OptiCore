@@ -20,7 +20,8 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 import bpy
 
 def clear_all_materials():
+    # bpy.ops.outliner.orphans_purge() # TODO: This would be useful but might be messing with users scenes because it deletes too much. --> Limit to OC_ meshes and materials
     materials = bpy.data.materials
-    for material in materials:
-        if material.users == 0:
+    for material in materials[:]: # use a copy so that removal doesn't mess with the iteration
+        if material.users == 0 and material.name.startswith('OC_'):
             materials.remove(material)

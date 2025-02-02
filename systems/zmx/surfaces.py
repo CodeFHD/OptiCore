@@ -192,7 +192,7 @@ def parse_zmx_surface(surflines):
                 surf_rotation = float(line.split()[2])
         elif line.startswith('XDAT'):
             iparm = int(line.split()[1])
-            if surftype == 'TOROIDAL':
+            if surftype == 'TOROIDAL' and iparm == 2:
                 radiusY = float(line.split()[2])
     
     # determine the surface type in the OptiCore scheme
@@ -207,11 +207,13 @@ def parse_zmx_surface(surflines):
     ltype = surftype_zmx2ltype(radiusX, radiusY, kX, kY, AX, AY)
     if ltype == 'cylindricX':
         ltype = 'cylindrical'
-        surf_rotation = 0
+        surf_rotation = np.pi/2
     elif ltype == 'cylindricY':
         radiusX, kX, AX, radiusY, kY, AY = radiusY, kY, AY, radiusX, kX, AX
         ltype = 'cylindrical'
-        surf_rotation = np.pi/2
+        surf_rotation = 0
+    elif ltype == 'toric':
+        surf_rotation = 0#np.pi/2
     else:
         surf_rotation = 0
 
