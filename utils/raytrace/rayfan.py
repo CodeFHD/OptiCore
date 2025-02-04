@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024, Johannes Hinrichs
+Copyright 2019-2025, Johannes Hinrichs
 
 This file is part of OptiCore.
 
@@ -21,24 +21,38 @@ import numpy as np
 
 from .. import geometry
 
-def rayfan2D(Nrays, rad, rayfanz=-20, angle=0):
+def rayfan2D(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     #init ray fan (2D plot)
-    O = [[0,i, rayfanz] for i in np.linspace(-rad, rad, Nrays)]
-    D = [[0,0,1.] for i in range(len(O))]
-    O, D = np.array(O), np.array(D)
-    if angle != 0:
-        rotmat = geometry.get_rotmat_x(angle)
-        O_0 = np.array([[0,i, 0] for i in np.linspace(-rad, rad, Nrays)])
-        O = np.matmul(rotmat, (O-O_0).T).T + O_0
-        D = np.matmul(rotmat, D.T).T
+    rayfany = -rayfanz*np.tan(theta)
+    O_0 = np.array([[i*np.cos(alpha), i*np.sin(alpha), 0] for i in np.linspace(-rad, rad, Nrays)])
+    O = [[i*np.cos(alpha) + rayfany*np.cos(phi), i*np.sin(alpha) + rayfany*np.sin(phi), rayfanz] for i in np.linspace(-rad, rad, Nrays)]
+    #D = [[0, 0, 1.] for i in range(len(O))]
+    #O, D = np.array(O), np.array(D)
+    O = np.array(O)
+    #if phi != 0:
+    #    rotmat_phi = geometry.get_rotmat_z(phi)
+    #    O = np.matmul(rotmat_phi, O.T).T
+    #    #D = np.matmul(rotmat_phi, D.T).T
+    #if theta != 0:
+    #    rotmat_theta = geometry.get_rotmat_y(-theta)
+    #    O = np.matmul(rotmat_theta, (O-O_0).T).T + O_0
+    #    #D = np.matmul(rotmat_theta, D.T).T
+    D = O_0 - O
+    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
+    D = D.T
     return O, D
 
-def rayfan2D_finite(Nrays, rad, rayfanz=-20, rayfany=0):
+def rayfan2D_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     #init ray fan (2D plot)
-    O1 = [[0, i, 0] for i in np.linspace(-rad, rad, Nrays)]
-    O = [[0, rayfany, rayfanz] for i in np.linspace(-rad, rad, Nrays)]
-    O, O1 = np.array(O), np.array(O1)
-    D = O1 - O
+    rayfany = -rayfanz*np.tan(theta)
+    O_0 = np.array([[i*np.cos(alpha), i*np.sin(alpha), 0] for i in np.linspace(-rad, rad, Nrays)])
+    #O_0 = [[i, 0, 0] for i in np.linspace(-rad, rad, Nrays)]
+    O = [[rayfany*np.cos(phi), rayfany*np.sin(phi), rayfanz] for i in np.linspace(-rad, rad, Nrays)]
+    O, O_0 = np.array(O), np.array(O_0)
+    #if alpha != 0:
+    #    rotmat_alpha = geometry.get_rotmat_z(alpha)
+    #    O_0 = np.matmul(rotmat_alpha, O_0.T).T
+    D = O_0 - O
     D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
     D = D.T
     return O, D

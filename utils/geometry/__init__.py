@@ -28,21 +28,46 @@ np.matmul(R, U.T).T
 """
 
 def get_rotmat_x(phi):
-    R = [[1, 0, 0],
-         [0, np.cos(phi),-np.sin(phi)],
-         [0, np.sin(phi), np.cos(phi)]]
+    cphi = np.cos(phi)
+    sphi = np.sin(phi)
+    R = [[1,  0,     0    ],
+         [0,  cphi,  -sphi],
+         [0,  sphi,  cphi ]]
     return np.array(R)
 
 def get_rotmat_y(phi):
-    R = [[np.cos(phi), 0, np.sin(phi)],
-         [0, 1, 0],
-         [-np.sin(phi), 0, np.cos(phi)]]
+    cphi = np.cos(phi)
+    sphi = np.sin(phi)
+    R = [[cphi,   0,  sphi],
+         [0,      1,  0   ],
+         [-sphi,  0,  cphi]]
     return np.array(R)
 
 def get_rotmat_z(phi):
-    R = [[np.cos(phi), -np.sin(phi), 0],
-         [np.sin(phi), np.cos(phi), 0],
-         [0, 0, 1]]
+    cphi = np.cos(phi)
+    sphi = np.sin(phi)
+    R = [[cphi,  -sphi,  0],
+         [sphi,  cphi,   0],
+         [0,     0,      1]]
+    return np.array(R)
+
+def get_rotmat_axis(phi, a=[1,0,0]):
+    a1, a2, a3 = a
+    cphi = np.cos(phi)
+    sphi = np.sin(phi)
+    mcphi = 1 - cphi
+    R11 = a1*a1*mcphi + cphi
+    R12 = a1*a2*mcphi - a3*sphi
+    R13 = a1*a3*mcphi + a2*sphi
+    R21 = a1*a2*mcphi + a3*sphi
+    R22 = a2*a2*mcphi + cphi
+    R23 = a2*a3*mcphi - a1*sphi
+    R31 = a1*a3*mcphi - a2*sphi
+    R32 = a2*a3*mcphi + a1*sphi
+    R33 = a3*a3*mcphi + cphi
+    R = [[R11, R12, R13],
+         [R21, R22, R23],
+         [R31, R32, R33]]
     return np.array(R)
 
 def rotate_vector_x(V, surf_rotation):

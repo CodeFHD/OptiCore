@@ -151,12 +151,29 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
            default = 20.,
            description="Distance where ray fan originates.",
            )
-    fanangle : FloatProperty(
-           name="Fan Angle",
+    fanangle1 : FloatProperty(
+           name="Fan FoV Angle",
            default = 0.,
-           description="Angle of Ray Fan.",
-           min = -90.,
-           max = 90.,
+           description="Field-of-View angle of the ray fan.",
+           min = -np.pi/2,
+           max = np.pi/2,
+           unit = "ROTATION",
+           )
+    fanangle2 : FloatProperty(
+           name="Fan Azimuth Angle",
+           default = 0.,
+           description="Azimuth angle of the ray fan.",
+           min = 0,
+           max = np.pi,
+           unit = "ROTATION",
+           )
+    fanangle3 : FloatProperty(
+           name="Fan Rotation Angle",
+           default = np.pi/2.,
+           description="Roll angle of the ray fan.",
+           min = 0.,
+           max = np.pi,
+           unit = "ROTATION",
            )
     fanangle_additional : StringProperty(
            name="Additional",
@@ -222,7 +239,9 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         col.prop(self, 'nrays')
         col.prop(self, 'fantype')
         col.prop(self, 'fandist')
-        col.prop(self, 'fanangle')
+        col.prop(self, 'fanangle1')
+        col.prop(self, 'fanangle2')
+        col.prop(self, 'fanangle3')
         col.prop(self, 'fanangle_additional')
         col.prop(self, 'fandiam')
         col.prop(self, 'aperturediam')
@@ -396,7 +415,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if self.addrayfan:
             t40 = time.perf_counter()
             # try to convert the angles and clamp between -90 and 90 degrees
-            fanangles = [self.fanangle]
+            fanangles = [self.fanangle1]
             try:
                 if not self.fanangle_additional in ["", "None", "none", "NONE"]:
                     fanangles_add = [max(min(float(a), 89.99), -89.99) for a in self.fanangle_additional.split(";")]
@@ -407,13 +426,19 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             for fanangle in fanangles:
                 # set up the rays
                 # TODO: it might be a less branched approach to set up the initparams with a dictionary. Consider with future updates
-                if self.fantype in ["2D_finite"]:
-                    rayfany = self.fandist*np.tan(fanangle*np.pi/180)
-                    initparams = [self.nrays, lens.data['rCA'][1]*self.fandiam, -1*self.fandist, -1.*rayfany]
+                if self.fantype in ["3D_rings_finite"]:
+                    rayfany = self.fandist*np.tan(fanangle)
+                    initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, 1.*rayfany]
+                elif self.fantype in ["2D_finite", "2D"]:
+                    initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, fanangle, self.fanangle2, self.fanangle3] 
                 else:# self.fantype in ["2D"]:
-                    initparams = [self.nrays, lens.data['rCA'][1]*self.fandiam, -1*self.fandist, fanangle*np.pi/180] 
-                #else:
-                #    initparams = [self.nrays, lens.data['rCA'][1]*self.fandiam, -1*self.fandist, self.fanangle*np.pi/180]    
+                    initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, fanangle] 
+                
+                #if self.fantype in ["2D_finite"]:
+                #    rayfany = self.fandist*np.tan(fanangle*np.pi/180)
+                #    initparams = [self.nrays, lens.data['rCA'][1]*self.fandiam, -1*self.fandist, -1.*rayfany]
+                #else:# self.fantype in ["2D"]:
+                #    initparams = [self.nrays, lens.data['rCA'][1]*self.fandiam, -1*self.fandist, fanangle*np.pi/180]  
                 rays = rayfan.RayFan(self.fantype, initparams, store_history=True)
                 # try to parse ghost_oder
                 ghost_order = self.ghost_order
