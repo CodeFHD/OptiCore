@@ -19,8 +19,6 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 
 from .check_surface import *
 from . import lens_math
-from .seqrt import *
-from . import rayfan
 
 DEBUGPRINT = False
 def debugprint(*messages):
