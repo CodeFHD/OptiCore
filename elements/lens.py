@@ -363,9 +363,10 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
     fantype : EnumProperty(
            name="Ray Fan Type",
            items = {("2D","2D",""),
-                    ("3D_square","3D square",""),
                     ("3D_tri","3D tris",""),
+                    ("3D_tri_finite","3D tris - finite",""),
                     ("3D_random","3D random",""),
+                    ("3D_random_finite","3D random - finite",""),
                     ("2D_finite","2D - finite",""),
                     ("3D_rings", "3D rings", ""),
                     ("3D_rings_finite", "3D rings - finite", ""),},
@@ -388,14 +389,14 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     fanangle2 : FloatProperty(
            name="Fan Azimuth Angle",
-           default = 0.,
+           default = np.pi/2,
            description="Azimuth angle of the ray fan.",
            min = 0,
-           max = np.pi,
+           max = 2*np.pi,
            unit = "ROTATION",
            )
     fanangle3 : FloatProperty(
-           name="Fan Rotation Angle",
+           name="Fan Roll Angle",
            default = np.pi/2.,
            description="Roll angle of the ray fan.",
            min = 0.,
@@ -1498,15 +1499,7 @@ def add_rayfan(self, context):
     lens.detector['pixelpitch'] = 1 # default
     lens.build(0.586)
     # set up the rays
-    if self.fantype in ["3D_rings_finite"]:
-        rayfany = self.fandist*np.tan(self.fanangle1)
-        initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, 1.*rayfany]
-    elif self.fantype in ["2D_finite", "2D"]:
-        initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, self.fanangle1, self.fanangle2, self.fanangle3] 
-    else:# self.fantype in ["2D"]:
-        initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, self.fanangle1] 
-    #else:
-    #    initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist]    
+    initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, self.fanangle1, self.fanangle2, self.fanangle3] 
     rays = rayfan.RayFan(self.fantype, initparams, store_history=True)
     # try to parse ghost_oder
     ghost_order = self.ghost_order
