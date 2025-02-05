@@ -26,7 +26,7 @@ SUPPORTED_SURFTYPES =['STANDARD', 'EVENASPH', 'BICONICX', 'TOROIDAL']
 
 
 def _type_from_surflines(surflines):
-    surftype = None
+    surftype = 'STANDARD' # default, as zemax file does not need to contain TYPE line (seen in edmund optics doublets)
     for line in surflines:
         # Get the tr
         if line.startswith('TYPE'):
