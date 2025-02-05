@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import bpy
 import numpy as np
 
 from mathutils import Vector
 
+import bpy
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 def add_circular_aperture(self, context, radius_inner, radius_outer, N, dshape=False):

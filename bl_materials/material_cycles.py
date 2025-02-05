@@ -18,7 +18,8 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import bpy
-from ..utils.raytrace import glasscatalog
+
+from ..raytrace import glasscatalog
 
 def get_OC_material_name(material_name):
     OC_material_name = 'OC_' + material_name + '_cycles'

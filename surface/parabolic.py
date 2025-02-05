@@ -19,8 +19,6 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
-from mathutils import Vector
-
 def getdxdr(r,A):
     return 2.*r*A
 
@@ -66,7 +64,7 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,zadd=0,nVerts=0,
         fyoffset = 0
 
     if not hole:
-        verts.append(Vector((A*OAD**2+xoffset-zadd,OAD+yoffset,0)))
+        verts.append([A*OAD**2+xoffset-zadd,OAD+yoffset,0])
         dxdr = getdxdr(OAD,A)
         adxdr = np.sqrt(1 + dxdr**2)
         dxdr = dxdr/adxdr
@@ -84,7 +82,7 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,zadd=0,nVerts=0,
         zp = ri*ctj
         dp = np.sqrt(yp**2+zp**2)
         xp = A*dp**2
-        verts.append(Vector((xp+xoffset-zadd,yp+yoffset,zp)))
+        verts.append([xp+xoffset-zadd,yp+yoffset,zp])
         dxdr = getdxdr(dp,A)
         adxdr = np.sqrt(1 + dxdr**2)
         dxdr = dxdr/adxdr
@@ -109,7 +107,7 @@ def add_parabolic_surface(fp,mrad,N1,N2,theta,orig='FP',nsurf=1,zadd=0,nVerts=0,
             zp = ri*ctj
             dp = np.sqrt(yp**2+zp**2)
             xp = A*dp**2
-            verts.append(Vector((xp+xoffset-zadd,yp+yoffset,zp)))
+            verts.append([xp+xoffset-zadd,yp+yoffset,zp])
             dxdr = getdxdr(dp,A)
             adxdr = np.sqrt(1 + dxdr**2)
             dxdr = dxdr/adxdr

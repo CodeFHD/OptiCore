@@ -17,10 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import bpy
-#from bpy.ops.object import shade_smooth
 import numpy as np
 
+import bpy
 from bpy.types import Operator, ParticleSettingsTextureSlot
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add

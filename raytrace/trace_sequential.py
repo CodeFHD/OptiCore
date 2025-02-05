@@ -21,10 +21,9 @@ import time
 
 import numpy as np
 
-from . import rayfan
 from . import intersect as rt_intersect
 from . import intersect_asphere as rt_intersect_asph
-from ...surface.toric import get_z_toric, get_N_toric
+from ..surface.toric import get_z_toric, get_N_toric
 
 import bpy
 

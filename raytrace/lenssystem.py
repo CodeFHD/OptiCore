@@ -18,7 +18,7 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from . import glasscatalog
-from ..paraxial import paraxial
+from . import paraxial
 
 """
 TODO: Possibly to be foreseen in this implementation:

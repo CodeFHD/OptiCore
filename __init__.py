@@ -29,14 +29,13 @@ bl_info = {
     "category": "Add Mesh",
     }
 
-import bpy
 import numpy as np
-# from bpy.types import Operator
-# from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
+
+
+import bpy
 from bpy_extras.object_utils import AddObjectHelper, object_data_add # NOTE: have to import object_data_add here even though it is not used in this file, due to the way it is imported in other files. TODO: attempt to change it to absolute imports in those modules to clean this up.
-from .elements import OBJECT_OT_add_lens, reset_lens_defaults, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro, OBJECT_OT_add_siemens
-from .optomech import OBJECT_OT_add_table, OBJECT_OT_add_post
-from .systems import OBJECT_OT_load_zmx, reset_loadzmx_faults#, OBJECT_OT_test_zmx
+from .bl_optics import OBJECT_OT_add_lens, reset_lens_defaults, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro, OBJECT_OT_add_siemens, OBJECT_OT_load_zmx, reset_loadzmx_faults#, OBJECT_OT_test_zmx
+from .bl_optomech import OBJECT_OT_add_table, OBJECT_OT_add_post
 
 class OBJECT_OT_reset_performance_variables(bpy.types.Operator, AddObjectHelper):
     """This function resets some variables that may have caused performance issues"""

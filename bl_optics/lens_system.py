@@ -1,10 +1,10 @@
-import bpy
 import numpy as np
 
+import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
-from ..elements import OBJECT_OT_add_lens, OBJECT_OT_add_sqlens#, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro
+from . import OBJECT_OT_add_lens, OBJECT_OT_add_sqlens#, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro
 
 class OBJECT_OT_lens_system(bpy.types.Operator, AddObjectHelper):
     """Create a new Mesh Object"""
@@ -40,3 +40,4 @@ class OBJECT_OT_lens_system(bpy.types.Operator, AddObjectHelper):
         return {'FINISHED'}
 
 def create_system(self, context):
+    pass

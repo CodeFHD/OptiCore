@@ -17,9 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import bpy
 import numpy as np
 
+from mathutils import Vector
+
+import bpy
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
@@ -27,16 +29,7 @@ from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from .. import object_data_add
 from .. import utils
 
-from mathutils import Vector
-
 import time
-
-#brad = 0.01
-#hrad = 0.003
-#nph = 16
-#nbev = 8
-
-
 
 class OBJECT_OT_add_table(Operator, AddObjectHelper):
     """Create a new Mesh Object"""

@@ -20,7 +20,7 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 pi2 = 2*np.pi # often used
 
-from .. import geometry
+from ..utils import geometry
 
 def rayfan2D(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     rayfany = -rayfanz*np.tan(theta)

@@ -1,7 +1,5 @@
 import numpy as np
 
-from mathutils import Vector
-
 from .radialprofiles import get_zN_spherical, get_z_spherical, get_N_spherical, get_z_evenasphere, get_N_evenasphere
 # from .spherical import get_z_spherical, get_N_spherical
 from .aspheric import _check_k # get_z_asphere, get_N_asphere, 
@@ -29,7 +27,7 @@ def add_sagsurface_circular(R, k, A, lrad, N1, N2,
     if surftype=='aspheric':
         k = _check_k(k, R, lrad)
 
-    verts.append(Vector((0, 0, -zadd)))
+    verts.append([0, 0, -zadd])
     normals.append((0, 0, 1))
     """outer loop"""
     for i in range(N1 - (lrad_ext > lrad)):
@@ -55,7 +53,7 @@ def add_sagsurface_circular(R, k, A, lrad, N1, N2,
                 z, N = get_zN_acylindrical(x, y, R, k, A, surf_rotation=surf_rotation)
             elif surftype == 'toric':
                 z, N = get_zN_toric(x, y, R, rad2, surf_rotation=surf_rotation)
-            verts.append(Vector((x, y, -z - zadd)))
+            verts.append([x, y, -z - zadd])
             normals.append(N)
             if dshape and j==N2-1:
                 pass
@@ -92,7 +90,7 @@ def add_sagsurface_circular(R, k, A, lrad, N1, N2,
             phi = maxb*j/N2 + minb
             x = r*np.cos(phi)
             y = r*np.sin(phi)
-            verts.append(Vector((x, y, -z - zadd)))
+            verts.append([x, y, -z - zadd])
             normals.append((0, 0, 1))
             if dshape and j==N2-1:
                 pass
@@ -141,7 +139,7 @@ def add_sagsurface_rectangular(R, k, A, lwidth, N1, N2,
                 z, N = get_zN_acylindrical(x, y, R, k, A, surf_rotation=surf_rotation)
             elif surftype == 'toric':
                 z, N = get_zN_toric(x, y, R, rad2, surf_rotation=surf_rotation)
-            verts.append(Vector((x, y, -z-zadd)))
+            verts.append([x, y, -z-zadd])
             normals.append(N)
             ang = np.arctan2(y + lwidth/(2*N2-2), x + lwidth/(2*N1-2))
             vertquads.append(ang/np.pi*2)

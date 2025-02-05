@@ -19,30 +19,6 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
-from mathutils import Vector
-
-"""
-This _fixN1, _fixN2 mechanic seems to not have been needed
-rest of code would have broken due to implementation if it had been used.
-Commented out for now, see what happens for some time then delete.
-
-def _fixN1(N1, alpha):
-    # recursive function to test and reduce N1 until condition is met
-    if (1 - alpha)**(N1 - 2) > 0.01:
-        return N1
-    else:
-        return _fixN1(N1-1, alpha)
-
-def _fixN2(N2, maxb):
-    # recursive function to test and increase N2 until condition is met
-    if maxb/N2 < 1:
-        return N2
-    else:
-        return _fixN2(N2+1, maxb)
-"""
-
-
-
 def add_spherical_surface(rad, lrad, N1, N2, zadd=0, nVerts=0, cylinderaxis=None,
                           hole=False, hrad=0, dshape=False, lrad_ext=0):
     #TODO: Could parse arguments by kwargs-dict to keep function call short, then pop here
@@ -66,7 +42,7 @@ def add_spherical_surface(rad, lrad, N1, N2, zadd=0, nVerts=0, cylinderaxis=None
 
     # central vertex only without hole
     if not hole:
-        verts.append(Vector((0, 0, -zadd)))
+        verts.append([0, 0, -zadd])
         normals.append((0, 0, 1))
         hang = 0 # angle where first ring is placed
     else:
@@ -87,7 +63,7 @@ def add_spherical_surface(rad, lrad, N1, N2, zadd=0, nVerts=0, cylinderaxis=None
             else:
                 r = r0
             z = rad-np.sqrt(rad**2-r**2)
-            verts.append(Vector((x, y, -z*sig-zadd)))
+            verts.append([x, y, -z*sig-zadd])
             normals.append((sig*np.sin(a)*np.cos(b),
                             sig*np.sin(a)*np.sin(b),
                             np.cos(a)))
@@ -117,7 +93,7 @@ def add_spherical_surface(rad, lrad, N1, N2, zadd=0, nVerts=0, cylinderaxis=None
         r = lrad_ext       
         for j in range(N2):
             b = maxb*j/N2 + minb
-            verts.append(Vector((r*np.cos(b), r*np.sin(b), -z*sig - zadd)))
+            verts.append([r*np.cos(b), r*np.sin(b), -z*sig - zadd])
             normals.append((0, 0, 1))
             if dshape and j==N2-1:
                 pass
@@ -203,7 +179,7 @@ def add_sqspherical_surface(rad, lwidth, N1, N2, zadd=0, nVerts=0,
             else:
                 r = np.sqrt(y**2 + z**2)
             x = rad - np.sqrt(rad**2 - r**2)
-            verts.append(Vector((y, z, -x*sig - zadd)))
+            verts.append([y, z, -x*sig - zadd])
             ang = np.arctan2(z + lwidth_ext/(N2-1), y + lwidth_ext/(N1-1))
             # Normals
             if is_flangevert:

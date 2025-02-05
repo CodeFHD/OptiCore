@@ -19,8 +19,6 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
-from mathutils import Vector
-
 from .radialprofiles import get_z_evenasphere, get_N_evenasphere, get_dzdr_evenasphere
 
 def _check_k(k, r, lrad):
@@ -53,13 +51,13 @@ def add_aspheric_surface(R, k, A, lrad, N1, N2, zadd=0, nVerts=0, dshape=False, 
 
     k = _check_k(k, R, lrad)
 
-    verts.append(Vector((-zadd,0,0)))
+    verts.append([-zadd,0,0])
     normals.append((1,0,0))
     r = lrad/(N1- (lrad_ext > lrad))
     x = get_z_evenasphere(r**2, R, k, A)
     for j in range(N2):
         b = maxb*j/N2
-        verts.append(Vector((-1.*x-zadd, r*np.sin(b), r*np.cos(b))))
+        verts.append([-1.*x-zadd, r*np.sin(b), r*np.cos(b)])
         N = get_N_evenasphere(r, b, R, k, A)
         normals.append(N)
         if dshape and j==N2-1:
@@ -74,7 +72,7 @@ def add_aspheric_surface(R, k, A, lrad, N1, N2, zadd=0, nVerts=0, dshape=False, 
         x = get_z_evenasphere(r**2, R, k, A)
         for j in range(N2):
             b = maxb*j/N2
-            verts.append(Vector((-1.*x-zadd,r*np.sin(b),r*np.cos(b))))
+            verts.append([-1.*x-zadd,r*np.sin(b),r*np.cos(b)])
             N = get_N_evenasphere(r, b, R, k, A)
             normals.append(N)
             if dshape and j==N2-1:
@@ -92,7 +90,7 @@ def add_aspheric_surface(R, k, A, lrad, N1, N2, zadd=0, nVerts=0, dshape=False, 
         r = lrad_ext
         for j in range(N2):
             b = maxb*j/N2
-            verts.append(Vector((-1.*x - zadd,r*np.sin(b),r*np.cos(b))))
+            verts.append([-1.*x - zadd,r*np.sin(b),r*np.cos(b)])
             normals.append((1,0,0))
             if dshape and j==N2-1:
                 pass
@@ -133,7 +131,7 @@ def add_sqaspheric_surface(R, k, A, lwidth, N1, N2, nsurf=1, zadd=0, nVerts=0, c
             else:
                 r = np.sqrt(y**2 + z**2)
             x = get_z_evenasphere(r**2, R, k, A)
-            verts.append(Vector((-1.*x*nsurf-zadd,y,z)))
+            verts.append([-1.*x*nsurf-zadd,y,z])
             dxdr = get_dzdr_evenasphere(r, R, k, A)
             adxdr = np.sqrt(dxdr**2 + 1)
             dxdr = dxdr/adxdr

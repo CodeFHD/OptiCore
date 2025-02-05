@@ -20,9 +20,8 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 
 from .intersect import rectangle_intersect
-from ...surface.radialprofiles import get_z_evenasphere, get_N_evenasphere
-# from ...surface.aspheric import get_z_asphere, get_N_asphere
-from ...surface.toric import get_z_toric, get_N_toric
+from ..surface.radialprofiles import get_z_evenasphere, get_N_evenasphere
+from ..surface.toric import get_z_toric, get_N_toric
 
 """
 PARKED CODE for spossible use of Newton-Raphson in the future

@@ -18,7 +18,6 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from .check_surface import *
-from . import lens_math
 
 DEBUGPRINT = False
 def debugprint(*messages):

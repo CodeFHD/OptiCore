@@ -23,7 +23,7 @@ import pickle
 import numpy as np
 
 modulepath = os.path.dirname(__file__)
-glasscatdir = os.path.join(modulepath, 'glasscatalog')
+glasscatdir = os.path.join(modulepath, 'glasscatalog_data')
 
 N_FALLBACK = 1.6
 

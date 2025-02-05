@@ -4,4 +4,4 @@
 *.py.bak
 *.bak
 
-systems/test_zemax_library.py
+bl_optics/test_zemax_library.py

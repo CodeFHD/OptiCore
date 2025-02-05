@@ -17,24 +17,23 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from urllib.request import proxy_bypass
-import bpy
-from bpy.types import SEQUENCER_PT_sequencer_overlay_strips
 import numpy as np
 
 from mathutils import Vector
 
+import bpy
+from bpy.types import SEQUENCER_PT_sequencer_overlay_strips
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 from .. import surface as sfc
 from .. import object_data_add
 from .. import utils
-from ..utils.paraxial import paraxial
-from ..utils.raytrace.element import Element
-from ..utils.raytrace.lenssystem import Lenssystem
-from ..utils.raytrace.trace_sequential import exec_trace, trace_to_scene
-from ..utils.raytrace import rayfan
+from ..raytrace import paraxial
+from ..raytrace.element import Element
+from ..raytrace.lenssystem import Lenssystem
+from ..raytrace.trace_sequential import exec_trace, trace_to_scene
+from ..raytrace import rayfan
 from ..utils.check_surface import surftype_Lens2Element
 from ..surface.surfaceutils import get_N1_sqsurface
 
