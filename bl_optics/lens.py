@@ -1000,10 +1000,11 @@ def add_lens(self, context, paramdict=None):
     
     # all sides are equal so this is generic and gets added below
     if squarelens:
-        normalsside = sfc.get_sqringnormals(N1, N2, dshape=dshape)
+        pass
+        # normalsside = sfc.get_sqringnormals(N1, N2, dshape=dshape)
     else:
         normalsside = sfc.get_ringnormals(N2, dshape=dshape)
-    normalsside = [[t[2], t[0], t[1]] for t in normalsside]
+        normalsside = [[t[2], t[0], t[1]] for t in normalsside]
     nFacSide = N2
     
     # add further surfaces
@@ -1281,8 +1282,6 @@ def add_lens(self, context, paramdict=None):
     Creating split edge normals for smooth shading
     """
 
-    if squarelens: shade_smooth = False # TODO: temporary
-
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
     """Case 1: Round lens"""
     if shade_smooth and not squarelens:
@@ -1292,12 +1291,11 @@ def add_lens(self, context, paramdict=None):
         cn_list = []
         i_segment = 1 # start at 1 because of 0 offset
         n_loops = 0
-        n_loops_prev = 0
+
         for i_surf in range(num_surfaces):
             surf_subtype0 = lsubtype_list[i_surf]
-            # surfaces
-            srad0 = srad_list[i_surf]
             ltype0 = ltype_list[i_surf]
+            # surface
             if surf_subtype0 == 'flat':
                 nloops1 = N2 # when radius == 0, the face is flat circle, only one loop line going around
                 nloops1_fl = N2 # flange has no impact for a flat face
@@ -1315,7 +1313,6 @@ def add_lens(self, context, paramdict=None):
                     vi = mesh.loops[nloops1_fl + n_loops + i].vertex_index
                     cn_list.append(normals[nVerts_at_segment[i_segment]-1]) # all annulus vertices have the same pointing
             i_segment = i_segment + 1
-            n_loops_prev = n_loops
             n_loops = n_loops + nloops1
             
             # no sides at the first face
@@ -1332,7 +1329,6 @@ def add_lens(self, context, paramdict=None):
                 else:
                     vi = (vi - nVerts_at_segment[i_segment - 1])%N2
                 cn_list.append(normalsside[vi])
-            n_loops_prev = n_loops
             n_loops = n_loops + n_loop_side
         
             # D-shape
@@ -1347,7 +1343,6 @@ def add_lens(self, context, paramdict=None):
                     n_side2 = 2*N1
                 for i in range(n_side1 + n_side2 + 2):
                     cn_list.append((0,-1,0))
-                n_loops_prev = n_loops
                 n_loops = n_loops + n_side1 + n_side2 + 2
             
             i_segment = i_segment + 1
@@ -1356,7 +1351,62 @@ def add_lens(self, context, paramdict=None):
 
     """Case 2: Square lens"""
     if shade_smooth and squarelens:
-        pass
+        bpy.ops.object.shade_smooth()
+        bpy.ops.mesh.customdata_custom_splitnormals_clear()
+        bpy.ops.mesh.customdata_custom_splitnormals_add()
+        cn_list = []
+        i_segment = 1 # start at 1 because of 0 offset
+        n_loops = 0
+
+        for i_surf in range(num_surfaces):
+            surf_subtype0 = lsubtype_list[i_surf]
+            ltype0 = ltype_list[i_surf]
+            # surface
+            if surf_subtype0 == 'flat':
+                nloops1 = 2*(N1 - 1) + 2*(N2 - 1) # when radius == 0, the face is flat square, edge has N1-1 or N2-1 loops
+                nloops1_fl = nloops1 # flange has no impact for a flat face
+            else:
+                # all faces are tris for the sqlens
+                nloops1 = 3*2*(N1 - 1)*(N2 - 1) # In this case, all triangular faces
+                nloops1_fl = nloops1 # TODO: cahnge when flanges implemented for sqlens
+            for i in range(nloops1_fl):
+                vi = mesh.loops[i + n_loops].vertex_index
+                cn_list.append(normals[vi])
+            i_segment = i_segment + 1
+            n_loops = n_loops + nloops1
+
+            # no sides at the first face
+            if i_surf == 0:
+                continue
+
+            # side
+            # explanation for n_loop_side: left/right (forst term) and top/bottom are identical so factor two each
+            # then each side (factor 2 for a total of four) has N2-1 loops at the surface
+            # plus the two lines connecting front and back face, cancelling out 2*(N2-1) + 2 = 2*N2
+            # left face is identical with and withouot dshape
+            n_loop_side =  + 4*N2 + 4*N1
+            #Not working with normalsside here because it is easier to separate by side since they each have equal normal
+            # left
+            for i in range(2*N2):
+                cn_list.append([0, -1, 0])
+            # right
+            for i in range(2*N2):
+                cn_list.append([0, 1, 0])
+            # top
+            for i in range(2*N1):
+                cn_list.append([0, 0, 1])
+            # bottom
+            for i in range(2*N1):
+                cn_list.append([0, 0, -1])
+            n_loops = n_loops + n_loop_side
+
+            # D-shape
+            # dshape does not need special handling for sqlens,
+            # included in terms above because of necessity
+
+            i_segment = i_segment + 1
+
+        mesh.normals_split_custom_set(cn_list)
 
     """
     Basic paraxial lens analysis

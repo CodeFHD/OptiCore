@@ -42,12 +42,12 @@ def get_sqringnormals(N1, N2, dshape=False):
     # left side
     for i in range(N2):
         normals.append((-1, 0, 0))
+    # right side
+    for i in range(N2):
+        normals.append((1, 0, 0))
     # bottom and top, alternating
     for i in range(N1 - 2):
         normals.append((0, -1, 0))
         normals.append((0, 1, 0))
-    # right side
-    for i in range(N2):
-        normals.append((1, 0, 0))
 
     return normals
