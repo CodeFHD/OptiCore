@@ -26,7 +26,7 @@ from ..utils import debugprint
 
 from ..raytrace.trace_sequential import exec_trace, trace_to_scene
 from ..raytrace import rayfan
-from . import add_lens, add_mirror, get_default_paramdict_lens, get_default_paramdict_mirror, add_circular_aperture
+from ..bl_optics import add_lens, add_mirror, get_default_paramdict_lens, get_default_paramdict_mirror, add_circular_aperture, add_sensor
 from ..fileparser.zmx import load_from_zmx
 from ..bl_materials import glass_from_Element_cycles, clear_all_materials, add_edgematerial_cycles, add_dfacematerial_cycles
 
@@ -117,6 +117,21 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
     addrayfan : BoolProperty(
             name="Add Ray Fan",
             default=False,
+           )
+    addsensor : BoolProperty(
+            name="Add Sensor",
+            default=True,
+           )
+    thicksensor : BoolProperty(
+            name="Thick",
+            default=True,
+           )
+    sensorfactor : FloatProperty(
+           name="Sensor size factor",
+           default = 1.0,
+           description="Factor to adjust sensor size",
+           min = 0.01,
+           max = 3.0,
            )
     zdet : FloatProperty(
            name="Detector Offset",
@@ -246,6 +261,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         col.prop(self, 'addlenses')
         col.prop(self, 'addaperture')
         col.prop(self, 'addrayfan')
+        row = col.row()
+        row.prop(self, 'addsensor')
+        row.prop(self, 'thicksensor')
+        col.prop(self, 'sensorfactor')
         col.prop(self, 'tracetoscene')
         col.prop(self, 'ghost_order')
         col.prop(self, 'autofocus')
@@ -525,6 +544,12 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             print(f'Adding ray-fan-mesh: {(t42_sum):.3f}')
         debugprint()
         """
+
+        if self.addsensor:
+            lx = lens.detector['sizex']/2*self.sensorfactor
+            ly = lens.detector['sizey']/2*self.sensorfactor
+            zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
+            add_sensor(self, context, lx, ly, zsensor, thicksensor=self.thicksensor)
         
         # Select all just created objects
         bpy.ops.object.select_all(action='DESELECT')

@@ -1545,6 +1545,8 @@ def add_rayfan(self, context):
         lens.detector['distance'] = 1000*sum(ele.data['CT'])
     lens.detector['sizex'] = 10240 # default
     lens.detector['sizey'] = 10240 # default
+    lens.detector['npixx'] = 10240 # default
+    lens.detector['npixy'] = 10240 # default
     lens.detector['pixelpitch'] = 1 # default
     lens.build(0.586)
     # set up the rays

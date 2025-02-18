@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024, Johannes Hinrichs
+Copyright 2019-2025, Johannes Hinrichs
 
 This file is part of OptiCore.
 
@@ -22,7 +22,7 @@ import numpy as np
 from mathutils import Vector
 
 import bpy
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
+from bpy_extras.object_utils import object_data_add
 
 def add_circular_aperture(self, context, radius_inner, radius_outer, N, dshape=False):
     verts = []

@@ -268,6 +268,8 @@ def create_elements(surf_infos, idx_elements, CT_cumulative):
     return elements, dz_sensor
 
 def load_from_zmx(filename, testmode=False, logfile=None):
+    pixelpitch = 0.01 # default because that is not stored in zmx files AFAIK
+
     # split he(ader), su(rfaces), fo(oter)
     he, su, fo = split_zmx_file(filename)
 
@@ -296,17 +298,23 @@ def load_from_zmx(filename, testmode=False, logfile=None):
     idx_imagesurf = len(surf_infos)-1
     if surf_infos[idx_imagesurf]['hasglass']:
         lens.imagemat = surf_infos[idx_imagesurf]['glass']
-    pixelpitch = 0.01 # default because that is not stored in zmx files AFAIK
     if surf_infos[idx_imagesurf]['rCA'] is not None:
-        imsize = int(np.ceil(surf_infos[idx_imagesurf]['rCA']/pixelpitch))
-        # multiply by 10 because usually the zmx file will specify the image size up to a design angle
-        # but not including vignetting. And full vignetting can exceed it by far.
-        # This doesn't affect performance, only ray fan cutoff
-        lens.detector['sizex'] = imsize*10
-        lens.detector['sizey'] = imsize*10
+        imlenx = surf_infos[idx_imagesurf]['rCA'] # one dimension always stored in rCA
+        # second dimension depends on shape
+        if surf_infos[idx_imagesurf]['outline_shape'] == 'square':
+            imleny = surf_infos[idx_imagesurf]['rCA_short']
+        else:
+            imleny = imlenx
     else:
-        lens.detector['sizex'] = 10240 # default
-        lens.detector['sizey'] = 10240 # default
+        imlenx = 10.24 # default
+        imleny = 10.24 # default
+    # convert to number of pixels
+    npixx = int(np.ceil(imlenx/pixelpitch))
+    npixy = int(np.ceil(imleny/pixelpitch))
+    lens.detector['sizex'] = imlenx
+    lens.detector['sizey'] = imleny
+    lens.detector['npixx'] = npixx
+    lens.detector['npixy'] = npixy
     lens.detector['distance'] = dz_sensor
     lens.detector['pixelpitch'] = pixelpitch # default
     stopidx, stoprad, z_stop = get_stop(surf_infos, idx_elements[0][0])

@@ -34,7 +34,7 @@ class Lenssystem():
         # "construction" of the system, i.e. physical contents
         self.elements = [] # list of elements comprising this lens [[Element, displacement]]
         self.apertures = {} # dict of apertures ['idx_surface' (aperture comes after this surface), 'z_ap' (absolute position), 'shape', 'radius', 'n_blades']
-        self.detector = {} # detector definition ['distance' from last lens, 'sizex', 'sizey', 'pixelpitch', 'pixelsize']
+        self.detector = {} # detector definition ['distance' from last lens, 'sizex', 'sizey', 'npixx', 'npixy', 'pixelpitch', 'pixelsize']
 
         # optical parameters
         self.wl = 0.546074 # default wavelength is e-line. unit micrometers
@@ -195,11 +195,15 @@ class Lenssystem():
         z = self.detector['distance'] + self.data['CT_sum'][-1]
         sx = self.detector['sizex']
         sy = self.detector['sizey']
-        pp = self.detector['pixelpitch']
-        v1 = [-sx*pp/2, -sy*pp/2, z]
-        v2 = [sx*pp/2, -sy*pp/2, z]
-        v3 = [sx*pp/2, sy*pp/2, z]
-        v4 = [-sx*pp/2, sy*pp/2, z]
+        v1 = [-sx/2, -sy/2, z]
+        v2 = [sx/2, -sy/2, z]
+        v3 = [sx/2, sy/2, z]
+        v4 = [-sx/2, sy/2, z]
+        # pp = self.detector['pixelpitch']
+        # v1 = [-sx*pp/2, -sy*pp/2, z]
+        # v2 = [sx*pp/2, -sy*pp/2, z]
+        # v3 = [sx*pp/2, sy*pp/2, z]
+        # v4 = [-sx*pp/2, sy*pp/2, z]
         self.detector['Quad'] = [v1, v2, v3, v4]
         
 

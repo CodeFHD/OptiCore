@@ -31,20 +31,27 @@ bl_info = {
 
 import numpy as np
 
+try:
+    import bpy
+    in_blender = True
+except:
+    # This allows me to import OptiCore as a separate module
+    # and work with anything not in the bl_... submodules
+    in_blender = False
 
-import bpy
-from bpy_extras.object_utils import AddObjectHelper, object_data_add # NOTE: have to import object_data_add here even though it is not used in this file, due to the way it is imported in other files. TODO: attempt to change it to absolute imports in those modules to clean this up.
-from .bl_optics import OBJECT_OT_add_lens, reset_lens_defaults, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro, OBJECT_OT_add_siemens, OBJECT_OT_load_zmx, reset_loadzmx_faults#, OBJECT_OT_test_zmx
-from .bl_optomech import OBJECT_OT_add_table, OBJECT_OT_add_post
-
-class OBJECT_OT_reset_performance_variables(bpy.types.Operator, AddObjectHelper):
-    """This function resets some variables that may have caused performance issues"""
-    bl_idname = "mesh.reset_performance_variables"
-    bl_label = "Reset Performance Critical Settings"
-    bl_options = {'REGISTER', 'UNDO'}
-     
-    def draw(self, context):
-        pass
+if in_blender:
+    from bpy_extras.object_utils import AddObjectHelper, object_data_add # NOTE: have to import object_data_add here even though it is not used in this file, due to the way it is imported in other files. TODO: attempt to change it to absolute imports in those modules to clean this up.
+    from .bl_optics import OBJECT_OT_add_lens, reset_lens_defaults, OBJECT_OT_add_sqlens, OBJECT_OT_add_mirror, OBJECT_OT_add_CCretro, OBJECT_OT_add_siemens
+    from .bl_optomech import OBJECT_OT_add_table, OBJECT_OT_add_post
+    from .bl_systems import OBJECT_OT_load_zmx, reset_loadzmx_faults #, OBJECT_OT_test_zmx
+    class OBJECT_OT_reset_performance_variables(bpy.types.Operator, AddObjectHelper):
+        """This function resets some variables that may have caused performance issues"""
+        bl_idname = "mesh.reset_performance_variables"
+        bl_label = "Reset Performance Critical Settings"
+        bl_options = {'REGISTER', 'UNDO'}
+        
+        def draw(self, context):
+            pass
 
     def execute(self, context):
         reset_lens_defaults()

@@ -23,5 +23,4 @@ from .sqlens import *
 from .ccretro import *
 from .siemens import *
 from .lens_aperture import add_circular_aperture
-from .load_zmx import *
-# from .test_zemax_library import *
+from .sensor import *
