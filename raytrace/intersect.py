@@ -297,11 +297,10 @@ def triangle_intersect(O, D, Tri, return_t=False):
     # Check if points are within triangle
     e0, e1, e2 = Tri[1] - Tri[0], Tri[2] - Tri[1], Tri[0] - Tri[2]
     p0, p1, p2 = P - Tri[0], P - Tri[1], P - Tri[2]
-    s0 = np.sign(np.einsum('ij,ij->i', N, np.cross(e0, p0))).astype(int)
-    s1 = np.sign(np.einsum('ij,ij->i', N, np.cross(e1, p1))).astype(int)
-    s2 = np.sign(np.einsum('ij,ij->i', N, np.cross(e2, p2))).astype(int)
-    s = s0*s1*s2
-    s = s > -0.5
+    s0 = np.sign(np.einsum('ij,ij->i', N, np.cross(e0, p0))).astype(int) > -0.5
+    s1 = np.sign(np.einsum('ij,ij->i', N, np.cross(e1, p1))).astype(int) > -0.5
+    s2 = np.sign(np.einsum('ij,ij->i', N, np.cross(e2, p2))).astype(int) > -0.5
+    s = s0 & s1 & s2
 
     P[~s] = float('nan')
 
