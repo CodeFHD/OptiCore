@@ -103,26 +103,12 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
         k2 = ld['asph2'][idx_s][0]
         A2 = ld['asph2'][idx_s][1:]
         # determine the type of surface w.r.t. the intersection algorithms:
-        hasrad = r != 0
-        hasconic = k != 0 and k is not None
-        haspoly = not (np.all(np.array(A) == 0) or np.all(np.array(A) == None) or A is None)
+        surftype = ld['type'][idx_s]
         # surface rotation for e.g. cylinder lenses
         surf_rotation = ld['surf_rotation'][idx_s]
 
-        # TODO: surfshape and surftype could/should be united
-        if not hasrad and not haspoly:
-            surfshape = 'flat'
-        elif not hasconic and not haspoly:
-            surfshape = 'spherical'
-        elif haspoly:
-            surfshape = 'aspheric'
-        else:
-            surfshape = 'conic'
-
-        surftype = ld['type'][idx_s]
-
         # set center of sphere coordinates
-        # TODO: Add decenter and tilt
+        # ENHANCEMENT: Add decenter and tilt
         C = [0, 0, ld['CT_sum'][idx_s] + r]
         C = np.array(C)
         C_CT = [0, 0, ld['CT_sum'][idx_s]]
