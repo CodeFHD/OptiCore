@@ -243,7 +243,6 @@ def get_n_Sumita(wl, C):
     return n
 
 def get_n_tabulated(wl, C):
-    # TODO: Implement this when needed
     print('WARNING: Tabulated refractive index not yet implemented!')
     return -1
 

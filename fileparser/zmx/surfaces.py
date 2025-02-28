@@ -33,7 +33,7 @@ def _type_from_surflines(surflines):
             surftype = line.split()[1]
             # had some files where XASPHERE was used in addition to EVENASPH
             # It seems that in those cases, EVENASPH only goes up to 8th-order coefficients and XASPHERE also to higher ones. Otehr differences I did not find reference to online.
-            # For that reason, treating them as the same here. TODO
+            # For that reason, treating them as the same here.
             if surftype == 'XASPHERE': type = 'EVENASPH'
     return surftype
 
@@ -103,7 +103,8 @@ def parse_zmx_surface(surflines):
                 if iparm == 1:
                     # I have yet to see a file that has a power-2 coefficient
                     # (assuming iparm == 1 is for power 2 coefficient)
-                    # The OptiCore-geometry function currently starts at power-4, therefore ignoring this for the moment. TODO
+                    # The OptiCore-geometry function currently starts at power-4, therefore ignoring this for the moment.
+                    # TODO: Add power-2 and refactor rest of code to account for this
                     pass
                 else:
                     AX.append(float(line.split()[2]))

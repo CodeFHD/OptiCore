@@ -66,17 +66,17 @@ def determine_OC_surftype(radX, kX, AX, radY=None, kY=None, AY=None):
     Flat options:            flat,
     rotational options:      spherical,    conical,          polynominal,      aspherical,
     cylindrical options:     cylindrical,  conicylindrical,  polycylindrical,  acylindrical,
-    toric options:           toric,        conitoric,        polytoric,        atoric       # TODO: Potential for mix cases causing issues, but probably unrealistic to be found in real world examples. Ignore for now.
+    toric options:           toric,        conitoric,        polytoric,        atoric
     """
 
-    # first test for flat case
+    # first test for flat
     XisFlat = radX == 0 and not haspolyX
     YisFlat = radY == 0 and not haspolyY
     Surfisflat = (XisFlat and YisFlat) or (XisFlat and YisNone)
     if Surfisflat:
         return 'flat'
 
-    # second test for rotational case
+    # second test for rotational
     # remember: due to intial check-and-flip, XisNone == False is guaranteed here
     IsRotational = YisNone
     if IsRotational:
@@ -112,7 +112,7 @@ def determine_OC_surftype(radX, kX, AX, radY=None, kY=None, AY=None):
         elif (not hasradX and haspolyX) and (not hasradY and haspolyY):
             return 'polytoric'
         else:
-            # TODO: currently this covers mixed cases
+            # currently this covers mixed cases. Are they relevant though, or would that be freeform anyways?
             return 'atoric'
 
     # Final case (UNDEFINED) that something odd slipped past the above tests

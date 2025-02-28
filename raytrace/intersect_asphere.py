@@ -194,8 +194,7 @@ def intersect_asphere(O, D, C, lrad, rad, k, A):
     diff1 = P[:,0]-C[0]
     diff2 = P[:,1]-C[1]
     Prad = np.sqrt(diff1*diff1 + diff2*diff2)
-    #TODO: this could alternatively be swapped for marking only in idx_fail
-    P[Prad > lrad] = float('nan')
+    P[Prad > lrad] = float('nan') # TODO: remove this, only create idx_fail, and let rays.update() take care of the rest ?
 
     
     idx_fail = np.isnan(P[:,0])
@@ -322,7 +321,7 @@ def intersect_implicit(O, D, C, lrad, z_fun, z_fun_params, N_fun=None):
     s[s==0] = 1
     N = (N.T*s).T
     
-    # TODO optional: use bisection method to get initial guess, then use Newton-Raphson for refinement
+    # optional: use bisection method to get initial guess, then use Newton-Raphson for refinement
 
     ###########################################################################
     
@@ -333,8 +332,7 @@ def intersect_implicit(O, D, C, lrad, z_fun, z_fun_params, N_fun=None):
     diff1 = P[:,0] # - C[0]
     diff2 = P[:,1] # - C[1]
     Prad = np.sqrt(diff1*diff1 + diff2*diff2)
-    #TODO: this could alternatively be swapped for marking only in idx_fail
-    P[Prad > lrad] = float('nan')
+    P[Prad > lrad] = float('nan') # TODO: remove this, only create idx_fail, and let rays.update() take care of the rest ?
     
     idx_fail = np.isnan(P[:,0])
     return P, N, idx_fail 

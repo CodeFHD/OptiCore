@@ -232,8 +232,7 @@ def lens_intersect(O, D, C, r, rad, k=0, A=[0], surf_rotation=0, surfshape='sphe
     diff1 = P[:,0]-C[0]
     diff2 = P[:,1]-C[1]
     Prad = np.sqrt(diff1*diff1 + diff2*diff2)
-    #TODO: this could alternatively be swapped for marking only in idx_fail
-    P[Prad > rad] = float('nan')
+    P[Prad > rad] = float('nan') # TODO: remove this, only create idx_fail, and let rays.update() take care of the rest ?
     idx_fail = np.isnan(P[:,0])
     return P, N, idx_fail
 

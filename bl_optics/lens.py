@@ -32,7 +32,8 @@ from .. import utils
 from ..raytrace import paraxial
 from ..raytrace.element import Element
 from ..raytrace.lenssystem import Lenssystem
-from ..raytrace.trace_sequential import exec_trace, trace_to_scene
+from ..raytrace.trace_sequential import exec_trace
+from ..bl_raytrace.trace_scene import trace_to_scene
 from ..raytrace import rayfan
 from ..utils.check_surface import surftype_Lens2Element
 from ..surface.surfaceutils import get_N1_sqsurface
@@ -1368,7 +1369,7 @@ def add_lens(self, context, paramdict=None):
             else:
                 # all faces are tris for the sqlens
                 nloops1 = 3*2*(N1 - 1)*(N2 - 1) # In this case, all triangular faces
-                nloops1_fl = nloops1 # TODO: cahnge when flanges implemented for sqlens
+                nloops1_fl = nloops1 # Needs to change when flanges implemented for sqlens
             for i in range(nloops1_fl):
                 vi = mesh.loops[i + n_loops].vertex_index
                 cn_list.append(normals[vi])

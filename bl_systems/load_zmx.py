@@ -24,7 +24,8 @@ from mathutils import Vector
 
 from ..utils import debugprint
 
-from ..raytrace.trace_sequential import exec_trace, trace_to_scene
+from ..raytrace.trace_sequential import exec_trace
+from ..bl_raytrace.trace_scene import trace_to_scene
 from ..raytrace import rayfan
 from ..bl_optics import add_lens, add_mirror, get_default_paramdict_lens, get_default_paramdict_mirror, add_circular_aperture, add_sensor
 from ..fileparser.zmx import load_from_zmx
@@ -311,7 +312,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 """
                 num_surfaces = len(ele.data['radius'])
                 if num_surfaces > 4 and not self.split_cemented:
-                    # TODO: Currently only supporting up to triplet groups
+                    # TODO: Support more than triplet groups? Realistically needed?
                     continue
                 dz_this = CT_sum + dz
                 CT_sum = CT_sum + dz + sum(ele.data['CT'][:-1])

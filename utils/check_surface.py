@@ -62,7 +62,7 @@ def surftype_zmx2ltype(rx, ry, kx, ky, Ax, Ay):
     elif (not s1None and not s1flat) and (not s2None and not s2flat):
         return 'toric'
 
-    # TODO: not implemented cases (return rotational as default)
+    # else: not implemented cases (return rotational as default)
     else:
         return 'rotational'
 

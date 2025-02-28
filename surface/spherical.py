@@ -21,8 +21,6 @@ import numpy as np
 
 def add_spherical_surface(rad, lrad, N1, N2, zadd=0, nVerts=0, cylinderaxis=None,
                           hole=False, hrad=0, dshape=False, lrad_ext=0):
-    #TODO: Could parse arguments by kwargs-dict to keep function call short, then pop here
-
     verts = []
     faces = []
     normals = []

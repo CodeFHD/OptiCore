@@ -132,7 +132,7 @@ def identify_elements(surf_infos):
         debugprint('GLASSTYPES', glasstype_prev, glasstype_here, glasstype_next)
         debugprint('MIRRORS', mirror_prev, mirror_here, mirror_next)
         
-        # TODO: I should probably compare more than just one radius
+        # TODO: I should probably compare more than just one radius, e.g. in case of toric lens
         # create some compare_surfaces function or something like that to test for duplicates
         absrad_prev = round(abs(surf_infos[i-1]['radius']), EPSILON_DIGITS)
         absrad_here = round(abs(surf_infos[i+0]['radius']), EPSILON_DIGITS)
@@ -243,7 +243,7 @@ def create_elements(surf_infos, idx_elements, CT_cumulative):
 
             surftype = surf_infos[idx]['type']
             lenstype = surf_infos[idx]['ltype']
-            ele.outline_shape = surf_infos[idx]['outline_shape'] # TODO: Assumption that there is no mix between sufaces for one element
+            ele.outline_shape = surf_infos[idx]['outline_shape'] # Assumption that there is no mix between sufaces for one element
 
             ele.add_surface(surftype, lenstype=lenstype, radius = r1, radius2 = r2, asph = asph1, asph2 = asph2, rCA = surf_infos[idx]['rCA'], CT = CT_cumulative[idx]*direction, material = surf_infos[idx]['glass'], coating = coating, surf_rotation=surf_rotation)
             
