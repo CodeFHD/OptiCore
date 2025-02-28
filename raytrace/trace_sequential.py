@@ -138,7 +138,7 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
         O, D = rays.get_rays()
         
         # Check if aperture is involved
-        # ToDo: a more universal way would be to always trace each aperture and check for positive ray-t,
+        # IDEA: a more universal way would be to always trace each aperture and check for positive ray-t,
         # comparing with the ray-t of the following lens-surface;
         # That would allow more universal placement but might slow down a lot.
         # ['idx_surface', 'z_ap', 'shape', 'radius', 'n_blades']
@@ -152,16 +152,18 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
                 else:
                     continue
             else:
-                pass
+                # TODO: Check if aperture is between previous and next surface to save unneccessary tracing
+                aperture_here=True
             if ap['z_ap']:
                 zap = ap['z_ap']
             else:
                 zap = ld['CT_sum'][idx_s]
-            r_ap = ap['radius']
-            n_blades = ap['n_blades']
-            P, N, idx_fail = rt_intersect.aperture_intersect(O, D, r_ap, zap, n_blades=n_blades)
-            rays.update_special_hits(P, idx_fail)
-            O[~idx_fail] = float('nan')
+            if aperture_here:
+                r_ap = ap['radius']
+                n_blades = ap['n_blades']
+                P_inside, P_outside, N, idx_fail_i, idx_fail_o = rt_intersect.aperture_intersect(O, D, r_ap, zap, n_blades=n_blades)
+                rays.update_special_hits(P_outside, idx_fail_i)
+                O[~idx_fail_o] = float('nan')
 
         # trace rays
         # calculate lens intersection points
@@ -185,8 +187,7 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
             D_new = rt_intersect.reflect_ray(D, N)
 
         # update the origin and direction arrays
-        # rays.update(P, D_new, I, OPD, idx_fail)
-        a = rays.update(P, D_new, None, None, idx_fail, N=N)
+        rays.update(P, D_new, None, None, idx_fail, N=N)
         
         # update parameters for next loop
         lastsurface = int(1*idx_s)
@@ -195,10 +196,32 @@ def exec_trace(lens, rays, surfs, trace_detector=True):
             print('ALL FAIL at surface', idx_s)
             return rays
 
-    # TODO: additional aperture check before the detector
+    # additional aperture check before the detector
+    O, D = rays.get_rays()
+    for j, ap in lens.apertures.items():
+        aperture_here = False
+        if ap['idx_surface'] is not None:
+            if idx_s == ap['idx_surface']: # idx_s has retained the value of the last surface from the loop
+                aperture_here = True
+            else:
+                continue
+        else:
+            # TODO: Check if aperture is between previous and next surface to save unneccessary tracing
+            aperture_here=True
+        if ap['z_ap']:
+            zap = ap['z_ap']
+        else:
+            zap = ld['CT_sum'][idx_s]
+        if aperture_here:
+            r_ap = ap['radius']
+            n_blades = ap['n_blades']
+            P_inside, P_outside, N, idx_fail_i, idx_fail_o  = rt_intersect.aperture_intersect(O, D, r_ap, zap, n_blades=n_blades, pass_inside=True)
+            rays.update_special_hits(P_outside, idx_fail_o)
+            # reset the origin rays
+            rays.update(O, D, None, None, idx_fail_i, N=N) # use idx_fail_i because aperture_intersect has opposite logic (aperture IS hit)
 
     # trace detector
-    if trace_detector:    
+    if trace_detector:
         O, D = rays.get_rays()
         P, N, idx_fail = rt_intersect.rectangle_intersect(O, D, lens.detector['Quad'])
         rays.D_tosensor = np.array(rays.D)

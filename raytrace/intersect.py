@@ -220,7 +220,7 @@ def intersect_conic(O, D, C, r, k):
 # Combine sphere_intersect with a check for aperture to create lens intersection
 def lens_intersect(O, D, C, r, rad, k=0, A=[0], surf_rotation=0, surfshape='spherical', direction=1, ):#, surface=-1):
     if surfshape == 'flat':
-        P , N, idx_fail = circle_intersect(O, D, C[2], rad)
+        P, _, N, idx_fail, _ = circle_intersect(O, D, C[2], rad)
     elif surfshape == 'conical':
         P, N = intersect_conic(O, D, C, r, k)
     elif surfshape == 'cylindrical':
@@ -238,7 +238,7 @@ def lens_intersect(O, D, C, r, rad, k=0, A=[0], surf_rotation=0, surfshape='sphe
     return P, N, idx_fail
 
 # Circle intersect is used e.g. for planar faces
-def circle_intersect(O, D, zcirc, r, pass_inside=True):
+def circle_intersect(O, D, zcirc, r, pass_inside=True, pass_outside=False):
     """
     Intersection with circular face
     oriented perpendicular to z-axis
@@ -248,24 +248,34 @@ def circle_intersect(O, D, zcirc, r, pass_inside=True):
     zcirc is float
     r is float  
     """
-    #get Ray-t to circle assuming it is a vertical plane at z-location zdet
+    if not pass_inside and not pass_outside:
+        print("[OC] WARNING: circle_intersect() not specified with pass_inside or pass_outside. Defaulting to pass_inside.")
+        pass_inside = True
+    P_inside = None
+    P_outside = None
+
+    # get Ray-t to circle assuming it is a vertical plane at z-location zdet
     t = (zcirc - O[:,2])/D[:,2]
     
-    #calc intersection points
+    # calc intersection points
     P = O + (t*D.T).T
     
-    #check if (not) within boundaries
+    # check if (not) within boundaries
     if pass_inside:
-        idx_fail = np.einsum('ij,ij->i',P[:,:2],P[:,:2]) > r**2
-        P[idx_fail] = float('nan')
-    else:
-        idx_fail = np.einsum('ij,ij->i',P[:,:2],P[:,:2]) < r**2
-        P[idx_fail] = float('nan')
+        P_inside = np.array(P)
+        idx_fail_i = np.einsum('ij,ij->i',P[:,:2],P[:,:2]) > r**2
+        P_inside[idx_fail_i] = float('nan')
+    if pass_outside:
+        P_outside = np.array(P)
+        idx_fail_o = np.einsum('ij,ij->i',P[:,:2],P[:,:2]) <= r**2
+        P_outside[idx_fail_o] = float('nan')
 
-    #surface normal is in negative direction by definition
-    N = np.array([[0,0,-1.] for i in range(P.shape[0])])
-    
-    return P, N, idx_fail
+    # surface normal is in negative direction by definition
+    N = np.array([[0, 0, -1.] for i in range(P.shape[0])])
+
+    if P_inside is None: idx_fail_i = None
+    if P_outside is None: idx_fail_o = None
+    return P_inside, P_outside, N, idx_fail_i, idx_fail_o
 
 # Ray-Triangle intersection
 def triangle_intersect(O, D, Tri, return_t=False):
@@ -335,13 +345,16 @@ def rectangle_intersect(O, D, Quad, return_t=False):
     idx_fail1[~idx_fail2] = idx_fail2[~idx_fail2]
     return P1, N1, idx_fail1
 
-def aperture_intersect(O, D, r_ap, zap, n_blades=7):
+def aperture_intersect(O, D, r_ap, zap, n_blades=7, pass_inside=False):
     if n_blades < 3:
         #print('WARNING: Number of Blades below 3 doesnt make sense! Tracing circular aperture')
         n_blades = 0
     if n_blades == 0:
-        P, N, idx_fail = circle_intersect(O, D, zap, r_ap, pass_inside=False)
-        return P, N, idx_fail
+        P_inside, P_outside, N, idx_fail_i, idx_fail_o = circle_intersect(O, D, zap, r_ap, pass_inside=pass_inside, pass_outside=True)
+        return P_inside, P_outside, N, idx_fail_i, idx_fail_o
+    
+    P_inside = None
+    P_outside = None
         
     #get Ray-t to plane assuming it is a vertical plane at z-location zap
     t = (zap - O[:,2])/D[:,2]
@@ -358,13 +371,19 @@ def aperture_intersect(O, D, r_ap, zap, n_blades=7):
     
     dist = np.einsum('ij,ij->i', P[:,:2], bladedir)
     
-    idx_fail = dist <= r_ap
-    P[idx_fail] = float('nan')
+    if pass_inside:
+        P_inside = np.array(P)
+        idx_fail_i = dist > r_ap
+        P_inside[idx_fail_i] = float('nan')
+    # pass_outside always True in this function
+    P_outside = np.array(P)
+    idx_fail_o = dist <= r_ap
+    P_outside[idx_fail_o] = float('nan')
 
     #surface normal is in negative direction by definition
     N = np.array([[0,0,-1.] for i in range(P.shape[0])])
     
-    return P, N, idx_fail
+    return P_inside, P_outside, N, idx_fail_i, idx_fail_o
 
 
 #################################################

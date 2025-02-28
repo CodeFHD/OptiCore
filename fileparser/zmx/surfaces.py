@@ -162,21 +162,21 @@ def parse_zmx_surface(surflines):
 
 def get_stop(surf_infos, idx_first=0):
     stopidx = 1
-    for idx, surf in surf_infos.items():
+    for idx, surf in surf_infos.items(): # Use first surface as default stop location
         if idx == 1:
             if surf['rCA'] is not None:
                 stoprad = surf['rCA']
             elif surf['lrad'] is not None:
                 stoprad = surf['lrad']
             break
-    for idx, surf in surf_infos.items():
+    for idx, surf in surf_infos.items(): # override stop where 'isstop' is set
         if surf['isstop']:
             stopidx = idx
             if surf['rCA'] is not None:
                 stoprad = surf['rCA']
             elif surf['lrad'] is not None:
                 stoprad = surf['lrad']
-    if idx_first > stopidx:
+    if idx_first > stopidx: # Aperture in front of first glass surface
         CT_list = [surf_infos[i]['CT'] for i in range(stopidx, idx_first)]
         z_stop = -sum(CT_list)
     else:
