@@ -256,23 +256,35 @@ class RayFan():
             return self.O, self.D
 
     def update(self, O, D, I, OPD, idx_fail, N=None):
-            self.O[self.idx_hit] = O
-            self.D[self.idx_hit] = D
-            self.I[self.idx_hit] = I
-            self.OPD[self.idx_hit] = OPD
+        self.O[self.idx_hit] = O
+        self.D[self.idx_hit] = D
+        self.I[self.idx_hit] = I
+        self.OPD[self.idx_hit] = OPD
+        if N is not None:
+            self.N[self.idx_hit] = N
+        if self.store_history:
+            self.idx_history = self.idx_history + 1
+            self.O_history[self.idx_history] = np.array(self.O)
             if N is not None:
-                self.N[self.idx_hit] = N
-            if self.store_history:
-                self.idx_history = self.idx_history + 1
-                self.O_history[self.idx_history] = np.array(self.O)
-                if N is not None:
-                    self.N_history[self.idx_history] = np.array(self.N)
-
-            self.O[self.idx_hit][idx_fail] = float('nan')
-            self.D[self.idx_hit][idx_fail] = float('nan')
-            self.I[self.idx_hit][idx_fail] = float('nan')
-            self.OPD[self.idx_hit][idx_fail] = float('nan')
-            self.idx_hit = ~np.isnan(self.O[:,0])
+                self.N_history[self.idx_history] = np.array(self.N)
+        
+        O = self.O[self.idx_hit]
+        O[idx_fail] = float('nan')
+        self.O[self.idx_hit] = O
+        
+        D = self.D[self.idx_hit]
+        D[idx_fail] = float('nan')
+        self.D[self.idx_hit] = D
+        
+        I = self.I[self.idx_hit]
+        I[idx_fail] = float('nan')
+        self.I[self.idx_hit] = I
+        
+        OPD = self.OPD[self.idx_hit]
+        OPD[idx_fail] = float('nan')
+        self.OPD[self.idx_hit] = OPD
+        
+        self.idx_hit = ~np.isnan(self.O[:,0])
 
     def update_special_hits(self, P, idx_fail):
         if not self.store_history:
