@@ -24,6 +24,8 @@ import numpy as np
 import bpy
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
+from ..bl_materials import add_diffusematerial_cycles
+
 def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, thickness=None):
     verts = []
     edges = []
@@ -58,3 +60,11 @@ def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, thickness=None
     # useful for development when the mesh may be invalid.
     #mesh.validate(verbose=True)
     obj = object_data_add(context, mesh, operator=self)
+
+    using_cycles = context.scene.render.engine == 'CYCLES'
+
+    if using_cycles:
+        materialname_sensor = add_diffusematerial_cycles(objectname='Sensor')
+        material_sensor = bpy.data.materials[materialname_sensor]
+        ob = bpy.context.active_object
+        ob.data.materials.append(material_sensor)

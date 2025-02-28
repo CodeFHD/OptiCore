@@ -56,12 +56,12 @@ def add_glass_cycles(glassname, n, cyclesType='ShaderNodeBsdfGlass', update=Fals
     material.node_tree.links.new(glass_node.outputs["BSDF"], output_node.inputs["Surface"])
     return material
 
-def add_edgematerial_cycles():
-    edge_material_name = 'OC_LensEdge_cycles'
-    if edge_material_name in bpy.data.materials.keys():
-        return bpy.data.materials.get(edge_material_name)
+def add_blackoutmaterial_cycles(objectname='LensEdge'):
+    OC_material_name = get_OC_material_name(objectname)
+    if OC_material_name in bpy.data.materials.keys():
+        return OC_material_name# bpy.data.materials.get(OC_material_name)
     else:
-        material = bpy.data.materials.new(name=edge_material_name)
+        material = bpy.data.materials.new(name=OC_material_name)
         material.use_nodes = True
     # set up a clear node tree
     nodes = material.node_tree.nodes
@@ -77,30 +77,30 @@ def add_edgematerial_cycles():
     material.diffuse_color = [0, 0, 0, 1]
     # connections
     material.node_tree.links.new(glass_node.outputs["BSDF"], output_node.inputs["Surface"])
-    return material
+    return OC_material_name
 
-def add_dfacematerial_cycles():
-    dface_material_name = 'OC_LensDface_cycles'
-    if dface_material_name in bpy.data.materials.keys():
-        return bpy.data.materials.get(dface_material_name)
+def add_diffusematerial_cycles(objectname='LensDface', color=[1, 1, 1, 1], viewportcolor=[1, 1, 1, 1]):
+    OC_material_name = get_OC_material_name(objectname)
+    if OC_material_name in bpy.data.materials.keys():
+        return OC_material_name# bpy.data.materials.get(OC_material_name)
     else:
-        material = bpy.data.materials.new(name=dface_material_name)
+        material = bpy.data.materials.new(name=OC_material_name)
         material.use_nodes = True
     # set up a clear node tree
     nodes = material.node_tree.nodes
     nodes.clear()
     # define basic node components
-    glass_node = nodes.new(type='ShaderNodeBsdfDiffuse')
+    diffuse_node = nodes.new(type='ShaderNodeBsdfDiffuse')
     output_node = nodes.new(type='ShaderNodeOutputMaterial')
     # GUI layout
-    glass_node.location = (0, 0)
+    diffuse_node.location = (0, 0)
     output_node.location = (300, 0)
     # set parameters
-    #glass_node.inputs["Color"].default_value = [1, 0, 0, 1]
-    #material.diffuse_color = [1, 0, 0, 1]
+    diffuse_node.inputs["Color"].default_value = color
+    material.diffuse_color = viewportcolor
     # connections
-    material.node_tree.links.new(glass_node.outputs["BSDF"], output_node.inputs["Surface"])
-    return material
+    material.node_tree.links.new(diffuse_node.outputs["BSDF"], output_node.inputs["Surface"])
+    return OC_material_name
 
 def glass_from_Element_cycles(ele, wl):
     materials_bulk = []
