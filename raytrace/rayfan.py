@@ -87,8 +87,8 @@ def rayfan3D_rings_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     D = D.T
     return O, D
 
-def rayfan3D_tri(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
-    # sample lens with equilateral triangles
+def get_Nrays_trifan(Nrays, rad):
+    # separate this function to be called in other parts of the code
     Nrays_y = int(np.sqrt(Nrays)) # numhber of rays along x-axis
     Nrays_y = Nrays_y + 1 - Nrays_y%2 # make sure it is an odd number
     a = 2*rad/(Nrays_y - 1) # length of triangle, sampling along x-axis
@@ -96,6 +96,11 @@ def rayfan3D_tri(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     Nrays_x = int(2*rad//h) + 1 # number of rays along y-axis
     Nrays_x = Nrays_x + 1 - Nrays_x%2 # make sure it is an odd number
     W_half = h*(Nrays_x - 1)/2
+    return Nrays_x, Nrays_y, a, h, W_half
+
+def rayfan3D_tri(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+    # sample lens with equilateral triangles
+    Nrays_x, Nrays_y,a, h, W_half = get_Nrays_trifan(Nrays, rad)
     O = []
     O_0 = []
     for i in range(Nrays_x):
@@ -121,13 +126,7 @@ def rayfan3D_tri(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
 
 def rayfan3D_tri_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     # sample lens with equilateral triangles
-    Nrays_y = int(np.sqrt(Nrays)) # numhber of rays along x-axis
-    Nrays_y = Nrays_y + 1 - Nrays_y%2 # make sure it is an odd number
-    a = 2*rad/(Nrays_y - 1) # length of triangle, sampling along x-axis
-    h = np.sqrt(3)/2*a # height of triangle, sampling along y-axis
-    Nrays_x = int(2*rad//h) + 1 # number of rays along y-axis
-    Nrays_x = Nrays_x + 1 - Nrays_x%2 # make sure it is an odd number
-    W_half = h*(Nrays_x - 1)/2
+    Nrays_x, Nrays_y, a, h, W_half = get_Nrays_trifan(Nrays, rad)
     O_0 = []
     for i in range(Nrays_x):
         x = i*h - W_half
