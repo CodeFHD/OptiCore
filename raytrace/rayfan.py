@@ -264,8 +264,10 @@ class RayFan():
     def update(self, O, D, I, OPD, idx_fail, N=None):
         self.O[self.idx_hit] = O
         self.D[self.idx_hit] = D
-        self.I[self.idx_hit] = I
-        self.OPD[self.idx_hit] = OPD
+        if I is not None:
+            self.I[self.idx_hit] = I
+        if OPD is not None:
+            self.OPD[self.idx_hit] = OPD
         if N is not None:
             self.N[self.idx_hit] = N
         if self.store_history:
