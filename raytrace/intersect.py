@@ -277,6 +277,15 @@ def circle_intersect(O, D, zcirc, r, pass_inside=True, pass_outside=False):
     return P_inside, P_outside, N, idx_fail_i, idx_fail_o
 
 # Ray-Triangle intersection
+def is_point_in_tri(P, Tri, N):
+    e0, e1, e2 = Tri[1] - Tri[0], Tri[2] - Tri[1], Tri[0] - Tri[2]
+    p0, p1, p2 = P - Tri[0], P - Tri[1], P - Tri[2]
+    s0 = np.sign(np.einsum('j,ij->i', N, np.cross(e0, p0))).astype(int) > -0.5
+    s1 = np.sign(np.einsum('j,ij->i', N, np.cross(e1, p1))).astype(int) > -0.5
+    s2 = np.sign(np.einsum('j,ij->i', N, np.cross(e2, p2))).astype(int) > -0.5
+    s = s0 & s1 & s2
+    return s
+
 def triangle_intersect(O, D, Tri, return_t=False):
     """
     O is shape (N,3) 
@@ -304,12 +313,7 @@ def triangle_intersect(O, D, Tri, return_t=False):
     P = O + (t*D.T).T
 
     # Check if points are within triangle
-    e0, e1, e2 = Tri[1] - Tri[0], Tri[2] - Tri[1], Tri[0] - Tri[2]
-    p0, p1, p2 = P - Tri[0], P - Tri[1], P - Tri[2]
-    s0 = np.sign(np.einsum('ij,ij->i', N, np.cross(e0, p0))).astype(int) > -0.5
-    s1 = np.sign(np.einsum('ij,ij->i', N, np.cross(e1, p1))).astype(int) > -0.5
-    s2 = np.sign(np.einsum('ij,ij->i', N, np.cross(e2, p2))).astype(int) > -0.5
-    s = s0 & s1 & s2
+    s = is_point_in_tri(P, Tri, n)
 
     P[~s] = float('nan')
 
