@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
+import os
+import sys
+
 import numpy as np
 pi2 = 2*np.pi # often used
 
@@ -143,8 +146,10 @@ def rayfan3D_tri_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     return O, D
 
 def rayfan3D_uniformdiskrandom(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
-    u1 = np.random.rand(Nrays)
-    u2 = np.random.rand(Nrays)
+    seed = int.from_bytes(os.urandom(4), sys.byteorder)
+    rng = np.random.default_rng(seed)
+    u1 = rng.random(Nrays)
+    u2 = rng.random(Nrays)
     Ox = rad * np.sqrt(u1) * np.sin(2*np.pi*u2)
     Oy = rad * np.sqrt(u1) * np.cos(2*np.pi*u2)
     Oz = np.zeros(Nrays) + rayfanz
@@ -164,8 +169,10 @@ def rayfan3D_uniformdiskrandom(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0)
     return O, D
 
 def rayfan3D_uniformdiskrandom_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
-    u1 = np.random.rand(Nrays)
-    u2 = np.random.rand(Nrays)
+    seed = int.from_bytes(os.urandom(4), sys.byteorder)
+    rng = np.random.default_rng(seed)
+    u1 = rng.random(Nrays)
+    u2 = rng.random(Nrays)
     Ox = rad * np.sqrt(u1) * np.sin(2*np.pi*u2)
     Oy = rad * np.sqrt(u1) * np.cos(2*np.pi*u2)
     rayfany = -rayfanz*np.tan(theta)
