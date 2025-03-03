@@ -33,6 +33,7 @@ import numpy as np
 
 try:
     import bpy
+    x = bpy.data # needed to fail with fake_bpy module, only on linux it seems
     in_blender = True
 except:
     # This allows me to import OptiCore as a separate module
