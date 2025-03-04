@@ -237,6 +237,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         name="Split models of cemented lenses",
         default=False,
         )
+    mat_refract_only : BoolProperty(
+        name="Material: Set refractive only",
+        default=False,
+        )
 
     def draw(self, context):
         scene = context.scene
@@ -276,6 +280,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         col.prop(self, 'split_cemented')
         col.prop(self, 'num1')
         col.prop(self, 'num2')
+        col.prop(self, 'mat_refract_only')
 
     
     def execute(self, context):
@@ -346,7 +351,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         n_loop = num_surfaces
                     # get materials
                     if using_cycles:
-                        materials_bulk, materials_interface = glass_from_Element_cycles(ele, self.wl)
+                        materials_bulk, materials_interface = glass_from_Element_cycles(ele, self.wl, self.mat_refract_only)
                         material_edge = add_blackoutmaterial_cycles()
                         material_dface = add_diffusematerial_cycles(viewportcolor=[1, 0, 0, 1])
                     while True:

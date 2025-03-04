@@ -50,7 +50,8 @@ def add_glass_cycles(glassname, n, cyclesType='ShaderNodeBsdfGlass', update=Fals
     glass_node.location = (0, 0)
     output_node.location = (300, 0)
     # set parameters
-    glass_node.inputs["Roughness"].default_value = 0.0
+    if cyclesType == 'ShaderNodeBsdfGlass':
+        glass_node.inputs["Roughness"].default_value = 0.0
     glass_node.inputs["IOR"].default_value = n
     # connections
     material.node_tree.links.new(glass_node.outputs["BSDF"], output_node.inputs["Surface"])
@@ -102,7 +103,7 @@ def add_diffusematerial_cycles(objectname='LensDface', color=[1, 1, 1, 1], viewp
     material.node_tree.links.new(diffuse_node.outputs["BSDF"], output_node.inputs["Surface"])
     return OC_material_name
 
-def glass_from_Element_cycles(ele, wl):
+def glass_from_Element_cycles(ele, wl, mat_refract_only=False):
     materials_bulk = []
     materials_interface = []
     num_glasses = len(ele.data['type']) - 1
@@ -117,9 +118,15 @@ def glass_from_Element_cycles(ele, wl):
         n_list.append(n)
         if glassname_is_dummy:
             glassname = f'Glass-{n:.5f}'
+        if mat_refract_only:
+            glassname = glassname + '_refraction'
         material_exists, OC_material_name = check_OC_material(glassname)
         if not material_exists:
-            _ = add_glass_cycles(glassname, n)
+            if mat_refract_only:
+                cyclesType = 'ShaderNodeBsdfRefraction'
+            else:
+                cyclesType = 'ShaderNodeBsdfGlass'
+            _ = add_glass_cycles(glassname, n, cyclesType=cyclesType)
         materials_bulk.append(OC_material_name)
 
     # interface materials, if present
