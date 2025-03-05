@@ -46,7 +46,7 @@ def add_flat_surface(lrad, N1, N2, zadd=0, xadd=0, nVerts=0, hole=False, hrad=0,
             fi2 = nVerts + j
             fi4 = fi1 + N2
             fi3 = fi2 + N2
-            faces.append([fi4,fi3,fi2,fi1])
+            faces.append([fi1,fi2,fi3,fi4])
     else:
         faces.append([int(nVerts + x) for x in range(N2)])
 

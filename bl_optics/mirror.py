@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024, Johannes Hinrichs
+Copyright 2019-2025, Johannes Hinrichs
 
 This file is part of OptiCore.
 
@@ -233,65 +233,81 @@ def add_mirror(self, context, paramdict=None):
         if abs(srad) < mrad: srad = 0
         # if not utils.check_surface(np.abs(srad), mrad): srad=0
 
+    # no hole for aspheric surface
+    if surftype == 'aspheric':
+        cent_hole = False
+
     #compute mirror surface
     if srad == 0: #flat surface case
-        verts, faces, normals = sfc.add_flat_surface(mrad,N1,N2,hole=cent_hole,hrad=hrad)
-        yadd = 0
-        xOA = 0
+        verts, faces, normals = sfc.add_flat_surface(mrad, N1, N2, hole=cent_hole, hrad=hrad)
+        xadd = 0
+        zOA = 0
     else:
         if surftype == 'spherical':
-            verts, faces, normals, N1, N2 = sfc.add_spherical_surface(-srad, mrad, N1, N2,hole=cent_hole,hrad=hrad)
-            yadd = 0
-            xOA = 0
+            verts, faces, normals = sfc.add_spherical_surface(-srad, mrad, N1, N2,hole=cent_hole,hrad=hrad)
+            xadd = 0
+            zOA = 0
             if srad < 0:
-                xOA = -np.abs(srad)+np.sqrt(srad**2-mrad**2)
+                zOA = -np.abs(srad)+np.sqrt(srad**2-mrad**2)
         elif surftype == 'aspheric':
-            verts, faces, normals = sfc.add_aspheric_surface(-srad, k, A, mrad, N1, N2,1)
-            yadd = 0
-            xOA = 0
+            verts, faces, normals = sfc.add_sagsurface_circular(-srad, k, A, mrad, N1, N2, nVerts=0, surftype='aspheric')
+            #verts, faces, normals = sfc.add_aspheric_surface(-srad, k, A, mrad, N1, N2, 1)
+            xadd = 0
+            zOA = 0
         elif surftype == 'parabolic':
-            verts, faces, yadd, xOA, normals = sfc.add_parabolic_surface(-srad, mrad, N1, N2, theta, orig=opos,hole=cent_hole,hrad=hrad)
-    
+            verts, faces, xadd, zOA, normals = sfc.add_parabolic_surface(-srad, mrad, N1, N2, theta, orig=opos,hole=cent_hole,hrad=hrad)
+
+    # reorder the coordinate system to Blender covnention
+    verts = [[t[2], t[0], t[1]] for t in verts]
+    normals = [[t[2], t[0], t[1]] for t in normals]
+
     nVerts = len(verts)
     
     #add rear surface
-    dvert, dfac, normals2 = sfc.add_flat_surface(mrad,N1,N2,-1,CT-xOA,yadd,nVerts=nVerts,hole=cent_hole,hrad=hrad)
-    dvert = dvert[::-1]
-    
-    verts = verts+dvert
-    faces = faces+dfac
-        
-    del dvert
-    del dfac
+    verts2, faces2, normals2 = sfc.add_flat_surface(mrad, N1, N2, CT-zOA, xadd, nVerts=nVerts,hole=cent_hole,hrad=hrad)
 
-    nVerts2 = len(verts)
+    # reorder the coordinate system to Blender covnention
+    verts2 = [[t[2], t[0], t[1]] for t in verts2]
+    normals2 = [[t[2], t[0], t[1]] for t in normals2]
+
+    # flip normals for last surface
+    faces2 = [df[::-1] for df in faces2]
+    normals2 = [(-t[0], -t[1], -t[2]) for t in normals2]
+
+    nVerts2 = len(verts2)
+    
+    verts = verts + verts2
+    faces = faces + faces2
+    normals = normals + normals2
+
+    nVerts_tot = len(verts)
+        
+    del verts2
+    del faces2
 
     #add side
     for j in range(N2):
-        fi1 = nVerts+(j+1)%(N2)
-        fi2 = nVerts+j
-        fi3 = fi2-N2
-        fi4 = fi1-N2
-        faces.append([fi1,fi2,fi3,fi4])
-    nVertsSide = len(verts)
+        fi1 = nVerts + (j+1)%(N2) + N2*cent_hole
+        fi2 = nVerts + j + N2*cent_hole
+        fi3 = fi2 - N2*(1 + cent_hole)
+        fi4 = fi1 - N2*(1 + cent_hole)
+        faces.append([fi4,fi3,fi2,fi1])
 
     normalsside = sfc.get_ringnormals(N2)
+    normalsside = [[t[2], t[0], t[1]] for t in normalsside]
 
     #fill hole
     normalshole = [] #in case there is no hole
     if cent_hole:
-        lv = len(verts)
         for j in range(N2):
             fi2 = j
             fi1 = (j+1)%N2
-            fi4 = (j+1)%N2 + lv - N2
-            fi3 = j + lv - N2
-            faces.append([fi1,fi2,fi3,fi4])
+            fi4 = nVerts + (j+1)%N2
+            fi3 = nVerts + j
+            faces.append([fi4,fi3,fi2,fi1])
 
         normalshole = sfc.get_ringnormals(N2)
-        normalshole = [(-n[0], -n[1], -n[2]) for n in normalshole]
-    
-    normals = normals + normals2
+        normalshole = [(-n[2], -n[0], -n[1]) for n in normalshole]
 
     #create mesh from verts and faces
     mesh = bpy.data.meshes.new(name="Mirror")
@@ -343,7 +359,7 @@ def add_mirror(self, context, paramdict=None):
                 if vi < nVerts:
                     vi = vi - nVerts + N2
                 else:
-                    vi = vi - nVerts
+                    vi = (vi - nVerts)%N2
                 cn3.append(normalsside[vi])
             #hole
             if cent_hole:
@@ -353,7 +369,7 @@ def add_mirror(self, context, paramdict=None):
                     if vi < nVerts:
                         pass
                     else:
-                        vi = vi - nVerts2 + N2
+                        vi = vi - nVerts_tot + N2
                     cn4.append(normalshole[vi])
 
             mesh.normals_split_custom_set(cn1 + cn2 + cn3 + cn4)

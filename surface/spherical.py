@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024, Johannes Hinrichs
+Copyright 2019-2025, Johannes Hinrichs
 
 This file is part of OptiCore.
 
@@ -68,10 +68,11 @@ def add_spherical_surface(rad, lrad, N1, N2, zadd=0, nVerts=0, cylinderaxis=None
             if dshape and j==N2-1:
                 pass
             elif i == 0:
-                fi1 = nVerts
-                fi2 = fi1 + ((j+1)%N2+1)
-                fi3 = fi1 + (j+1)
-                faces.append([fi3,fi2,fi1])
+                if not hole:
+                    fi1 = nVerts
+                    fi2 = fi1 + ((j+1)%N2+1)
+                    fi3 = fi1 + (j+1)
+                    faces.append([fi3,fi2,fi1])
             else:
                 fi1 = nVerts + j+nhole+i*N2
                 fi2 = nVerts + (j+1)%N2+nhole+i*N2
