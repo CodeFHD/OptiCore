@@ -445,13 +445,14 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             try:
                 if not self.fanangle_additional in ["", "None", "none", "NONE"]:
                     fanangles_add = [max(min(float(a), 89.99), -89.99) for a in self.fanangle_additional.split(";")]
+                    fanangles_add = [angle*np.pi/180 for angle in fanangles_add]
                     fanangles = fanangles_add + fanangles
             except:
                 print("FANANGLE ERROR")
 
             for fanangle in fanangles:
                 # set up the rays
-                initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, self.fanangle1, self.fanangle2, self.fanangle3] 
+                initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, fanangle, self.fanangle2, self.fanangle3] 
                 rays = rayfan.RayFan(self.fantype, initparams, store_history=True)
                 # try to parse ghost_oder
                 ghost_order = self.ghost_order
