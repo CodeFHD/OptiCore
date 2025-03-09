@@ -67,7 +67,7 @@ class Lenssystem():
         """
         self.elements.append([ele, dz])
 
-    def build(self, wl=None):
+    def build(self, wl=0.5786):
         """This function builds the final data structure"""
         # Data structure definition
         # This dictionary is what the ray tracer actually works thorugh
@@ -92,6 +92,8 @@ class Lenssystem():
         # Other parameters
         if wl:
             self.wl = wl
+        else:
+            self.wl = 0.5876
 
         surfacecount = 0
         # First element of structure is ambient medium plus dummy surface parameters
