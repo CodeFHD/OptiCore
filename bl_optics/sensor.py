@@ -26,13 +26,13 @@ from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 from ..bl_materials import add_diffusematerial_cycles
 
-def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, thickness=None):
+def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, sensorthickness=None):
     verts = []
     edges = []
     faces = []
 
-    if thicksensor and thickness is None:
-        thickness = max(lx, ly)/20
+    if thicksensor and sensorthickness is None:
+        sensorthickness = max(lx, ly)/20
 
     # front face
     verts.append([-zsensor, -lx, -ly])
@@ -43,10 +43,10 @@ def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, thickness=None
 
     if thicksensor:
         # rear face
-        verts.append([-zsensor - thickness, -lx, -ly])
-        verts.append([-zsensor - thickness, lx, -ly])
-        verts.append([-zsensor - thickness, lx, ly])
-        verts.append([-zsensor - thickness, -lx, ly])
+        verts.append([-zsensor - sensorthickness, -lx, -ly])
+        verts.append([-zsensor - sensorthickness, lx, -ly])
+        verts.append([-zsensor - sensorthickness, lx, ly])
+        verts.append([-zsensor - sensorthickness, -lx, ly])
         faces.append([7, 6, 5, 4])
         # sides
         faces.append([0, 4, 5, 1]) # bottom

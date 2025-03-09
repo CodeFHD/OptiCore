@@ -112,6 +112,7 @@ def add_sagsurface_rectangular(R, k, A, lwidth, N1, N2,
     faces = []
     vertquads = []
     normals = []
+    vo = [] # outline verts
 
     if surftype=='aspheric':
         testrad = lwidth*np.sqrt(2)
@@ -140,6 +141,10 @@ def add_sagsurface_rectangular(R, k, A, lwidth, N1, N2,
             elif surftype == 'toric':
                 z, N = get_zN_toric(x, y, R, rad2, surf_rotation=surf_rotation)
             verts.append([x, y, -z-zadd])
+            if i == 0 or i == N1-1:
+                vo.append(verts[-1])
+            elif j == 0 or j == N2-1:
+                vo.append(verts[-1])
             normals.append(N)
             ang = np.arctan2(y + lwidth/(2*N2-2), x + lwidth/(2*N1-2))
             vertquads.append(ang/np.pi*2)
@@ -164,5 +169,13 @@ def add_sagsurface_rectangular(R, k, A, lwidth, N1, N2,
                 faces.append([f1,f3,f4])
             else:
                 faces.append([f1,f2,f3,f4])
+                
+    # reorder outline verts to go around
+    if not dshape:
+        vo_row1 = vo[:N1]
+        vo_row2 = vo[-N1:]
+        vo_col1 = vo[N1:-N1][::2]
+        vo_col2 = vo[N1:-N1][1::2]
+        vo = vo_row1[::-1] + vo_col1 + vo_row2+ vo_col2[::-1]
             
-    return verts, faces, normals
+    return verts, faces, normals, vo

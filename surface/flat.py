@@ -60,7 +60,7 @@ def add_sqflat_surface(lwidth, N1, N2, zadd=0, xadd=0, nVerts=0, dshape=False):
     """Flat surface with square cross-section"""
 
     verts = []
-
+    vo = []
     N_tot = 2*(N1+N2) - 4 #number of points around the outline
 
     if dshape:
@@ -95,5 +95,13 @@ def add_sqflat_surface(lwidth, N1, N2, zadd=0, xadd=0, nVerts=0, dshape=False):
 
     #define normals
     normals = N_tot*[[0, 0, 1]]
+                
+    # reorder outline verts to go around
+    if not dshape:
+        vo_row1 = verts[:N1]
+        vo_row2 = verts[-N1:]
+        vo_col1 = verts[N1:-N1][::2]
+        vo_col2 = verts[N1:-N1][1::2]
+        vo = vo_row1[::-1] + vo_col1 + vo_row2+ vo_col2[::-1]
 
-    return verts, faces, normals
+    return verts, faces, normals, vo

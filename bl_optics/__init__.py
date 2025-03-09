@@ -22,5 +22,4 @@ from .mirror import *
 from .sqlens import *
 from .ccretro import *
 from .siemens import *
-from .lens_aperture import add_circular_aperture
 from .sensor import *

@@ -27,7 +27,9 @@ from ..utils import debugprint
 from ..raytrace.trace_sequential import exec_trace
 from ..bl_raytrace.trace_scene import trace_to_scene
 from ..raytrace import rayfan
-from ..bl_optics import add_lens, add_mirror, get_default_paramdict_lens, get_default_paramdict_mirror, add_circular_aperture, add_sensor
+from ..bl_optics import add_lens, add_mirror, get_default_paramdict_lens, get_default_paramdict_mirror, add_sensor
+from ..bl_optomech.lens_aperture import add_circular_aperture
+from ..bl_optomech.lens_housing import add_lenshousing_simple
 from ..fileparser.zmx import load_from_zmx
 from ..bl_materials import glass_from_Element_cycles, clear_all_materials, add_blackoutmaterial_cycles, add_diffusematerial_cycles
 
@@ -114,6 +116,14 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
     addaperture : BoolProperty(
             name="Add Aperture",
             default=True,
+           )
+    addhousing : BoolProperty(
+            name="Simple Housing",
+            default=False,
+            description="Adds a very simple stray light housing around the lens, "
+            "leaving 99 percent of the lens clear aperture. be advised that it may leak light, "
+            "can overlap for certain geometries and manual verification of its performance is advised. "
+            "Solidification via modifier might be suitable.",
            )
     addrayfan : BoolProperty(
             name="Add Ray Fan",
@@ -265,6 +275,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         col.prop(self, 'excludedetector')
         col.prop(self, 'addlenses')
         col.prop(self, 'addaperture')
+        col.prop(self, 'addhousing')
         col.prop(self, 'addrayfan')
         row = col.row()
         row.prop(self, 'addsensor')
@@ -303,6 +314,9 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         # remove orphaned OC_ materials
         if using_cycles:
             clear_all_materials()
+
+        verts_outline = []
+        dz_outline = []
         
         # create meshes from the elements
         if self.addlenses:
@@ -395,7 +409,14 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         paramdict['dshape'] = self.dshape
                         if ele.outline_shape == 'square':
                             paramdict['squarelens'] = True
-                        add_lens(self, context, paramdict=paramdict)
+                        vo = add_lens(self, context, paramdict=paramdict)
+                        verts_outline.append(vo[0]) # only first and last surface
+                        verts_outline.append(vo[-1])
+                        dz_outline.append(-dz_this)
+                        dz_outline.append(-dz_this)
+                        #verts_outline = verts_outline + vo
+                        #for _ in range(len(vo)):
+                        #    dz_outline.append(dz_this)
                         bpy.ops.transform.translate(value=(-dz_this, 0, 0))
                         obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
                         created_objects.append(obj_name)
@@ -437,6 +458,19 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         t4 = time.perf_counter()
         t41_sum = 0
         t42_sum = 0
+
+        # add sensor
+        lx = lens.detector['sizex']/2*self.sensorfactor
+        ly = lens.detector['sizey']/2*self.sensorfactor
+        sensorthickness = max(lx, ly)/20
+        if self.addsensor:
+            zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
+            add_sensor(self, context, lx, ly, zsensor, thicksensor=self.thicksensor, sensorthickness=sensorthickness)
+
+        # create housing
+        if self.addhousing:
+            add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, dshape=self.dshape,
+                                   thicksensor=self.thicksensor, sensorthickness=sensorthickness)
             
         if self.addrayfan:
             t40 = time.perf_counter()
@@ -555,12 +589,6 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             print(f'Adding ray-fan-mesh: {(t42_sum):.3f}')
         debugprint()
         """
-
-        if self.addsensor:
-            lx = lens.detector['sizex']/2*self.sensorfactor
-            ly = lens.detector['sizey']/2*self.sensorfactor
-            zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
-            add_sensor(self, context, lx, ly, zsensor, thicksensor=self.thicksensor)
         
         # Select all just created objects
         bpy.ops.object.select_all(action='DESELECT')

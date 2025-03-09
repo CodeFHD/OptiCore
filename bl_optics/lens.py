@@ -686,90 +686,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
         # cls.centerthickness1 = cls.__annotations__['centerthickness1'].default
    
 
-def add_surface(ltype, surf_subtype, squarelens, N1, N2, lrad,
-                srad, k=None, A=None, RY2=None, k2=None, A2=None,
-                surf_rotation=0,
-                zadd=0, nVerts=0,
-                dshape=False, lrad_ext=None):
-    """
-    This function is a wrapper for the different surface shapes
-    and returns the corresponding vertices, surface index lists and normals
 
-    to keep the code short observe the following variable names:
-    v, f, n == verts, faces, normals
-    """
-
-    """Rectangular cutout"""
-    if squarelens:
-        if ltype == 'flat' or surf_subtype == 'flat':
-            # flat surface
-            v, f, n = sfc.add_sqflat_surface(lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape)
-        elif ltype == 'rotational' and surf_subtype == 'spherical':
-            # normal spherical surface
-            v, f, n = sfc.add_sqspherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lwidth_ext=lrad_ext)
-        elif ltype == 'rotational' and surf_subtype != 'spherical':
-            # normal aspheric surface
-            v, f, n = sfc.add_sagsurface_rectangular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='aspheric', dshape=dshape, lrad_ext=lrad_ext)
-        elif ltype == 'cylindrical' and surf_subtype == 'spherical':
-            # normal aspheric surface
-            v, f, n = sfc.add_sagsurface_rectangular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='cylindrical', dshape=dshape, lrad_ext=lrad_ext)
-        elif ltype == 'cylindrical' and surf_subtype != 'spherical':
-            # normal aspheric surface
-            v, f, n = sfc.add_sagsurface_rectangular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='acylindrical', dshape=dshape, lrad_ext=lrad_ext)
-            """
-        elif ltype == 'cylindricX' and surf_subtype == 'spherical':
-            # X-cylinder spherical
-            v, f, n = sfc.add_sqspherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lwidth_ext=lrad_ext, cylinderaxis='X')
-        elif ltype == 'cylindricY' and surf_subtype == 'spherical':
-            # Y-cylinder spherical
-            v, f, n = sfc.add_sqspherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lwidth_ext=lrad_ext, cylinderaxis='Y')
-            """
-        elif ltype == 'toric' and surf_subtype == 'spherical':
-            v, f, n = sfc.add_sagsurface_rectangular(srad, k, A, lrad, N1, N2, zadd=zadd, nVerts=nVerts,
-                    rad2=RY2, k2=None, A2=None,
-                    surf_rotation=surf_rotation, surftype='toric',dshape=dshape, lrad_ext=lrad_ext)
-        else:
-            # in case of anything not covered by the above
-            print("This surface combination is not implemented:", ltype, surf_subtype, squarelens)
-            return None
-    else:
-        if ltype == 'flat' or surf_subtype == 'flat': #flat surface case
-            v, f, n = sfc.add_flat_surface(lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape)
-        elif ltype == 'rotational' and surf_subtype == 'spherical':
-            v, f, n = sfc.add_spherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lrad_ext=lrad_ext)
-        elif ltype == 'rotational' and surf_subtype != 'spherical':
-            v, f, n = sfc.add_sagsurface_circular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='aspheric', dshape=dshape, lrad_ext=lrad_ext)
-        elif ltype == 'cylindrical' and surf_subtype == 'spherical':
-            v, f, n = sfc.add_sagsurface_circular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='cylindrical', dshape=dshape, lrad_ext=lrad_ext)
-        elif ltype == 'cylindrical' and surf_subtype != 'spherical':
-            v, f, n = sfc.add_sagsurface_circular(srad, k, A, lrad, N1, N2, surf_rotation=surf_rotation, zadd=zadd, nVerts=nVerts, surftype='acylindrical', dshape=dshape, lrad_ext=lrad_ext)
-            """
-        elif ltype == 'cylindricX' and surf_subtype == 'spherical':
-            v, f, n = sfc.add_spherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lrad_ext=lrad_ext, cylinderaxis='X')
-        elif ltype == 'cylindricY' and surf_subtype == 'spherical':
-            v, f, n = sfc.add_spherical_surface(srad, lrad, N1, N2, zadd=zadd, nVerts=nVerts, dshape=dshape, lrad_ext=lrad_ext, cylinderaxis='Y')
-            """
-        elif ltype == 'toric' and surf_subtype == 'spherical':
-            v, f, n = sfc.add_sagsurface_circular(srad, k, A, lrad, N1, N2, zadd=zadd, nVerts=nVerts,
-                    rad2=RY2, k2=None, A2=None,
-                    surf_rotation=surf_rotation, surftype='toric',dshape=dshape, lrad_ext=lrad_ext)
-        else:
-            print("This surface combination is not implemented:", ltype, surf_subtype, squarelens)
-            return None
-
-    N_inside_sq = 'this_will_fail' # variable should later be overwritten, this way i will catch errors more easily
-    if squarelens:
-        # this variable is used later for side face generation
-        if ltype == 'flat' or surf_subtype == 'flat':
-            N_inside_sq = 2
-        else:
-            N_inside_sq = N2
-
-    # reorder the coordinate system to Blender covnention
-    v = [[t[2], t[0], t[1]] for t in v]
-    n = [[t[2], t[0], t[1]] for t in n]
-
-    return v, f, n, N_inside_sq
 
 def get_default_paramdict_lens():
     """
@@ -983,16 +900,21 @@ def add_lens(self, context, paramdict=None):
     nVerts_at_segment = [0]
     nLoops_at_segment = [0]
     nFaces_at_segment = [0]
+
+    # For lens housing
+    verts_outline = []
     
     """
     Generating the vertices and faces
     """
 
-    verts, faces, normals, N_inside_sq_prev = add_surface(ltype1, surf_subtype_X1, squarelens, N1, N2, lrad1,
+    verts, faces, normals, N_inside_sq_prev, vo = sfc.add_surface(ltype1, surf_subtype_X1, squarelens, N1, N2, lrad1,
                                                           RY1, k=k1, A=A1,
                                                           RY2=RZ1, k2=None, A2=None,
                                                           surf_rotation=surfrot1,
                                                           dshape=dshape, lrad_ext=lrad)
+
+    verts_outline.append([vo, squarelens])
 
     nVerts1 = len(verts)
     nFacs1 = len(faces)
@@ -1030,7 +952,7 @@ def add_lens(self, context, paramdict=None):
         
         # get the new surface and append
 
-        dvert, dfac, dnormals, N_inside_sq_here = add_surface(ltype0, surf_subtype0, squarelens, N1, N2, lrad0,
+        dvert, dfac, dnormals, N_inside_sq_here, vo = sfc.add_surface(ltype0, surf_subtype0, squarelens, N1, N2, lrad0,
                                                           srad0, k=k0, A=A0,
                                                           RY2=srad0Z, k2=None, A2=None,
                                                           surf_rotation=surfrot0,
@@ -1045,6 +967,7 @@ def add_lens(self, context, paramdict=None):
         verts = verts + dvert
         faces = faces + dfac
         normals = normals + dnormals
+        verts_outline.append([vo, squarelens])
         
         nVerts_this = len(dvert)
         nVerts_at_segment.append(len(verts))
@@ -1426,7 +1349,9 @@ def add_lens(self, context, paramdict=None):
         bpy.ops.mesh.select_all(action='DESELECT')
     else:
         # do this explicitly in case edit was left toggled before   
-        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)    
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+    
+    return verts_outline
         
 
 def add_rayfan(self, context):

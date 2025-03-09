@@ -104,7 +104,7 @@ def add_spherical_surface(rad, lrad, N1, N2, zadd=0, nVerts=0, cylinderaxis=None
                 faces.append([fi1,fi2,fi3,fi4])
                 #faces.append([fi4,fi3,fi2,fi1])
             
-    return verts, faces, normals#, N1, N2
+    return verts, faces, normals
 
 
 def add_sqspherical_surface(rad, lwidth, N1, N2, zadd=0, nVerts=0,
@@ -117,6 +117,7 @@ def add_sqspherical_surface(rad, lwidth, N1, N2, zadd=0, nVerts=0,
     faces = []
     normals = []
     vertquads = []
+    vo = [] # outline verts
 
     sig = 1
     if rad < 0:
@@ -179,6 +180,10 @@ def add_sqspherical_surface(rad, lwidth, N1, N2, zadd=0, nVerts=0,
                 r = np.sqrt(y**2 + z**2)
             x = rad - np.sqrt(rad**2 - r**2)
             verts.append([y, z, -x*sig - zadd])
+            if i == 0 or i == N1-1:
+                vo.append(verts[-1])
+            elif j == 0 or j == N2-1:
+                vo.append(verts[-1])
             ang = np.arctan2(z + lwidth_ext/(N2-1), y + lwidth_ext/(N1-1))
             # Normals
             if is_flangevert:
@@ -223,5 +228,13 @@ def add_sqspherical_surface(rad, lwidth, N1, N2, zadd=0, nVerts=0,
                 faces.append([f1,f3,f4])
             else:
                 faces.append([f1,f2,f3,f4])
-            
-    return verts, faces, normals
+
+    # reorder outline verts to go around
+    if not dshape:
+        vo_row1 = vo[:N1]
+        vo_row2 = vo[-N1:]
+        vo_col1 = vo[N1:-N1][::2]
+        vo_col2 = vo[N1:-N1][1::2]
+        vo = vo_row1[::-1] + vo_col1 + vo_row2+ vo_col2[::-1]
+
+    return verts, faces, normals, vo
