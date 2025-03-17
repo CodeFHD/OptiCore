@@ -24,7 +24,7 @@ import numpy as np
 import bpy
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
-from ..bl_materials import add_diffusematerial_cycles
+from ..bl_materials import add_diffusematerial_cycles, add_diffusematerial_luxcore
 
 def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, sensorthickness=None):
     verts = []
@@ -62,9 +62,13 @@ def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, sensorthicknes
     obj = object_data_add(context, mesh, operator=self)
 
     using_cycles = context.scene.render.engine == 'CYCLES'
+    using_luxcore = context.scene.render.engine == 'LUXCORE'
 
     if using_cycles:
         materialname_sensor = add_diffusematerial_cycles(objectname='Sensor')
+    elif using_luxcore:
+        materialname_sensor = add_diffusematerial_luxcore(objectname='Sensor')
+    if using_cycles or using_luxcore:
         material_sensor = bpy.data.materials[materialname_sensor]
         ob = bpy.context.active_object
         ob.data.materials.append(material_sensor)

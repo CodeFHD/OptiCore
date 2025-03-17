@@ -22,7 +22,7 @@ import numpy as np
 import bpy
 from bpy_extras.object_utils import object_data_add
 
-from ..bl_materials import add_blackoutmaterial_cycles
+from ..bl_materials import add_blackoutmaterial_cycles, add_blackoutmaterial_luxcore
 
 def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_factor=0.99, housing_factor=1.1, thicksensor=False, sensorthickness=None, dshape=False):
     """
@@ -205,9 +205,13 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_fa
 
     # assign material
     using_cycles = context.scene.render.engine == 'CYCLES'
+    using_luxcore = context.scene.render.engine == 'LUXCORE'
     
     if using_cycles:
-        materialname_aperture = add_blackoutmaterial_cycles(objectname='OC_Housing')
+        materialname_aperture = add_blackoutmaterial_cycles(objectname='Housing')
+    elif using_luxcore:
+        materialname_aperture = add_blackoutmaterial_luxcore(objectname='Housing')
+    if using_cycles or using_luxcore:
         material_apertue = bpy.data.materials[materialname_aperture]
         ob = bpy.context.active_object
         ob.data.materials.append(material_apertue)

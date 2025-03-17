@@ -24,7 +24,7 @@ from mathutils import Vector
 import bpy
 from bpy_extras.object_utils import object_data_add
 
-from ..bl_materials import add_blackoutmaterial_cycles, add_diffusematerial_cycles
+from ..bl_materials import add_blackoutmaterial_cycles, add_diffusematerial_cycles, add_blackoutmaterial_luxcore, add_diffusematerial_luxcore
 
 def add_circular_aperture(self, context, radius_inner, radius_outer, N, dshape=False):
     verts = []
@@ -106,14 +106,19 @@ def add_circular_aperture(self, context, radius_inner, radius_outer, N, dshape=F
     obj = object_data_add(context, mesh, operator=self)
 
     using_cycles = context.scene.render.engine == 'CYCLES'
+    using_luxcore = context.scene.render.engine == 'LUXCORE'
     
     if using_cycles:
         materialname_aperture = add_blackoutmaterial_cycles(objectname='Aperture')
+        if dshape: materialname_dface = add_diffusematerial_cycles(objectname='ApertureXSection')
+    elif using_luxcore:
+        materialname_aperture = add_blackoutmaterial_luxcore(objectname='Aperture')
+        if dshape: materialname_dface = add_diffusematerial_luxcore(objectname='ApertureXSection')
+    if using_cycles or using_luxcore:
         material_apertue = bpy.data.materials[materialname_aperture]
         ob = bpy.context.active_object
         ob.data.materials.append(material_apertue)
         if dshape:
-            materialname_dface = add_diffusematerial_cycles(objectname='ApertureXSection')
             material_dface = bpy.data.materials[materialname_dface]
             ob.data.materials.append(material_dface)
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)

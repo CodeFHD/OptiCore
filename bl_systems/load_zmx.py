@@ -31,7 +31,7 @@ from ..bl_optics import add_lens, add_mirror, get_default_paramdict_lens, get_de
 from ..bl_optomech.lens_aperture import add_circular_aperture
 from ..bl_optomech.lens_housing import add_lenshousing_simple
 from ..fileparser.zmx import load_from_zmx
-from ..bl_materials import glass_from_Element_cycles, clear_all_materials, add_blackoutmaterial_cycles, add_diffusematerial_cycles
+from ..bl_materials import *
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
@@ -315,9 +315,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         t1 = time.perf_counter()
 
         using_cycles = context.scene.render.engine == 'CYCLES'
+        using_luxcore = context.scene.render.engine == 'LUXCORE'
 
         # remove orphaned OC_ materials
-        if using_cycles:
+        if using_cycles or using_luxcore:
             clear_all_materials()
 
         verts_outline = []
@@ -373,6 +374,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         materials_bulk, materials_interface = glass_from_Element_cycles(ele, self.wl, self.mat_refract_only)
                         material_edge = add_blackoutmaterial_cycles()
                         material_dface = add_diffusematerial_cycles(viewportcolor=[1, 0, 0, 1])
+                    elif using_luxcore:
+                        materials_bulk, materials_interface = glass_from_Element_luxcore(ele, self.wl, self.mat_refract_only)
+                        material_edge = add_blackoutmaterial_luxcore()
+                        material_dface = add_diffusematerial_luxcore(viewportcolor=[1, 0, 0, 1])
                     while True:
                         if self.split_cemented:
                             i1 = i0 + 2
@@ -393,7 +398,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                             paramdict[f'surfrot{i+1}'] = ele.data['surf_rotation'][i0+i]
                             if ele.data['rCA_short'][i0+i] < max(ele.data['rCA'][i0:i1]):
                                 paramdict[f'flangerad{i+1}'] = max(ele.data['rCA'][i0:i1]) - ele.data['rCA_short'][i0+i]
-                            if using_cycles:
+                            if using_cycles or using_luxcore:
                                 if i == 0:
                                     paramdict[f'material_name{i+1}'] = materials_bulk[i]
                                 elif i == n_loop-1:
@@ -403,7 +408,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         for i in range(n_loop-1):
                             paramdict[f'centerthickness{i+1}'] = ele.data['CT'][i0+i]
                         
-                        if using_cycles:
+                        if using_cycles or using_luxcore:
                             paramdict[f'material_edge'] = material_edge# 'OC_LensEdge_cycles'
                             paramdict[f'material_dface'] = material_dface# 'OC_LensDface_cycles'
                         paramdict['lensradius'] = max(ele.data['rCA'][i0:i1])
