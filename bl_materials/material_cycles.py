@@ -19,19 +19,12 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 
+from .utils import *
 from ..raytrace import glasscatalog
 
-def get_OC_material_name(material_name):
-    OC_material_name = 'OC_' + material_name + '_cycles'
-    return OC_material_name
-
-def check_OC_material(material_name):
-    OC_material_name = get_OC_material_name(material_name)
-    material_exists = OC_material_name in bpy.data.materials.keys()
-    return material_exists, OC_material_name
 
 def add_glass_cycles(glassname, n, cyclesType='ShaderNodeBsdfGlass', update=False):
-    OC_material_name = get_OC_material_name(glassname)
+    OC_material_name = get_OC_material_name(glassname, 'cycles')
     # Check if material already exists
     if OC_material_name in bpy.data.materials.keys() and not update:
         return bpy.data.materials.get(OC_material_name)
@@ -58,7 +51,7 @@ def add_glass_cycles(glassname, n, cyclesType='ShaderNodeBsdfGlass', update=Fals
     return material
 
 def add_blackoutmaterial_cycles(objectname='LensEdge'):
-    OC_material_name = get_OC_material_name(objectname)
+    OC_material_name = get_OC_material_name(objectname, 'cycles')
     if OC_material_name in bpy.data.materials.keys():
         return OC_material_name# bpy.data.materials.get(OC_material_name)
     else:
@@ -81,7 +74,7 @@ def add_blackoutmaterial_cycles(objectname='LensEdge'):
     return OC_material_name
 
 def add_diffusematerial_cycles(objectname='LensDface', color=[1, 1, 1, 1], viewportcolor=[1, 1, 1, 1]):
-    OC_material_name = get_OC_material_name(objectname)
+    OC_material_name = get_OC_material_name(objectname, 'cycles')
     if OC_material_name in bpy.data.materials.keys():
         return OC_material_name# bpy.data.materials.get(OC_material_name)
     else:
@@ -108,6 +101,11 @@ def glass_from_Element_cycles(ele, wl, mat_refract_only=False):
     materials_interface = []
     num_glasses = len(ele.data['type']) - 1
     n_list = []
+
+    if mat_refract_only:
+        cyclesType = 'ShaderNodeBsdfRefraction'
+    else:
+        cyclesType = 'ShaderNodeBsdfGlass'
     
     # create materials
     for i in range(num_glasses):
@@ -120,12 +118,8 @@ def glass_from_Element_cycles(ele, wl, mat_refract_only=False):
             glassname = f'Glass-{n:.5f}'
         if mat_refract_only:
             glassname = glassname + '_refraction'
-        material_exists, OC_material_name = check_OC_material(glassname)
+        material_exists, OC_material_name = check_OC_material(glassname, 'cycles')
         if not material_exists:
-            if mat_refract_only:
-                cyclesType = 'ShaderNodeBsdfRefraction'
-            else:
-                cyclesType = 'ShaderNodeBsdfGlass'
             _ = add_glass_cycles(glassname, n, cyclesType=cyclesType)
         materials_bulk.append(OC_material_name)
 
@@ -141,9 +135,9 @@ def glass_from_Element_cycles(ele, wl, mat_refract_only=False):
                 glassname = f'GlassIF-{n_ratio:.5f}'
             else:
                 glassname = f'GlassIF-{glassname1}-{glassname2}'
-            material_exists, OC_material_name = check_OC_material(glassname)
+            material_exists, OC_material_name = check_OC_material(glassname, 'cycles')
             if not material_exists:
-                _ = add_glass_cycles(glassname, n_ratio)
+                _ = add_glass_cycles(glassname, n_ratio, cyclesType=cyclesType)
             materials_interface.append(OC_material_name)
 
     return materials_bulk, materials_interface

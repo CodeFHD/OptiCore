@@ -25,3 +25,13 @@ def clear_all_materials():
     for material in materials[:]: # use a copy so that removal doesn't mess with the iteration
         if material.users == 0 and material.name.startswith('OC_'):
             materials.remove(material)
+
+def get_OC_material_name(material_name, engine):
+    OC_material_name = 'OC_' + material_name + '_' + engine
+    return OC_material_name
+
+
+def check_OC_material(material_name, engine):
+    OC_material_name = get_OC_material_name(material_name, engine)
+    material_exists = OC_material_name in bpy.data.materials.keys()
+    return material_exists, OC_material_name
