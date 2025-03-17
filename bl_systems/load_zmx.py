@@ -306,6 +306,11 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         # load the lens
         lens = load_from_zmx(bpy.path.abspath(self.path))
         lens.apertures[0]['radius'] = lens.apertures[0]['radius']*self.aperturediam
+        lens.detector['npixx'] = int(lens.detector['npixx']*self.sensorfactor)
+        lens.detector['npixy'] = int(lens.detector['npixy']*self.sensorfactor)
+        lens.detector['sizex'] = lens.detector['npixx']*lens.detector['pixelpitch']
+        lens.detector['sizey'] = lens.detector['npixy']*lens.detector['pixelpitch']
+
         created_objects = [] # list of the individual objects that were created
         t1 = time.perf_counter()
 
@@ -460,8 +465,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         t42_sum = 0
 
         # add sensor
-        lx = lens.detector['sizex']/2*self.sensorfactor
-        ly = lens.detector['sizey']/2*self.sensorfactor
+        lx = lens.detector['sizex']/2#*self.sensorfactor
+        ly = lens.detector['sizey']/2#*self.sensorfactor
         sensorthickness = max(lx, ly)/20
         if self.addsensor:
             zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
