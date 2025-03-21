@@ -299,12 +299,12 @@ def load_from_zmx(filename, testmode=False, logfile=None):
     if surf_infos[idx_imagesurf]['hasglass']:
         lens.imagemat = surf_infos[idx_imagesurf]['glass']
     if surf_infos[idx_imagesurf]['rCA'] is not None:
-        imlenx = surf_infos[idx_imagesurf]['rCA'] # one dimension always stored in rCA
+        imleny = 2*surf_infos[idx_imagesurf]['rCA'] # one dimension always stored in rCA
         # second dimension depends on shape
         if surf_infos[idx_imagesurf]['outline_shape'] == 'square':
-            imleny = surf_infos[idx_imagesurf]['rCA_short']
+            imlenx = 2*surf_infos[idx_imagesurf]['rCA_short']
         else:
-            imleny = imlenx
+            imlenx = imleny
     else:
         imlenx = 10.24 # default
         imleny = 10.24 # default
