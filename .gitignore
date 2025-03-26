@@ -1,6 +1,7 @@
 *.pyc
 *.suo
 .vs/*
+.vscode/
 *.py.bak
 *.bak
 
