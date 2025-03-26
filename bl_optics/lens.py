@@ -1155,7 +1155,7 @@ def add_lens(self, context, paramdict=None):
         bpy.ops.object.material_slot_assign()
     
     # side
-    if hasmat_edge:  
+    if hasmat_edge:
         # deselect all
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.ops.mesh.select_all(action='DESELECT')
@@ -1181,6 +1181,44 @@ def add_lens(self, context, paramdict=None):
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         obj.active_material_index = obj.data.materials.find(material_edge)
         bpy.ops.object.material_slot_assign()
+        # flanges
+        nfaces = N2 - dshape
+        if hasfl1 and not squarelens:
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            for i in range(nfaces):
+                mesh.polygons[nFaces_at_segment[1] - i - 1].select=True
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            obj.active_material_index = obj.data.materials.find(material_edge)
+            bpy.ops.object.material_slot_assign()
+        if hasfl2 and not squarelens:
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            for i in range(nfaces):
+                mesh.polygons[nFaces_at_segment[2] - i - 1].select=True
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            obj.active_material_index = obj.data.materials.find(material_edge)
+            bpy.ops.object.material_slot_assign()
+        if hasfl3 and not squarelens and md in ['2', '3']:
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            for i in range(nfaces):
+                mesh.polygons[nFaces_at_segment[4] - i - 1].select=True
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            obj.active_material_index = obj.data.materials.find(material_edge)
+            bpy.ops.object.material_slot_assign()
+        if hasfl4 and not squarelens and md in ['3']:
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            for i in range(nfaces):
+                mesh.polygons[nFaces_at_segment[6] - i - 1].select=True
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            obj.active_material_index = obj.data.materials.find(material_edge)
+            bpy.ops.object.material_slot_assign()
     
     # d-shape
     if hasmat_dface and dshape:  
