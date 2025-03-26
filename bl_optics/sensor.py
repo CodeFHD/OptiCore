@@ -35,18 +35,18 @@ def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, sensorthicknes
         sensorthickness = max(lx, ly)/20
 
     # front face
-    verts.append([-zsensor, -lx, -ly])
-    verts.append([-zsensor, lx, -ly])
-    verts.append([-zsensor, lx, ly])
-    verts.append([-zsensor, -lx, ly])
+    verts.append([0, -lx, -ly])
+    verts.append([0, lx, -ly])
+    verts.append([0, lx, ly])
+    verts.append([0, -lx, ly])
     faces.append([0, 1, 2, 3])
 
     if thicksensor:
         # rear face
-        verts.append([-zsensor - sensorthickness, -lx, -ly])
-        verts.append([-zsensor - sensorthickness, lx, -ly])
-        verts.append([-zsensor - sensorthickness, lx, ly])
-        verts.append([-zsensor - sensorthickness, -lx, ly])
+        verts.append([-sensorthickness, -lx, -ly])
+        verts.append([-sensorthickness, lx, -ly])
+        verts.append([-sensorthickness, lx, ly])
+        verts.append([-sensorthickness, -lx, ly])
         faces.append([7, 6, 5, 4])
         # sides
         faces.append([0, 4, 5, 1]) # bottom

@@ -476,6 +476,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if self.addsensor:
             zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
             add_sensor(self, context, lx, ly, zsensor, thicksensor=self.thicksensor, sensorthickness=sensorthickness)
+            bpy.ops.transform.translate(value=(-zsensor, 0, 0))
 
         # create housing
         if self.addhousing:
