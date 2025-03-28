@@ -260,6 +260,12 @@ class RayFan():
             return self.O[self.idx_hit], self.D[self.idx_hit]
         else:
             return self.O, self.D
+        
+    def get_I(self, onlyvalid=True):
+        if onlyvalid:
+            return self.I[self.idx_hit]
+        else:
+            return self.I
 
     def update(self, O, D, I, OPD, idx_fail, N=None):
         self.O[self.idx_hit] = O
