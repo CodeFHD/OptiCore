@@ -158,8 +158,32 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
         else:
             D_new = rt_intersect.reflect_ray(D, N)
 
+        # adjust ray intensity:
+        coating = ld['coating'][idx_s]
+        if coating[0] is not None:
+            I = rays.get_I()
+            ckey = coating[0]
+            if ckey == 'MIRROR':
+                I_new = I
+            elif ckey == 'FRESNEL_0':
+                n_ratio = n2/n1
+                R_coating = lens.coating_data[ckey].get_R(n_ratio)
+                if refract == 1:
+                    I_new = I*(1.-R_coating)
+                else:
+                    I_new = I*R_coating
+            elif ckey.startswith('DATA_'):
+                R_coating = lens.coating_data[ckey].get_R(lens.wl, coating[1][2])
+                if refract == 1:
+                    I_new = I*(1.-R_coating)
+                else:
+                    I_new = I*R_coating
+            else:
+                print(f"[OC]: Warning: invalid coating key {ckey} at surface {idx_s}")
+                I_new = I
+
         # update the origin and direction arrays
-        rays.update(P, D_new, None, None, idx_fail, N=N)
+        rays.update(P, D_new, I_new, None, idx_fail, N=N)
         
         # update parameters for next loop
         lastsurface = int(1*idx_s)

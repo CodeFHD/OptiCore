@@ -17,8 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
+import os
+
 from . import glasscatalog
 from . import paraxial
+from .coatingdata import CoatingData
 
 """
 TODO: Possibly to be foreseen in this implementation:
@@ -30,6 +33,7 @@ implement a logic that it is not necessary to create the same element twice.
 class Lenssystem():
     def __init__(self, name='NONAME', ambimat='AIR'):
         self.name = name
+        self.imported_from = None
 
         # "construction" of the system, i.e. physical contents
         self.elements = [] # list of elements comprising this lens [[Element, displacement]]
@@ -47,6 +51,7 @@ class Lenssystem():
 
         # the final data structure
         self.data = {}
+        self.coating_data = {}
         self.num_surfaces = 0
         self.optical_axis_current = [0.,0.,1.] # For folded system, this variable keeps track of the local optical axis after the addition of each element. The first element is oriented, by definition, along the z-axis.
         
@@ -57,6 +62,23 @@ class Lenssystem():
         # for testing purposes
         self.testmode = False
         self.logfile = None
+    
+    def _add_coating_data(self, coating):
+        # determine key for self.coating_data
+        if coating[0] == 'MIRROR':
+            key = 'MIRROR'
+        elif coating[0] == 'DATA':
+            filename = os.path.basename(coating[1])
+            key = f'DATA_{filename}'
+        else:
+            key = 'FRESNEL_0'
+        # create new CoatingData isntance if needed
+        if not key in self.coating_data:
+            new_coating = CoatingData(coating[0])
+            if coating[0] == 'DATA':
+                new_coating.load_coating_csv(coating[1])
+            self.coating_data[key] = new_coating
+        return key
 
     def add_element(self, ele, dz=0, position=None, rotation=[0,0,0], rotation_absolute=False):
         """
@@ -88,6 +110,7 @@ class Lenssystem():
         self.data['surf_tilt'] = [] # Surface tilt error [[X, Y]]
         self.data['n'] = [] # Refractive index
         self.data['ismirror'] = [] # If the surface is reflective
+        self.data['coating'] = [] # coatings [key, data]
         # self.data['stop'] = [] # Aperture stops [[x,y,z], shape, size]
         # Other parameters
         if wl:
@@ -118,6 +141,7 @@ class Lenssystem():
         self.data['surf_tilt'].append(None)
         self.data['n'].append(n)
         self.data['ismirror'].append(False)
+        self.data['coating'].append([None])
         surfacecount = surfacecount + 1
         # Add glass surfaces
         CT_sum = 0
@@ -154,7 +178,11 @@ class Lenssystem():
                 self.data['surf_decenter'].append(ele.data['surf_decenter'][s])
                 self.data['surf_tilt'].append(ele.data['surf_tilt'][s])
                 self.data['n'].append(n)
-                self.data['ismirror'].append(ele.ismirror or ele.data['coating'][s] == 'MIRROR')
+                self.data['ismirror'].append(ele.ismirror or ele.data['coating'][s][0] == 'MIRROR')
+                # coating
+                coating_key = self._add_coating_data(ele.data['coating'][s])
+                coating_entry = [coating_key, ele.data['coating'][s]]
+                self.data['coating'].append(coating_entry)
                 surfacecount = surfacecount + 1
                 maxrad = max(maxrad, ele.data['rCA'][s])
                 

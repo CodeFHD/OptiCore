@@ -60,6 +60,7 @@ def parse_zmx_surface(surflines):
     rCA = None
     rCA_short = None
     lrad = None
+    coating = ['FRESNEL_0', None, None]
 
     # get the surface type first in order to know how to interpret the rest
     surftype = _type_from_surflines(surflines)
@@ -95,6 +96,11 @@ def parse_zmx_surface(surflines):
             rCA = float(line.split()[2])
         elif line.startswith('CONI'):
             kX = float(line.split()[1])
+        elif line.startswith('OCCT'):
+            coat_type = line.split()[1]
+            coat_filename = line.split()[2]
+            coat_idx = int(line.split()[3])
+            coating = [coat_type, coat_filename, coat_idx]
 
         # surftype-dependent parameters
         elif line.startswith('PARM'):
@@ -159,6 +165,7 @@ def parse_zmx_surface(surflines):
     surf_info['rCA_short'] = rCA_short
     surf_info['lrad'] = lrad
     surf_info['outline_shape'] = outline_shape
+    surf_info['coating'] = coating
     return surf_info
 
 def get_stop(surf_infos, idx_first=0):

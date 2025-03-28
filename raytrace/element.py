@@ -55,11 +55,11 @@ class Element():
         self.data['surf_rotation'] = [] # angle by which surface is rotated around optical axis. E.g. for cylinder lenses.
 
         ## imperfections
-        self.data['surf_decenter'] = [] # Surface lateral position error [[x, y]] in local coordinates
-        self.data['surf_tilt'] = [] # Surface tilt error [[X, Y]] in local coordinates
+        self.data['surf_decenter'] = [] # Surface lateral position error [x, y] in local coordinates
+        self.data['surf_tilt'] = [] # Surface tilt error [X, Y] in local coordinates
 
         ## other surface properties
-        self.data['coating'] = [] # coatings
+        self.data['coating'] = [] # coatings [type, datasource, dataindex]
         # self.data['roughness_model'] = [] # for scattering
         # self.data['roughness_coeffs']
         
@@ -81,7 +81,7 @@ class Element():
         # self.orientation = [0, 0, 0] # angles in spherical coordiantes [latitude, longitude, axis roll] to specify how this Element shall be oriented in 3D-space. Order of application: 1. Roll aorund z-axis, 2. latitude around x-axis, 3. longitude around y-axis.
 
     def add_surface(self, surftype, lenstype='rotational', radius=None, asph=[None, None], radius2=None, asph2=[None, None],
-                    coating=None, rCA=None, rCA_short = None, lrad=None, CT=None, material=None,
+                    coating=[None, None, None], rCA=None, rCA_short = None, lrad=None, CT=None, material=None,
                     surf_decenter=None, surf_tilt=None, surf_rotation=0):
         """
         function to append appropriately to the data structure

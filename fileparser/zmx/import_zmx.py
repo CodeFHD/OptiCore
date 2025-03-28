@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 """
 
+import os
 import re
 import numpy as np
 
@@ -231,9 +232,9 @@ def create_elements(surf_infos, idx_elements, CT_cumulative):
         for j, idx in enumerate(idx_list):
             ismirror = surf_infos[idx]['glass'] == 'MIRROR'
             if ismirror:
-                coating = 'MIRROR'
+                coating = ['MIRROR', None, None]
             else:
-                coating = None
+                coating = surf_infos[idx]['coating'] 
 
             r1 = surf_infos[idx]['radius']
             r2 = surf_infos[idx]['radius2']
@@ -269,6 +270,7 @@ def create_elements(surf_infos, idx_elements, CT_cumulative):
 
 def load_from_zmx(filename, testmode=False, logfile=None):
     pixelpitch = 0.01 # default because that is not stored in zmx files AFAIK
+    file_path, _ = os.path.split(filename)
 
     # split he(ader), su(rfaces), fo(oter)
     he, su, fo = split_zmx_file(filename)
@@ -277,6 +279,9 @@ def load_from_zmx(filename, testmode=False, logfile=None):
     surf_infos = {}
     for idx, surface in su.items():
         surf_info = parse_zmx_surface(surface)
+        # make coating filename absolute paths
+        if surf_info['coating'][0] in ['DATA']:
+            surf_info['coating'][1] = os.path.join(file_path, surf_info['coating'][1])
         surf_infos[idx] = surf_info
 
     # identify elements, or groups, i.e. cemented pieces
@@ -290,6 +295,7 @@ def load_from_zmx(filename, testmode=False, logfile=None):
 
     # Create the Lenssystem() class object
     lens = Lenssystem()
+    lens.imported_from = filename
     lens.testmode = testmode
     lens.logfile = logfile
     lens.elements = elements
