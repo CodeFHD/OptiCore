@@ -262,9 +262,9 @@ def _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
     if substitute_prefix is not None:
         glassname = substitute_prefix + glassname
     if glassname in CATALOG_MAP[catalog_name]:
-        print('FIND', catalog_name, glassname, substitute_prefix)
+        #print('FIND', catalog_name, glassname, substitute_prefix)
         coefficients = CATALOG_MAP[catalog_name][glassname]
-        print(coefficients)
+        #print(coefficients)
         n = CATALOG_RESOLVE_MAP[catalog_name](wl, coefficients)
         return n
     else:
@@ -274,9 +274,9 @@ def _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
 def _iteration_get_n(glassname, wl=0.5875618, substitute_prefix=None, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False):
     # Case 1: Check if glassname starts with manufacturer string, i.e. explicitly specified
     glassname_prefix = glassname.split('_')[0]
-    print('PREFIX:', glassname_prefix)
+    #print('PREFIX:', glassname_prefix)
     if glassname_prefix in CATALOG_MAP:
-        print(f'DIRECT CHECK FOR {glassname} with {substitute_prefix} IN {glassname_prefix}')
+        #print(f'DIRECT CHECK FOR {glassname} with {substitute_prefix} IN {glassname_prefix}')
         glassname = '_'.join(glassname.split('_')[1:])
         n = _get_n_from_catalog(glassname, glassname_prefix, wl, substitute_prefix=substitute_prefix)
         if n != -1:
@@ -350,7 +350,7 @@ def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
             if substitute_prefix is not None:
                 glassname = '_'.join(glassname.split('_')[1:])
                 print(f'Glas subsitution from {glassname} to {substitute_prefix + glassname}!')
-            print(f'Found refractive index {n:.4f} for {glassname}')
+            #print(f'Found refractive index {n:.4f} for {glassname}')
             return n
 
     # Case 3: Material not found
