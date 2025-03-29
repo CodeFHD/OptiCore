@@ -28,7 +28,7 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_fa
     """
     This function creates a basic lens housing intended for quick raytracing setups.
     The basic logic is to create and aperture at every surface, scaled by CAfactor,
-    and connecting them on the outside with a tube of the maximum lens diameter.
+    and connecting them on the outside.
     Likewise, the sensor housing is modelled based on the sensor size and connected to the lens tube.
     """
     if dshape:
@@ -39,7 +39,7 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_fa
     edges = []
     faces = []
 
-    # create vertices at lenses and connect aperturs
+    # create vertices at lenses and connect apertures
     offset = 0
     offset_list = [0]
     N_list = []
@@ -130,14 +130,11 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_fa
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 
-    nEdges_prebridge = len(mesh.edges)
-
     # bridge unconnected
     bpy.ops.object.mode_set(mode='EDIT', toggle=False)
     bpy.ops.mesh.select_all(action='DESELECT')
-    bpy.context.tool_settings.mesh_select_mode = [False, True, False] # Edge select mode
+    bpy.context.tool_settings.mesh_select_mode = [True, False, False] # Vertex select mode
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-    lastedge = 0 # for speeding up the search - start range
     for i in range(1, len(verts_outline)):
         if N_list[i] == N_list[i-1]:
             # opposite case as in step "connect lens tube"
@@ -146,26 +143,12 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_fa
         N_this = N_list[i]
         offset0 = offset_list[i-1] + N_before # index offset to the previous aperture incl. inner ring
         offset1 = offset_list[i] + N_this # index offset to this aperture incl. inner ring
-        n_selected = 0 # for speeding up the search - break condition
         for j in range(N_before):
             fi1 = offset0 + j
-            fi2 = offset0 + (j+1)%N_before
-            for edge in mesh.edges[lastedge:]:
-                if (fi1 in edge.vertices) and (fi2 in edge.vertices):
-                    edge.select = True
-                    n_selected += 1
-                if n_selected == N_before: break
-        n_selected = 0
+            mesh.vertices[fi1].select=True
         for j in range(N_this):
             fi3 = offset1 + (j+1)%N_this
-            fi4 = offset1 + j
-            for edge in mesh.edges[lastedge:]:
-                if (fi3 in edge.vertices) and (fi4 in edge.vertices):
-                    edge.select = True
-                    n_selected += 1
-                if n_selected == N_this:
-                    lastedge = edge.index
-                    break
+            mesh.vertices[fi3].select=True
 
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         bpy.ops.mesh.bridge_edge_loops()
@@ -178,29 +161,16 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_fa
     i = len(verts_outline) - 1 # should be preserved from above but bettzer be explicit
     N_this = N_list[i]
     offset1 = offset_list[i] + N_this # index offset to this aperture incl. inner ring
-    n_selected = 0
     for j in range(N_this):
         fi3 = offset1 + (j+1)%N_this
-        fi4 = offset1 + j
-        for edge in mesh.edges[-nEdges_prebridge-16-N_this:]:
-            if (fi3 in edge.vertices) and (fi4 in edge.vertices):
-                edge.select = True
-                n_selected += 1
-            if n_selected == N_this: break
+        mesh.vertices[fi3].select=True
     o = nVerts_tube
-    n_selected = 0
     for j in range(4):
         ei1 = o + j
-        ei2 = o + (j+1)%4
-        for edge in mesh.edges[-nEdges_prebridge-16:]:
-            if (ei1 in edge.vertices) and (ei2 in edge.vertices):
-                edge.select = True
-                n_selected += 1
-            if n_selected == 4: break
+        mesh.vertices[ei1].select=True
     
     bpy.ops.object.mode_set(mode='EDIT', toggle=False)
     bpy.ops.mesh.bridge_edge_loops()
-    #bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
     # assign material
