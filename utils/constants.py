@@ -33,3 +33,7 @@ Fraunhofer_map = {"i": 365.0146,
                   "t": 1013.9800,}
 
 digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+c = 299792458 # speefd of light, units m s-2
+kB = 1.380649e-23 # Boltzman consant, units J K-1
+h = 6.62607015e-34 # Plack constant, unit kg m+2 s-1
