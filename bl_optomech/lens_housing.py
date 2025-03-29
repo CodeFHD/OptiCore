@@ -24,7 +24,9 @@ from bpy_extras.object_utils import object_data_add
 
 from ..bl_materials import add_blackoutmaterial_cycles, add_blackoutmaterial_luxcore
 
-def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_factor=0.99, housing_factor=1.1, thicksensor=False, sensorthickness=None, dshape=False):
+def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline,
+                           CA_factor=0.99, housing_factor=1.1, thicksensor=False, sensorthickness=None,
+                           dshape=False, outlinetype='max'):
     """
     This function creates a basic lens housing intended for quick raytracing setups.
     The basic logic is to create and aperture at every surface, scaled by CAfactor,
@@ -34,6 +36,9 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_fa
     if dshape:
         # Not currently implemented for cross section lenses
         return
+    if outlinetype not in ['max', 'tight']:
+        print(f"[OC] Warning: Invalid value for outlinetype in add_lenshousing_simple(): '{outlinetype}'. Defaulting to 'max'")
+        outlinetype = 'max'
     
     verts = []
     edges = []
@@ -57,12 +62,21 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, CA_fa
         else:
             dz_epsilon = -0.1
         v2 = np.array(v) # create a copy
+        if outlinetype == 'max':
+            if squarelens:
+                thisrad = abs(v2[0, 1])
+            else:
+                thisrad = np.sqrt(np.sum(v2[0, 1:]*v2[0, 1:]))
+            maxrad = np.nanmax(lens.data['lrad'][1:])
+            outline_factor = maxrad/thisrad
+        else:
+            outline_factor = 1
         v2[:,1:] = v2[:,1:]*CA_factor
         v2[:,0] = v2[:,0] + dz + dz_epsilon
         v2 = [[v2[i,0], v2[i,1], v2[i,2]] for i in range(N_this)]
         verts = verts + v2
         v2 = np.array(v)
-        v2[:,1:] = v2[:,1:]*housing_factor
+        v2[:,1:] = v2[:,1:]*housing_factor*outline_factor
         v2[:,0] = v2[:,0] + dz + dz_epsilon
         v2 = [[v2[i,0], v2[i,1], v2[i,2]] for i in range(N_this)]
         verts = verts + v2

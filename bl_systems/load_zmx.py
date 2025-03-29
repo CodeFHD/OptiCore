@@ -125,6 +125,10 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             "can overlap for certain geometries and manual verification of its performance is advised. "
             "Solidification via modifier might be suitable.",
            )
+    housingtype : BoolProperty(
+            name="Tight",
+            default=False,
+           )
     addrayfan : BoolProperty(
             name="Add Ray Fan",
             default=False,
@@ -274,7 +278,9 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         col.prop(self, 'aperturediam')
         col.prop(self, 'addlenses')
         col.prop(self, 'addaperture')
-        col.prop(self, 'addhousing')
+        row = col.row()
+        row.prop(self, 'addhousing')
+        row.prop(self, 'housingtype')
         row = col.row()
         row.prop(self, 'addrayfan')
         row.prop(self, 'excludedetector')
@@ -481,8 +487,12 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
 
         # create housing
         if self.addhousing:
+            if self.housingtype:
+                outlinetype='tight'
+            else:
+                outlinetype='max'
             add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, dshape=self.dshape,
-                                   thicksensor=self.thicksensor, sensorthickness=sensorthickness)
+                                   thicksensor=self.thicksensor, sensorthickness=sensorthickness, outlinetype=outlinetype)
             
         if self.addrayfan:
             t40 = time.perf_counter()
