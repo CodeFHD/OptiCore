@@ -148,10 +148,15 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
            min = 0.01,
            max = 3.0,
            )
-    zdet : FloatProperty(
-           name="Detector Offset",
+    sensor_offset : FloatProperty(
+           name="Sensor Offset",
            default = 0.0,
            description="Displacement of the sensor plane from zmx file",
+           )
+    addcamera : BoolProperty(
+            name="Add Camera",
+            default=True,
+            description="Add a camera looking at the sensor. Only applies if a sensor is added",
            )
     nrays : IntProperty(
            name="Nrays",
@@ -266,7 +271,6 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         col.prop(self, 'flen')
         col.prop(self, 'rmsspotsize')
         col.prop(self, 'wl', text="Wavelength (um)")
-        col.prop(self, 'zdet')
         col.prop(self, 'nrays')
         col.prop(self, 'fantype')
         col.prop(self, 'fandist')
@@ -288,7 +292,9 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         row = col.row()
         row.prop(self, 'addsensor')
         row.prop(self, 'thicksensor')
+        col.prop(self, 'sensor_offset')
         col.prop(self, 'sensorfactor')
+        col.prop(self, 'addcamera')
         col.prop(self, 'ghost_order')
         col.prop(self, 'autofocus')
         col.prop(self, 'onlycompleterays')
@@ -450,7 +456,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         t2 = time.perf_counter()
 
         # apply sensor offset
-        lens.detector['distance'] = lens.detector['distance'] + self.zdet
+        lens.detector['distance'] = lens.detector['distance'] + self.sensor_offset
         # build the lens, raytrace, and get the rays for plotting
         lens.build(self.wl)
         self.flen_intern = lens.EFL_paraxial()
@@ -477,13 +483,26 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         t42_sum = 0
 
         # add sensor
-        lx = lens.detector['sizex']/2#*self.sensorfactor
-        ly = lens.detector['sizey']/2#*self.sensorfactor
-        sensorthickness = max(lx, ly)/20
+        sensor_sizex = lens.detector['sizex']/2#*self.sensorfactor
+        sensor_sizey = lens.detector['sizey']/2#*self.sensorfactor
+        sensorthickness = max(sensor_sizex, sensor_sizey)/20
         if self.addsensor:
             zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
-            add_sensor(self, context, lx, ly, zsensor, thicksensor=self.thicksensor, sensorthickness=sensorthickness)
+            add_sensor(self, context, sensor_sizex, sensor_sizey, zsensor, thicksensor=self.thicksensor, sensorthickness=sensorthickness)
             bpy.ops.transform.translate(value=(-zsensor, 0, 0))
+
+        # add camera
+        if self.addsensor and self.addcamera:
+            # Place camera between sensor and last lens at 10% the spacing.
+            # Check first if the sensor distance is unreasonably small, in that case issue a warning
+            if lens.detector['distance'] < 0.01*lens.data['CT_sum'][-1]:
+                print("[OC] Warning: Distance between last lens and sensor is unreasonably small! The automatically created camera may not yield expected results!")
+            zcamera = lens.data['CT_sum'][-1] + 0.9*lens.detector['distance']
+            bpy.ops.object.camera_add(location=[-zcamera, 0, 0], rotation=[90*np.pi/180, 0, 90*np.pi/180])
+            cam = bpy.context.selected_objects[0]
+            cam.name = 'OC_Camera'
+            cam.data.type = 'ORTHO'
+            cam.data.ortho_scale = sensor_sizex*2
 
         # create housing
         if self.addhousing:
