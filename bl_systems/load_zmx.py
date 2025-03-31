@@ -258,7 +258,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         )
     mat_refract_only : BoolProperty(
         name="Material: Set refractive only",
-        default=False,
+        default=True,
         )
     origin_position : EnumProperty(
         name="Origin",
