@@ -511,7 +511,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             if lens.detector['distance'] < 0.01*lens.data['CT_sum'][-1]:
                 print("[OC] Warning: Distance between last lens and sensor is unreasonably small! The automatically created camera may not yield expected results!")
             zcamera = lens.data['CT_sum'][-1] + 0.9*lens.detector['distance']
-            bpy.ops.object.camera_add(location=[-zcamera, 0, 0], rotation=[90*np.pi/180, 0, 90*np.pi/180])
+            bpy.ops.object.camera_add(location=[-zcamera, 0, 0], rotation=[90*np.pi/180, np.pi, 90*np.pi/180])
             cam = bpy.context.selected_objects[0]
             cam.name = 'OC_Camera'
             cam.data.type = 'ORTHO'
