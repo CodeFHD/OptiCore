@@ -661,11 +661,16 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 bpy.data.objects[objname].select_set(True)
             bpy.ops.transform.translate(value=(zsensor, 0, 0))
         
-        # Select all just created objects
+        # Select a few objects at the end
+        # If ray fans were added, select the last one
+        # Else, select all lenses
         bpy.ops.object.select_all(action='DESELECT')
-        for o in bpy.data.objects:
-            if o.name in created_lenses:
-                o.select_set(True)
+        if len(created_rayfans) > 0:
+            objname = created_rayfans[-1]
+            bpy.data.objects[objname].select_set(True)
+        else:
+            for objname in created_lenses:
+                bpy.data.objects[objname].select_set(True)
         
         if self.display_edit:
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
