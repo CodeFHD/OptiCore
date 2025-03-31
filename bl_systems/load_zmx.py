@@ -260,6 +260,14 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         name="Material: Set refractive only",
         default=False,
         )
+    origin_position : EnumProperty(
+        name="Origin",
+        items = {("first_vertex","First Lens",""),
+                ("sensor","Sensor",""),},
+        default = "first_vertex",
+        description="Determines which component of the lens is placed at the location of the 3D cursor",
+        #options={'HIDDEN'},
+        )
 
     def draw(self, context):
         scene = context.scene
@@ -305,6 +313,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         col.prop(self, 'num1')
         col.prop(self, 'num2')
         col.prop(self, 'mat_refract_only')
+        col.prop(self, 'origin_position')
 
     
     def execute(self, context):
@@ -324,7 +333,9 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         lens.detector['sizex'] = lens.detector['npixx']*lens.detector['pixelpitch']
         lens.detector['sizey'] = lens.detector['npixy']*lens.detector['pixelpitch']
 
-        created_objects = [] # list of the individual objects that were created
+        created_lenses = [] # list of (object names) of the individual lenses
+        created_rayfans = [] # list of (object names) of the ray fans
+        created_other = [] # list of (object names) for other components: aperture, housing, sensor, camera
         t1 = time.perf_counter()
 
         using_cycles = context.scene.render.engine == 'CYCLES'
@@ -376,7 +387,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                     add_mirror(self, context, paramdict=paramdict)
                     bpy.ops.transform.translate(value=(-dz_this, 0, 0))
                     obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
-                    created_objects.append(obj_name)
+                    created_lenses.append(obj_name)
                 else:
                     if self.split_cemented:
                         n_loop = 2
@@ -442,7 +453,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         #    dz_outline.append(dz_this)
                         bpy.ops.transform.translate(value=(-dz_this, 0, 0))
                         obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
-                        created_objects.append(obj_name)
+                        created_lenses.append(obj_name)
 
                         if i1 >= num_surfaces:
                             #last surface was included
@@ -475,8 +486,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 radius_outer = max(radius_inner*1.2, radius_outer)
                 add_circular_aperture(self, context, radius_inner, radius_outer, self.num2, dshape = self.dshape)
                 bpy.ops.transform.translate(value=(-ap['z_ap'], 0, 0))
-                # obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
-                # created_objects.append(obj_name)
+                obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+                created_other.append(obj_name)
             
         t4 = time.perf_counter()
         t41_sum = 0
@@ -490,6 +501,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
             add_sensor(self, context, sensor_sizex, sensor_sizey, zsensor, thicksensor=self.thicksensor, sensorthickness=sensorthickness)
             bpy.ops.transform.translate(value=(-zsensor, 0, 0))
+            obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+            created_other.append(obj_name)
 
         # add camera
         if self.addsensor and self.addcamera:
@@ -503,6 +516,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             cam.name = 'OC_Camera'
             cam.data.type = 'ORTHO'
             cam.data.ortho_scale = sensor_sizex*2
+            obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+            created_other.append(obj_name)
 
         # create housing
         if self.addhousing:
@@ -512,6 +527,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 outlinetype='max'
             add_lenshousing_simple(self, context, lens, verts_outline, dz_outline, dshape=self.dshape,
                                    thicksensor=self.thicksensor, sensorthickness=sensorthickness, outlinetype=outlinetype)
+            obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+            created_other.append(obj_name)
             
         if self.addrayfan:
             t40 = time.perf_counter()
@@ -521,7 +538,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 if not self.fanangle_additional in ["", "None", "none", "NONE"]:
                     fanangles_add = [max(min(float(a), 89.99), -89.99) for a in self.fanangle_additional.split(";")]
                     fanangles_add = [angle*np.pi/180 for angle in fanangles_add]
-                    fanangles = fanangles_add + fanangles
+                    fanangles = fanangles_add + fanangles # the "main" fan angle is the last of the list for historic reasons
             except:
                 print("FANANGLE ERROR")
 
@@ -614,6 +631,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 mesh = bpy.data.meshes.new(name="Rayfan")
                 mesh.from_pydata(verts, edges, faces)
                 obj = object_data_add(context, mesh, operator=self)
+                obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+                created_rayfans.append(obj_name)
                 t42 = time.perf_counter()
                 t42_sum = t42_sum + t42 - t41
             
@@ -630,11 +649,22 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             print(f'Adding ray-fan-mesh: {(t42_sum):.3f}')
         debugprint()
         """
+
+        # move all components so that the sensor is at the origin
+        if self.origin_position == 'sensor':
+            bpy.ops.object.select_all(action='DESELECT')
+            for objname in created_lenses:
+                bpy.data.objects[objname].select_set(True)
+            for objname in created_rayfans:
+                bpy.data.objects[objname].select_set(True)
+            for objname in created_other:
+                bpy.data.objects[objname].select_set(True)
+            bpy.ops.transform.translate(value=(zsensor, 0, 0))
         
         # Select all just created objects
         bpy.ops.object.select_all(action='DESELECT')
         for o in bpy.data.objects:
-            if o.name in created_objects:
+            if o.name in created_lenses:
                 o.select_set(True)
         
         if self.display_edit:
