@@ -516,6 +516,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             cam.name = 'OC_Camera'
             cam.data.type = 'ORTHO'
             cam.data.ortho_scale = sensor_sizex*2
+            if using_luxcore:
+                cam.data.luxcore.imagepipeline.tonemapper.use_autolinear = True
             obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
             created_other.append(obj_name)
 
