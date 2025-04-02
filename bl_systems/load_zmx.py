@@ -556,7 +556,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         sensor_sizex = lens.detector['sizex']/2#*self.sensorfactor
         sensor_sizey = lens.detector['sizey']/2#*self.sensorfactor
         sensorthickness = max(sensor_sizex, sensor_sizey)/20
-        zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
+        zsensor = lens.data['CT_sum'][-1]# + lens.detector['distance']
         if self.addsensor:
             add_sensor(self, context, sensor_sizex, sensor_sizey, zsensor, thicksensor=self.thicksensor, sensorthickness=sensorthickness)
             bpy.ops.transform.translate(value=(-zsensor, 0, 0))
@@ -567,9 +567,9 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if self.addsensor and self.addcamera:
             # Place camera between sensor and last lens at 10% the spacing.
             # Check first if the sensor distance is unreasonably small, in that case issue a warning
-            if lens.detector['distance'] < 0.01*lens.data['CT_sum'][-1]:
+            if lens.detector['distance'] < 0.01*lens.data['CT_sum'][-2]:
                 print("[OC] Warning: Distance between last lens and sensor is unreasonably small! The automatically created camera may not yield expected results!")
-            zcamera = lens.data['CT_sum'][-1] + 0.9*lens.detector['distance']
+            zcamera = lens.data['CT_sum'][-2] + 0.9*lens.detector['distance']
             bpy.ops.object.camera_add(location=[-zcamera, 0, 0], rotation=[90*np.pi/180, np.pi, 90*np.pi/180])
             cam = bpy.context.selected_objects[0]
             cam.name = 'OC_Camera'
@@ -616,7 +616,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 if not ghost_order == '':
                     try:
                         surflist = [int(_) for _ in ghost_order.split(',')]
-                        if np.any(np.array(surflist) > nos) or np.any(np.array(surflist) < 1): 
+                        if np.any(np.array(surflist) > nos+1) or np.any(np.array(surflist) < 1): 
                             print("Warning: Custom ghost list invalid. Tracing default!")
                         elif surflist[0] == surflist[1]:
                             pass 

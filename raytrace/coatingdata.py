@@ -52,6 +52,8 @@ class CoatingData():
             return 1
         elif self.type == 'FRESNEL_0':
             return self.get_R_fresnel_0(params[0])
+        elif self.type == 'FIXVALUE':
+            return self.reflectance_data
         else:
             return self.get_R_fresnel_0(params[0])
         

@@ -70,13 +70,17 @@ class Lenssystem():
         elif coating[0] == 'DATA':
             filename = os.path.basename(coating[1])
             key = f'DATA_{filename}'
+        elif coating[0] == 'FIXVALUE':
+            key = f'FIXVALUE_{coating[1]:.4f}'
         else:
             key = 'FRESNEL_0'
-        # create new CoatingData isntance if needed
+        # create new CoatingData instance if needed
         if not key in self.coating_data:
             new_coating = CoatingData(coating[0])
             if coating[0] == 'DATA':
                 new_coating.load_coating_csv(coating[1])
+            elif coating[0] == 'FIXVALUE':
+                new_coating.reflectance_data = coating[1]
             self.coating_data[key] = new_coating
         return key
 
@@ -175,6 +179,7 @@ class Lenssystem():
                 self.data['rCA'].append(ele.data['rCA'][s])
                 self.data['rCA_short'].append(ele.data['rCA_short'][s])
                 self.data['surf_rotation'].append(ele.data['surf_rotation'][s])
+                self.data['CA_shape'].append('circle') # TODO
                 self.data['surf_decenter'].append(ele.data['surf_decenter'][s])
                 self.data['surf_tilt'].append(ele.data['surf_tilt'][s])
                 self.data['n'].append(n)
@@ -185,7 +190,7 @@ class Lenssystem():
                 self.data['coating'].append(coating_entry)
                 surfacecount = surfacecount + 1
                 maxrad = max(maxrad, ele.data['rCA'][s])
-                
+
         if self.imagemat:
             n = glasscatalog.get_n(self.imagemat, self.wl)
             self.data['n'][-1] = n
@@ -195,6 +200,28 @@ class Lenssystem():
 
         # define detector quad
         self.set_detector()
+        
+        # add the sensor as a surface as well for handling sensor ghosts
+        self.data['type'].append('flat')
+        self.data['radius'].append(0)
+        self.data['asph'].append([None, None])
+        self.data['radius2'].append(0)
+        self.data['asph2'].append([None, None])
+        # self.data['freeform_coeff'].append([None])
+        # self.data['CT'].append(None)
+        self.data['CT_sum'].append(self.data['CT_sum'][-1] + self.detector['distance'])
+        self.data['lrad'].append(None)
+        self.data['rCA'].append(self.detector['sizex'])
+        self.data['rCA_short'].append(self.detector['sizey'])
+        self.data['surf_rotation'].append(0)
+        self.data['CA_shape'].append('rect')
+        self.data['surf_decenter'].append(None)
+        self.data['surf_tilt'].append(None)
+        self.data['n'].append(n)
+        self.data['ismirror'].append(False)
+        coating_key = self._add_coating_data(['FIXVALUE', 0.3])
+        coating_entry = [coating_key, ['FIXVALUE', None, None]]
+        self.data['coating'].append(coating_entry)
 
         # convert aperture positions to index
         # TODO: The other way round also?
