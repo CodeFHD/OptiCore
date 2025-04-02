@@ -1552,30 +1552,61 @@ def add_rayfan(self, context):
     # if trace to scene, perform the last trace
     if self.tracetoscene:
         rays = trace_to_scene(context, rays)
-        
+
     # create the lines
     verts = []
     edges = []
     faces = []
-    nVerts = 0
-    for j in range(len(rays.O_history)-1):
-        for i in range(rays.O_history[0].shape[0]):
-            # change axis convention from raytrace to Blender orientation
-            o = np.array(rays.O_history[j][i])
-            o[[0,1,2]] = o[[2,0,1]]
-            o[0] = -1*o[0]
-            verts.append(Vector(o))
-            o = np.array(rays.O_history[j+1][i])
-            o[[0,1,2]] = o[[2,0,1]]
-            o[0] = -1*o[0]
-            verts.append(Vector(o))
-            edges.append([nVerts + 2*i, nVerts + 2*i + 1])
-        nVerts = len(verts)
-        
+    ocr = False # self.onlycompleterays
+
+    n_history = len(rays.O_history)
+    n_rays = rays.O_history[0].shape[0]
+    # create single numpy.array from history. Shape is (n_surf, n_rays, 3)
+    O_hist = np.array([rays.O_history[i] for i in range(n_history)])
+    idx_complete = ~np.isnan(O_hist[:,:,0].sum(axis=0))
+
+    # reduce array down to fully valid rows
+    if ocr:
+        O_hist = O_hist[:, idx_complete, :]
+        n_rays = O_hist.shape[1] # update this variable
+    # change axis convention from raytrace to Blender orientation
+    O_hist[:, :, [0, 1, 2]] = O_hist[:, :, [2, 0, 1]]
+    O_hist[:, :, 0] *= -1
+    # always add the verts for the first surface (i.e. ray fan input)
+    o1 = np.copy(O_hist[0, :, :]) # initialize first surface
+    verts = [list(o1[j, :]) for j in range(n_rays)]
+    vidx1 = [j for j in range(n_rays)] # at each surface, the index in the verts list that each point has been assinged
+    # loop over pairs of surfaces
+    for i in range(1, n_history):
+        offset1 = len(verts)
+        # get new surface
+        o2 = np.copy(O_hist[i, :, :])
+
+        valid_both = ~np.isnan(o1[:, 0]) & ~np.isnan(o2[:, 0])
+        n_valid = sum(valid_both)
+        valid_any = np.any(valid_both)
+
+        #add verts and lines
+        if valid_any:
+            verts_new = [list(o2[j, :]) for j, j_valid in enumerate(valid_both) if j_valid]
+            verts = verts + verts_new
+            vidx2 = np.full(n_rays, -1) # invalid points == -1
+            vidx2[valid_both] = range(offset1, offset1 + n_valid)
+            edges_new = [[vidx1[j], vidx2[j]] for j, j_valid in enumerate(valid_both) if j_valid]
+            edges = edges + edges_new
+        else:
+            # can't continue tracing no valid ray
+            break
+
+        # switch for next loop iteration
+        o2 = np.copy(o1)
+        vidx1 = vidx2
+    
+
     # calculate rms spot size
     if trace_detector:    
         # get points in detector plane
-        P = np.array(rays.O_history[len(rays.O_history)-1])
+        P = np.array(rays.O_history[n_history - 1])
         # get mean point
         Pmean = np.nanmean(P, axis=0)
         # get differences
@@ -1585,7 +1616,7 @@ def add_rayfan(self, context):
         rmsspotsize = np.sqrt(np.nanmean(r2))
     else:
         rmsspotsize = float('NaN')
-            
+
     mesh = bpy.data.meshes.new(name="Rayfan")
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
