@@ -551,6 +551,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         t4 = time.perf_counter()
         t41_sum = 0
         t42_sum = 0
+        t43_sum = 0
 
         # add sensor
         sensor_sizex = lens.detector['sizex']/2#*self.sensorfactor
@@ -691,32 +692,33 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                             verts.append(Vector(o1))
                     nVerts = len(verts)
                 #print('RAY LOOP DONE')
+                t42 = time.perf_counter()
+                t42_sum = t42_sum + t42 - t41
                 mesh = bpy.data.meshes.new(name="Rayfan")
                 mesh.from_pydata(verts, edges, faces)
                 obj = object_data_add(context, mesh, operator=self)
                 obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
                 created_rayfans.append(obj_name)
-                t42 = time.perf_counter()
-                t42_sum = t42_sum + t42 - t41
-            
-        #t5 = time.perf_counter()
+                t43 = time.perf_counter()
+                t43_sum = t43_sum + t43 - t42
 
         # create lights
         if self.addlasers:
             created_lights = add_laser_array(self.HFOV, self.VFOV, self.NHFOV, self.NVFOV, self.fandist, lasersize=1.5*2*lens.data['rCA'][1])
 
-        """
-        debugprint()
-        print('Execution Times:')
-        print(f'parsing .zmx-file: {(t1-t0):.3f}')
-        print(f'Create Element-Meshes: {(t2-t1):.3f}')
-        print(f'Build lens: {(t3-t2):.3f}')
-        print(f'Create Aperture-Meshes: {(t4-t3):.3f}')
-        if self.addrayfan:
-            print(f'Raytracing: {(t41_sum):.3f}')
-            print(f'Adding ray-fan-mesh: {(t42_sum):.3f}')
-        debugprint()
-        """
+        if True:
+            print()
+            print('Execution Times:')
+            print(f'parsing .zmx-file: {(t1-t0):.3f}')
+            print(f'Create Element-Meshes: {(t2-t1):.3f}')
+            print(f'Build lens: {(t3-t2):.3f}')
+            print(f'Create Aperture-Meshes: {(t4-t3):.3f}')
+            if self.addrayfan:
+                print(f'Raytracing: {(t41_sum):.3f}')
+                print(f'looping ray-fan-mesh: {(t42_sum):.3f}')
+                print(f'Adding ray-fan-mesh: {(t43_sum):.3f}')
+            print()
+        
 
         # move all components so that the sensor is at the origin
         if self.origin_position == 'sensor':
