@@ -381,8 +381,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if not str(self.path.lower()).endswith('.zmx'):
             return {'FINISHED'}
         fname = self.path.split("\\")[-1]
-        print()
-        print(f'Now importing {fname}')
+        print(f'[OC] Now importing .zmx-file: {fname}')
         # load the lens
         lens = load_from_zmx(bpy.path.abspath(self.path))
         lens.apertures[0]['radius'] = lens.apertures[0]['radius']*self.aperturediam
@@ -716,7 +715,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if self.addlasers:
             created_lights = add_laser_array(self.HFOV, self.VFOV, self.NHFOV, self.NVFOV, self.fandist, lasersize=1.5*2*lens.data['rCA'][1])
 
-        if True:
+        if False: # still the easiest way to block-comment...
             print()
             print('Execution Times:')
             print(f'parsing .zmx-file: {(t1-t0):.3f}')
@@ -758,15 +757,16 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
             bpy.ops.mesh.select_all(action='SELECT')
 
-        print('Lens import finished. For transfer to Blender materials,\nuse the following refractive indices')
-        print('Surface no.\tn_Blender')
-        for i in range(1, lens.num_surfaces):
-            n1 = lens.data['n'][i-1]
-            n2 = lens.data['n'][i]
-            if n2 > 1.1:
-                nratio = n2/n1
-            else:
-                nratio = n1/n2
-            print(f'{i}\t\t{nratio:.6f}')
+        if not using_cycles and not using_luxcore:
+            print('[OC] .zmx-import finished. For transfer to Blender materials,\nuse the following refractive indices')
+            print('Surface no.\tn_Blender')
+            for i in range(1, lens.num_surfaces):
+                n1 = lens.data['n'][i-1]
+                n2 = lens.data['n'][i]
+                if n2 > 1.1:
+                    nratio = n2/n1
+                else:
+                    nratio = n1/n2
+                print(f'{i}\t\t{nratio:.6f}')
         
         return {'FINISHED'}
