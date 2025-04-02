@@ -556,8 +556,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         sensor_sizex = lens.detector['sizex']/2#*self.sensorfactor
         sensor_sizey = lens.detector['sizey']/2#*self.sensorfactor
         sensorthickness = max(sensor_sizex, sensor_sizey)/20
+        zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
         if self.addsensor:
-            zsensor = lens.data['CT_sum'][-1] + lens.detector['distance']
             add_sensor(self, context, sensor_sizex, sensor_sizey, zsensor, thicksensor=self.thicksensor, sensorthickness=sensorthickness)
             bpy.ops.transform.translate(value=(-zsensor, 0, 0))
             obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
