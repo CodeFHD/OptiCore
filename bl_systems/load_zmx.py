@@ -657,47 +657,57 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 verts = []
                 edges = []
                 faces = []
-                nVerts = 0
                 ocr = self.onlycompleterays
+
+                n_history = len(rays.O_history)
+                n_rays = rays.O_history[0].shape[0]
+                # create single numpy.array from history. Shape is (n_surf, n_rays, 3)
+                O_hist = np.array([rays.O_history[i] for i in range(n_history)])
+                idx_complete = ~np.isnan(O_hist[:,:,0].sum(axis=0))
+
+                # reduce array down to fully valid rows
                 if ocr:
-                    Ohist = np.array([ooo for ooo in rays.O_history.values()]) # need to convert the dict for the next function to work
-                    # explanation: indices where the sum over Points is not nan.
-                    # Using sum and not nansum makes this nan if any of the points are nan
-                    idx_rays = np.where(np.isnan(np.sum(Ohist, axis=0).sum(axis=1)))[0]
-                else:
-                    idx_rays = range(rays.O_history[0].shape[0])
-                #print('IDXRAYS', idx_rays)
-                for j in range(len(rays.O_history)-1):
-                    i_valid = -1
-                    i_solo = 0
-                    for i in range(rays.O_history[0].shape[0]):
-                        if i in idx_rays and ocr: 
-                            #print('discarding ray', j, i)
-                            continue
-                        # change axis convention from raytrace to Blender orientation
-                        o1 = np.array(rays.O_history[j][i])
-                        o1[[0,1,2]] = o1[[2,0,1]]
-                        o1[0] = -1*o1[0]
-                        o2 = np.array(rays.O_history[j+1][i])
-                        o2[[0,1,2]] = o2[[2,0,1]]
-                        o2[0] = -1*o2[0]
-                        anynan = np.any(np.isnan(o1)) or np.any(np.isnan(o2))
-                        if not anynan:
-                            i_valid = i_valid + 1
-                            verts.append(Vector(o1))
-                            verts.append(Vector(o2))
-                            edges.append([nVerts + 2*i_valid + i_solo, nVerts + 2*i_valid + 1 + i_solo])
-                        elif j==0:
-                            i_solo = i_solo + 1
-                            verts.append(Vector(o1))
-                    nVerts = len(verts)
-                #print('RAY LOOP DONE')
+                    O_hist = O_hist[:, idx_complete, :]
+                    n_rays = O_hist.shape[1] # update this variable
+                # change axis convention from raytrace to Blender orientation
+                O_hist[:, :, [0, 1, 2]] = O_hist[:, :, [2, 0, 1]]
+                O_hist[:, :, 0] *= -1
+                # always add the verts for the first surface (i.e. ray fan input)
+                o1 = np.copy(O_hist[0, :, :]) # initialize first surface
+                verts = [list(o1[j, :]) for j in range(n_rays)]
+                vidx1 = [j for j in range(n_rays)] # at each surface, the index in the verts list that each point has been assinged
+                # loop over pairs of surfaces
+                for i in range(1, n_history):
+                    offset1 = len(verts)
+                    # get new surface
+                    o2 = np.copy(O_hist[i, :, :])
+
+                    valid_both = ~np.isnan(o1[:, 0]) & ~np.isnan(o2[:, 0])
+                    n_valid = sum(valid_both)
+                    valid_any = np.any(valid_both)
+
+                    #add verts and lines
+                    if valid_any:
+                        verts_new = [list(o2[j, :]) for j, j_valid in enumerate(valid_both) if j_valid]
+                        verts = verts + verts_new
+                        vidx2 = np.full(n_rays, -1) # invalid points == -1
+                        vidx2[valid_both] = range(offset1, offset1 + n_valid)
+                        edges_new = [[vidx1[j], vidx2[j]] for j, j_valid in enumerate(valid_both) if j_valid]
+                        edges = edges + edges_new
+                    else:
+                        # can't continue tracing no valid ray
+                        break
+
+                    # switch for next loop iteration
+                    o2 = np.copy(o1)
+                    vidx1 = vidx2
+                
                 t42 = time.perf_counter()
                 t42_sum = t42_sum + t42 - t41
                 mesh = bpy.data.meshes.new(name="Rayfan")
                 mesh.from_pydata(verts, edges, faces)
                 obj = object_data_add(context, mesh, operator=self)
-                obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
+                obj_name = obj.name
                 created_rayfans.append(obj_name)
                 t43 = time.perf_counter()
                 t43_sum = t43_sum + t43 - t42
