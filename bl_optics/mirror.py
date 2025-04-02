@@ -310,7 +310,7 @@ def add_mirror(self, context, paramdict=None):
         normalshole = [(-n[2], -n[0], -n[1]) for n in normalshole]
 
     #create mesh from verts and faces
-    mesh = bpy.data.meshes.new(name="Mirror")
+    mesh = bpy.data.meshes.new(name = 'OC_Mirror')
     edges = [] # edges are not explicitly created here so we pass an empty list
     mesh.from_pydata(verts, edges, faces)
     # useful for development when the mesh may be invalid.

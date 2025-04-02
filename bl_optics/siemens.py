@@ -218,7 +218,7 @@ def add_siemensstar(self, context):
             faces.append([fi1,fi2,fi3,fi4])
 
 
-    mesh = bpy.data.meshes.new(name="New Siemens Star")
+    mesh = bpy.data.meshes.new(name = 'OC_Siemens_Star')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 

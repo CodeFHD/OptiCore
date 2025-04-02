@@ -1045,7 +1045,7 @@ def add_lens(self, context, paramdict=None):
     del dvert
     del dfac
     edges = [] # edges are not explicitly created here so we pass an empty list
-    mesh = bpy.data.meshes.new(name="Lens")
+    mesh = bpy.data.meshes.new(name = 'OC_Lens')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 
@@ -1617,7 +1617,7 @@ def add_rayfan(self, context):
     else:
         rmsspotsize = float('NaN')
 
-    mesh = bpy.data.meshes.new(name="Rayfan")
+    mesh = bpy.data.meshes.new(name = 'OC_Rayfan')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
     

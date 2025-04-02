@@ -140,7 +140,7 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline,
     faces.append([o+4, o+5, o+6, o+7][::-1]) # rear wall
     
     # create object
-    mesh = bpy.data.meshes.new(name="OC_LensHousing")
+    mesh = bpy.data.meshes.new(name = 'OC_LensHousing')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 

@@ -250,7 +250,7 @@ def add_sqlens(self, context):
     del dvert
     del dfac
 
-    mesh = bpy.data.meshes.new(name="New Square Lens")
+    mesh = bpy.data.meshes.new(name = 'OC_Square_Lens')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
           

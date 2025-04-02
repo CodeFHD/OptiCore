@@ -382,7 +382,7 @@ def add_post05_v1(self, context):
         fac = [ow1+o+i+1,ow1+o+i,ow2+o+i,ow2+o+i+1]
         faces.append(fac)
 
-    mesh = bpy.data.meshes.new(name="New Post")
+    mesh = bpy.data.meshes.new(name = 'OC_Post')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 
@@ -626,7 +626,7 @@ def add_post05_v2(self, context):
     fac = [x + 2*n + 10*npr for x in range(npr)]
     faces.append(fac)
 
-    mesh = bpy.data.meshes.new(name="New Post")
+    mesh = bpy.data.meshes.new(name = 'OC_Post')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 

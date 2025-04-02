@@ -704,7 +704,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 
                 t42 = time.perf_counter()
                 t42_sum = t42_sum + t42 - t41
-                mesh = bpy.data.meshes.new(name="Rayfan")
+                mesh = bpy.data.meshes.new(name = 'OC_Rayfan')
                 mesh.from_pydata(verts, edges, faces)
                 obj = object_data_add(context, mesh, operator=self)
                 obj_name = obj.name

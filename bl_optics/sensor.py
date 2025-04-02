@@ -55,7 +55,7 @@ def add_sensor(self, context, lx, ly, zsensor, thicksensor=False, sensorthicknes
         faces.append([0, 3, 7, 4]) # left
 
     #create mesh from verts and faces
-    mesh = bpy.data.meshes.new(name="Sensor")
+    mesh = bpy.data.meshes.new(name = 'OC_Sensor')
     mesh.from_pydata(verts, edges, faces)
     # useful for development when the mesh may be invalid.
     #mesh.validate(verbose=True)

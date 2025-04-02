@@ -196,7 +196,7 @@ def add_table(self, context):
     nHoleFaces = nx*ny*nph
                 
     #add object
-    mesh = bpy.data.meshes.new(name="New Table")
+    mesh = bpy.data.meshes.new(name = 'OC_Table')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
 

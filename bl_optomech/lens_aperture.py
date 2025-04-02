@@ -99,7 +99,7 @@ def add_circular_aperture(self, context, radius_inner, radius_outer, N, dshape=F
         faces.append([fi3, fi4, fi2, fi1])
     
     #create mesh from verts and faces
-    mesh = bpy.data.meshes.new(name="Aperture")
+    mesh = bpy.data.meshes.new(name = 'OC_Aperture')
     mesh.from_pydata(verts, edges, faces)
     # useful for development when the mesh may be invalid.
     #mesh.validate(verbose=True)

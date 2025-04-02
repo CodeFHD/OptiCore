@@ -443,7 +443,7 @@ def add_ccretro_cube(self, context):
 
     
 
-    mesh = bpy.data.meshes.new(name="New CC Retroreflector")
+    mesh = bpy.data.meshes.new(name = 'OC_Retroreflector')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
     
@@ -693,7 +693,7 @@ def add_ccretro_trirect(self, context):
 
 
 
-    mesh = bpy.data.meshes.new(name="New CC Retroreflector")
+    mesh = bpy.data.meshes.new(name = 'OC_Retroreflector')
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
     
