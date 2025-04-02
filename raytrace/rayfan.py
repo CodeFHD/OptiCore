@@ -252,7 +252,7 @@ class RayFan():
         if self.store_history:
             self.O_history = {}
             self.O_history[0] = np.array(O)
-            self.N_history = {}
+            #self.N_history = {}
             self.special_hits = {} # index: history index after which these come.
 
     def get_rays(self, onlyvalid=True):
@@ -279,8 +279,8 @@ class RayFan():
         if self.store_history:
             self.idx_history = self.idx_history + 1
             self.O_history[self.idx_history] = np.array(self.O)
-            if N is not None:
-                self.N_history[self.idx_history] = np.array(self.N)
+            #if N is not None:
+            #    self.N_history[self.idx_history] = np.array(self.N)
         
         O = self.O[self.idx_hit]
         O[idx_fail] = float('nan')
