@@ -32,6 +32,7 @@ from ..bl_optomech.lens_aperture import add_circular_aperture
 from ..bl_optomech.lens_housing import add_lenshousing_simple
 from ..fileparser.zmx import load_from_zmx
 from ..bl_materials import *
+from ..bl_scenes.luxcore_lights import add_laser_array
 
 import bpy
 from bpy.props import FloatProperty, IntProperty, EnumProperty, StringProperty, BoolProperty, FloatVectorProperty
@@ -57,6 +58,14 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         name = "File Path",
         description="Choose a file:",
         subtype='FILE_PATH')
+    
+    display_option : EnumProperty(
+        name="Settings",
+        items = {("default","Import",""),
+                 ("luxcore","LuxCore Features","")},
+        default = "default",
+        description="Select which settings are displayed in this window.",
+           )
     
     wl: bpy.props.FloatProperty(
         name = "Wavelength",
@@ -268,52 +277,101 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         description="Determines which component of the lens is placed at the location of the 3D cursor",
         #options={'HIDDEN'},
         )
+    
+    # LuxCore Features
+    addlasers : BoolProperty(
+        name="Add Laser Lights",
+        default=False,
+        description='Adds a series of laser lights aimed at the front lens to quickly visualize Bokeh.'
+        )
+    HFOV : FloatProperty(
+           name="H-FoV",
+           default = 0.0,
+           description="Horizontal Field of View spread",
+           min = 0,
+           max = 90,
+           )
+    VFOV : FloatProperty(
+           name="V-FoV",
+           default = 0.0,
+           description="Vertical Field of View spread",
+           min = 0,
+           max = 90,
+           )
+    NHFOV : IntProperty(
+           name="Num-H",
+           default = 4,
+           description="Number of Horizontal points",
+           min = 1,
+           soft_max = 10,
+           )
+    NVFOV : IntProperty(
+           name="Num-V",
+           default = 4,
+           description="Number of Vertical points",
+           min = 1,
+           soft_max = 10,
+           )
 
     def draw(self, context):
+        disp = self.display_option
         scene = context.scene
         row = self.layout
         col = row.column(align=True)
         col.label(text="Import File")
         col.prop(self, 'path', text="Select File")
-        col.label(text="Ray Tracing")
-        col.prop(self, 'flen')
-        col.prop(self, 'rmsspotsize')
-        col.prop(self, 'wl', text="Wavelength (um)")
-        col.prop(self, 'nrays')
-        col.prop(self, 'fantype')
-        col.prop(self, 'fandist')
-        col.prop(self, 'fanangle1')
-        col.prop(self, 'fanangle2')
-        col.prop(self, 'fanangle3')
-        col.prop(self, 'fanangle_additional')
-        col.prop(self, 'fandiam')
-        col.prop(self, 'aperturediam')
-        col.prop(self, 'addlenses')
-        col.prop(self, 'addaperture')
-        row = col.row()
-        row.prop(self, 'addhousing')
-        row.prop(self, 'housingtype')
-        row = col.row()
-        row.prop(self, 'addrayfan')
-        row.prop(self, 'excludedetector')
-        col.prop(self, 'tracetoscene')
-        row = col.row()
-        row.prop(self, 'addsensor')
-        row.prop(self, 'thicksensor')
-        col.prop(self, 'sensor_offset')
-        col.prop(self, 'sensorfactor')
-        col.prop(self, 'addcamera')
-        col.prop(self, 'ghost_order')
-        col.prop(self, 'autofocus')
-        col.prop(self, 'onlycompleterays')
-        col.label(text="Mechanical Parameters")
-        col.prop(self, 'dshape')
-        col.prop(self, 'display_edit')
-        col.prop(self, 'split_cemented')
-        col.prop(self, 'num1')
-        col.prop(self, 'num2')
+        if disp == 'default':
+            col.label(text="Ray Tracing")
+            col.prop(self, 'flen')
+            col.prop(self, 'rmsspotsize')
+            col.prop(self, 'wl', text="Wavelength (um)")
+            col.prop(self, 'nrays')
+            col.prop(self, 'fantype')
+            col.prop(self, 'fandist')
+            col.prop(self, 'fanangle1')
+            col.prop(self, 'fanangle2')
+            col.prop(self, 'fanangle3')
+            col.prop(self, 'fanangle_additional')
+            col.prop(self, 'fandiam')
+            col.prop(self, 'aperturediam')
+            col.prop(self, 'addlenses')
+            col.prop(self, 'addaperture')
+            row = col.row()
+            row.prop(self, 'addhousing')
+            row.prop(self, 'housingtype')
+            row = col.row()
+            row.prop(self, 'addrayfan')
+            row.prop(self, 'excludedetector')
+            col.prop(self, 'tracetoscene')
+            row = col.row()
+            row.prop(self, 'addsensor')
+            row.prop(self, 'thicksensor')
+            col.prop(self, 'sensor_offset')
+            col.prop(self, 'sensorfactor')
+            col.prop(self, 'addcamera')
+            col.prop(self, 'ghost_order')
+            col.prop(self, 'autofocus')
+            col.prop(self, 'onlycompleterays')
+            col.label(text="Mechanical Parameters")
+            col.prop(self, 'dshape')
+            col.prop(self, 'display_edit')
+            col.prop(self, 'split_cemented')
+            col.prop(self, 'num1')
+            col.prop(self, 'num2')
+
+        elif disp == 'luxcore':
+            col.prop(self, 'addlasers')
+            row = col.row()
+            row.prop(self, 'HFOV')
+            col.prop(self, 'NHFOV')
+            row = col.row()
+            row.prop(self, 'VFOV')
+            col.prop(self, 'NVFOV')
+
+        # global config, always displayed
         col.prop(self, 'mat_refract_only')
         col.prop(self, 'origin_position')
+        col.prop(self, 'display_option')
 
     
     def execute(self, context):
@@ -336,6 +394,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         created_lenses = [] # list of (object names) of the individual lenses
         created_rayfans = [] # list of (object names) of the ray fans
         created_other = [] # list of (object names) for other components: aperture, housing, sensor, camera
+        created_lights = []
         t1 = time.perf_counter()
 
         using_cycles = context.scene.render.engine == 'CYCLES'
@@ -522,7 +581,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             created_other.append(obj_name)
 
         # create housing
-        if self.addhousing:
+        # only makes sense if lenses were created, otherwise verts_outline are empty
+        if self.addhousing and self.addlenses:
             if self.housingtype:
                 outlinetype='tight'
             else:
@@ -531,7 +591,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                                    thicksensor=self.thicksensor, sensorthickness=sensorthickness, outlinetype=outlinetype)
             obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
             created_other.append(obj_name)
-            
+
+        # create ray fans    
         if self.addrayfan:
             t40 = time.perf_counter()
             # try to convert the angles and clamp between -90 and 90 degrees
@@ -639,6 +700,11 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 t42_sum = t42_sum + t42 - t41
             
         #t5 = time.perf_counter()
+
+        # create lights
+        if self.addlasers:
+            created_lights = add_laser_array(self.HFOV, self.VFOV, self.NHFOV, self.NVFOV, self.fandist, lasersize=1.5*2*lens.data['rCA'][1])
+
         """
         debugprint()
         print('Execution Times:')
@@ -660,6 +726,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
             for objname in created_rayfans:
                 bpy.data.objects[objname].select_set(True)
             for objname in created_other:
+                bpy.data.objects[objname].select_set(True)
+            for objname in created_lights:
                 bpy.data.objects[objname].select_set(True)
             bpy.ops.transform.translate(value=(zsensor, 0, 0))
         

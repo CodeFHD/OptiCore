@@ -41,10 +41,13 @@ def add_laser(location=(0,0,0), rotation=(0,0,0),
     light_object.rotation_mode = 'YZX'
     light_object.rotation_euler = rotation
 
+    return light_object
+
 
 def add_laser_array(HFOV=0, VFOV=0, numH=4, numV=4,
                     distance=20,
                     rp=[0,0,0], lasersize=0.1):
+    created_lights = []
     if HFOV == 0:
         HFOV_list = [0]
     else:
@@ -73,4 +76,7 @@ def add_laser_array(HFOV=0, VFOV=0, numH=4, numV=4,
             location = np.matmul(RZ, location)
             location = np.matmul(RX, location)
             location = location + rp
-            add_laser(location, rotation, lasersize=lasersize)
+            obj = add_laser(location, rotation, lasersize=lasersize)
+            created_lights.append(obj.name)
+
+    return created_lights
