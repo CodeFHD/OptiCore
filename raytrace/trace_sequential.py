@@ -189,7 +189,6 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
         lastsurface = int(1*idx_s)
 
         if np.all(idx_fail):
-            print('ALL FAIL at surface', idx_s)
             return rays
 
     # additional aperture check before the detector
