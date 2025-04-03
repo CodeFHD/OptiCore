@@ -180,6 +180,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                     ("3D_tri_finite","3D tris - finite",""),
                     ("3D_random","3D random",""),
                     ("3D_random_finite","3D random - finite",""),
+                    ("3D_random_sun","3D random - sun",""),
                     ("2D_finite","2D - finite",""),
                     ("3D_rings", "3D rings", ""),
                     ("3D_rings_finite", "3D rings - finite", ""),},

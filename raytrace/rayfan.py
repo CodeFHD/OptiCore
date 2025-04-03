@@ -197,6 +197,45 @@ def rayfan3D_square(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
         D = np.matmul(rotmat, D.T).T
     return O, D
 
+def rayfan3D_sun(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+    # This function is designed to excplicitly sample a 32-arcmin source at infinity
+    # independently sample the aperture (as in rayfan3D_uniformdiskrandom)
+    # and the direction in a cone
+    seed = int.from_bytes(os.urandom(4), sys.byteorder)
+    rng = np.random.default_rng(seed)
+    # sampling the aperture at z=0
+    u1 = rng.random(Nrays)
+    u2 = rng.random(Nrays)
+    Ox = rad * np.sqrt(u1) * np.sin(2*np.pi*u2)
+    Oy = rad * np.sqrt(u1) * np.cos(2*np.pi*u2)
+    Oz = np.zeros(Nrays)
+    O = np.vstack((Ox, Oy, Oz)).T
+    # sampling the cone
+    # Using variables T and P as theta and phi inside the cone
+    # to distinguish from theta, phi describing the axis of the cone
+    u1 = rng.random(Nrays)
+    u2 = rng.random(Nrays)
+    # sample cos(Theta) linearly
+    cosT_max = 0.9999891691779588 # np.cos(32/60*np.pi/180)
+    cosT = cosT_max + u1*(1 - cosT_max)
+    sinT = np.sqrt(1 - cosT*cosT)
+    # sample phi directly
+    P = u2*2*np.pi
+    # convert to points on unit sphere
+    D = np.column_stack((np.cos(P)*sinT, np.sin(P)*sinT, cosT))
+    # rotate D by theta_phi
+    if theta != 0:
+        rotmat = geometry.get_rotmat_y(-theta)
+        D = np.matmul(rotmat, D.T).T
+    if phi != 0:
+        rotmat = geometry.get_rotmat_z(phi)
+        D = np.matmul(rotmat, D.T).T
+    # normalize D to mkae sure there are no conversion errors left
+    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
+    D = D.T
+    # project O from the aperture along negative D
+    O = O + rayfanz*D
+    return O, D
 
 
 # List of implemented distributions
@@ -210,6 +249,7 @@ DISTRIBUTIONS = {'2D': rayfan2D,
                  '3D_tri_finite': rayfan3D_tri_finite,
                  '3D_random': rayfan3D_uniformdiskrandom,
                  '3D_random_finite': rayfan3D_uniformdiskrandom_finite,
+                 '3D_random_sun': rayfan3D_sun, 
                  '3D_rings': rayfan3D_rings,
                  '3D_rings_finite': rayfan3D_rings_finite,
                  }
