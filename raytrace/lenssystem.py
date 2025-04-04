@@ -210,7 +210,7 @@ class Lenssystem():
         # self.data['freeform_coeff'].append([None])
         # self.data['CT'].append(None)
         self.data['CT_sum'].append(self.data['CT_sum'][-1] + self.detector['distance'])
-        self.data['lrad'].append(None)
+        self.data['lrad'].append(max(self.detector['sizex'], self.detector['sizey']))
         self.data['rCA'].append(self.detector['sizex'])
         self.data['rCA_short'].append(self.detector['sizey'])
         self.data['surf_rotation'].append(0)

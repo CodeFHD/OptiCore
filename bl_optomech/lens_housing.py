@@ -67,7 +67,7 @@ def add_lenshousing_simple(self, context, lens, verts_outline, dz_outline,
                 thisrad = abs(v2[0, 1])
             else:
                 thisrad = np.sqrt(np.sum(v2[0, 1:]*v2[0, 1:]))
-            maxrad = np.nanmax(lens.data['lrad'][1:])
+            maxrad = np.nanmax(lens.data['lrad'][1:-1])
             outline_factor = maxrad/thisrad
         else:
             outline_factor = 1

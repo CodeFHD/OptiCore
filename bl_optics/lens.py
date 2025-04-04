@@ -1482,7 +1482,7 @@ def add_rayfan(self, context):
     ##################
     n_surfaces = int(md) + 1
     y, u = 1, 0
-    t_list = CT_list[1:-1]
+    t_list = CT_list[1:-1] # "":-1" to exlcude sensor surface
     n_list2 = [1., ior1, ior2, ior3, 1.]
     n_elements = int(md)
     y1, u1 = paraxial.trace_lens(y,u, srad_list, t_list, n_list2, n_elements)
