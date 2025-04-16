@@ -178,6 +178,12 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
                     I_new = I*(1.-R_coating)
                 else:
                     I_new = I*R_coating
+            elif ckey.startswith('FIXVALUE_'):
+                R_coating = lens.coating_data[ckey].get_R()
+                if refract == 1:
+                    I_new = I*(1.-R_coating)
+                else:
+                    I_new = I*R_coating
             else:
                 print(f"[OC]: Warning: invalid coating key {ckey} at surface {idx_s}")
                 I_new = I
