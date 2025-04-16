@@ -34,7 +34,7 @@ def _type_from_surflines(surflines):
             # had some files where XASPHERE was used in addition to EVENASPH
             # It seems that in those cases, EVENASPH only goes up to 8th-order coefficients and XASPHERE also to higher ones. Otehr differences I did not find reference to online.
             # For that reason, treating them as the same here.
-            if surftype == 'XASPHERE': type = 'EVENASPH'
+            if surftype == 'XASPHERE': surftype = 'EVENASPH'
     return surftype
 
 def parse_zmx_surface(surflines):
