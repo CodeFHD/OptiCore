@@ -216,7 +216,7 @@ def rayfan3D_sun(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     u1 = rng.random(Nrays)
     u2 = rng.random(Nrays)
     # sample cos(Theta) linearly
-    cosT_max = 0.9999891691779588 # np.cos(32/60*np.pi/180)
+    cosT_max = 0.9999891691779588 # np.cos(32/2/60*np.pi/180)
     cosT = cosT_max + u1*(1 - cosT_max)
     sinT = np.sqrt(1 - cosT*cosT)
     # sample phi directly
