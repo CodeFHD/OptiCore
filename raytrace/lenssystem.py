@@ -219,7 +219,7 @@ class Lenssystem():
         self.data['surf_tilt'].append(None)
         self.data['n'].append(n)
         self.data['ismirror'].append(False)
-        coating_key = self._add_coating_data(['FIXVALUE', 0.3])
+        coating_key = self._add_coating_data(['FIXVALUE', 0.05])
         coating_entry = [coating_key, ['FIXVALUE', None, None]]
         self.data['coating'].append(coating_entry)
 
