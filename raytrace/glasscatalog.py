@@ -254,16 +254,16 @@ CATALOG_RESOLVE_MAP = {'CDGM': get_n_CDGM,
                        'Sumita': get_n_Sumita,}
 
 """
-Main Resolver
+Main Resolver - Refractive index
 """
 
 def _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
     # print(f'LOOKUP {glassname} WITH {substitute_prefix} in {catalog_name}')
     if substitute_prefix is not None:
         glassname = substitute_prefix + glassname
-    if glassname in CATALOG_MAP[catalog_name]:
+    if 'n-' + glassname in CATALOG_MAP[catalog_name]:
         #print('FIND', catalog_name, glassname, substitute_prefix)
-        coefficients = CATALOG_MAP[catalog_name][glassname]
+        coefficients = CATALOG_MAP[catalog_name]['n-' + glassname]
         #print(coefficients)
         n = CATALOG_RESOLVE_MAP[catalog_name](wl, coefficients)
         return n
