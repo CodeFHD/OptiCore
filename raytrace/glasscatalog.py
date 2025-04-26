@@ -85,6 +85,15 @@ CATALOG_MAP = {'CDGM': coefficients_CDGM,
 # At the time of writing this, there are two different materials named F2 and F5 in Schott and CDGM data. So order is important and/or a separate mechnanism to handle catalog-specification is needed.
 CATALOG_ORDER_DEFAULT = ['Schott', 'Ohara', 'Hoya', 'CDGM', 'Hikari', 'Sumita', 'special']
 
+# Iterations are made to check for substitutes, e.g. N-prefixed glasses for Schott
+SUBSTITUE_PREFIXES = [None,                     # Try without substitution first
+                      'N-', 'P-',               # Schott
+                      'S-', 'L-',               # Ohara
+                      'E-', 'M-', 'MC-', 'MP-', # Hoya
+                      'H-', 'D-',               # CDGM
+                      'J-', 'Q-',               # Hikari
+                      'K-',                     # Sumita
+                      ]
 
 """
 Section: Refractive index formulas
@@ -253,44 +262,100 @@ CATALOG_RESOLVE_MAP = {'CDGM': get_n_CDGM,
                        'Schott': get_n_Schott,
                        'Sumita': get_n_Sumita,}
 
-"""
-Main Resolver - Refractive index
-"""
+""" Parameter-specific  resolve functions """
+
+def _get_t_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
+    if substitute_prefix is not None:
+        glassname = substitute_prefix + glassname
+    if 't-' + glassname in CATALOG_MAP[catalog_name]:
+        t_data = CATALOG_MAP[catalog_name]['t-' + glassname]
+        wl_data = [_[0] for _ in t_data]
+        t_data = [_[1] for _ in t_data]
+        t = np.interp(wl, wl_data, t_data)
+        return t
+    else:
+        return -1
 
 def _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
-    # print(f'LOOKUP {glassname} WITH {substitute_prefix} in {catalog_name}')
     if substitute_prefix is not None:
         glassname = substitute_prefix + glassname
     if 'n-' + glassname in CATALOG_MAP[catalog_name]:
-        #print('FIND', catalog_name, glassname, substitute_prefix)
         coefficients = CATALOG_MAP[catalog_name]['n-' + glassname]
-        #print(coefficients)
         n = CATALOG_RESOLVE_MAP[catalog_name](wl, coefficients)
         return n
     else:
-        # print('NO FIND')
         return -1
 
-def _iteration_get_n(glassname, wl=0.5875618, substitute_prefix=None, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False):
+""" Catalog search iteration """
+
+def _iteration_get_value(glassname, wl=0.5875618, substitute_prefix=None, catalog_order=CATALOG_ORDER_DEFAULT, parameter='n'):
+    """
+    Options for 'parameter':
+    'n': refractive idnex
+    't': transmission t10
+    """
+    if not parameter in ['n', 't']:
+        raise ValueError("_iteration_get_value() received invalid parameter:", parameter)
     # Case 1: Check if glassname starts with manufacturer string, i.e. explicitly specified
     glassname_prefix = glassname.split('_')[0]
-    #print('PREFIX:', glassname_prefix)
     if glassname_prefix in CATALOG_MAP:
-        #print(f'DIRECT CHECK FOR {glassname} with {substitute_prefix} IN {glassname_prefix}')
         glassname = '_'.join(glassname.split('_')[1:])
-        n = _get_n_from_catalog(glassname, glassname_prefix, wl, substitute_prefix=substitute_prefix)
-        if n != -1:
-            return n
+        if parameter == 'n':
+            val = _get_n_from_catalog(glassname, glassname_prefix, wl, substitute_prefix=substitute_prefix)
+        elif parameter == 't':
+            val = _get_t_from_catalog(glassname, glassname_prefix, wl, substitute_prefix=substitute_prefix)
+        if val != -1:
+            return val
 
     # Case 2: Search catalogs in specified order
     for catalog_name in catalog_order:
-        #print(f'GENERAL SEARCH FOR {glassname} with {substitute_prefix} IN {catalog_name}')
-        n = _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=substitute_prefix)
-        if n != -1:
-            return n
+        if parameter == 'n':
+            val = _get_n_from_catalog(glassname, catalog_name, wl, substitute_prefix=substitute_prefix)
+        elif parameter == 't':
+            val = _get_t_from_catalog(glassname, catalog_name, wl, substitute_prefix=substitute_prefix)
+        if val != -1:
+            return val
 
     # Case 3: Material not found in this iteration
     return -1
+
+""" Main resolver """
+
+def get_t(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False):
+    """
+    Wavelength is given in micrometers
+    """
+
+    # catalogs are forced uppercase, do the same here
+    glassname = glassname.upper()
+
+    # Case 1: Special cases outside of catalog handling
+    if glassname == 'VACUUM':
+        # assume no absorption for vacuum
+        return 1.
+    elif glassname == 'AIR':
+        # assume no absorption for air
+        return 1.
+    elif glassname.startswith('FIXVALUE_'):
+        # This needs a method to specify a value in e.g. a zmx file
+        return 1.
+    elif glassname.startswith('___BLANK'):
+        # This needs a method to specify a value in e.g. a zmx file
+        return 1.
+
+    # Case 2: Check manufacturer catalogs
+    for substitute_prefix in SUBSTITUE_PREFIXES:
+        t = _iteration_get_value(glassname, wl, catalog_order = catalog_order,
+                            substitute_prefix = substitute_prefix, parameter = 't')
+        if t != -1:
+            if substitute_prefix is not None:
+                glassname = '_'.join(glassname.split('_')[1:])
+                print(f'Glas subsitution from {glassname} to {substitute_prefix + glassname}!')
+            return t
+
+    # Case 3: Material not found
+    # Do nothing here, this case is handled by get_n
+
 
 def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False):
     """
@@ -329,28 +394,14 @@ def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
         n = nAbbe_d(wl, [nd, vd])
         return n
 
-    # print()
-    # print('SEARCHING FOR GLASS', glassname)
-
     # Case 2: Check manufacturer catalogs
-    # Iterations are made to check for substitutes, e.g. N-prefixed glasses for Schott
-    SUBSTITUE_PREFIXES = [None,                     # Try first without substitution
-                          'N-', 'P-',               # Schott
-                          'S-', 'L-',               # Ohara
-                          'E-', 'M-', 'MC-', 'MP-', # Hoya
-                          'H-', 'D-',               # CDGM
-                          'J-', 'Q-',               # Hikari
-                          'K-',                     # Sumita
-                          ]
     for substitute_prefix in SUBSTITUE_PREFIXES:
-        #print(f'Trying {glassname} with {substitute_prefix}')
-        n = _iteration_get_n(glassname, wl, catalog_order = catalog_order,
-                            substitute_prefix = substitute_prefix)
+        n = _iteration_get_value(glassname, wl, catalog_order = catalog_order,
+                            substitute_prefix = substitute_prefix, parameter = 'n')
         if n != -1:
             if substitute_prefix is not None:
                 glassname = '_'.join(glassname.split('_')[1:])
                 print(f'Glas subsitution from {glassname} to {substitute_prefix + glassname}!')
-            #print(f'Found refractive index {n:.4f} for {glassname}')
             return n
 
     # Case 3: Material not found
