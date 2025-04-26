@@ -113,6 +113,7 @@ class Lenssystem():
         self.data['surf_decenter'] = [] # Surface lateral position error [[x, y]]
         self.data['surf_tilt'] = [] # Surface tilt error [[X, Y]]
         self.data['n'] = [] # Refractive index
+        self.data['t10'] = [] # glass transmission coefficient for 10mm thickness
         self.data['ismirror'] = [] # If the surface is reflective
         self.data['coating'] = [] # coatings [key, data]
         # self.data['stop'] = [] # Aperture stops [[x,y,z], shape, size]
@@ -126,8 +127,10 @@ class Lenssystem():
         # First element of structure is ambient medium plus dummy surface parameters
         if self.objectmat:
             n = glasscatalog.get_n(self.objectmat, self.wl)
+            t10 = glasscatalog.get_t(self.objectmat, self.wl)
         else:
             n = glasscatalog.get_n(self.ambimat, self.wl)
+            t10 = glasscatalog.get_t(self.ambimat, self.wl)
         self.data['type'].append('OBJECT')
         self.data['radius'].append(None)
         self.data['asph'].append([None, None])
@@ -144,6 +147,7 @@ class Lenssystem():
         self.data['surf_decenter'].append(None)
         self.data['surf_tilt'].append(None)
         self.data['n'].append(n)
+        self.data['t10'].append(t10)
         self.data['ismirror'].append(False)
         self.data['coating'].append([None])
         surfacecount = surfacecount + 1
@@ -161,9 +165,11 @@ class Lenssystem():
                     CT_sum = CT_sum + ele.data['CT'][s-1]
                 if s == num_surfaces-1:
                     n = glasscatalog.get_n(self.ambimat, self.wl)
+                    t10 = glasscatalog.get_t(self.ambimat, self.wl)
                     tmp_gname = self.ambimat
                 else:
                     n = glasscatalog.get_n(ele.data['material'][s], self.wl)
+                    t10 = glasscatalog.get_t(ele.data['material'][s], self.wl)
                     tmp_gname = ele.data['material'][s]
                 if self.testmode:
                     if n == tmp_gname:
@@ -183,6 +189,7 @@ class Lenssystem():
                 self.data['surf_decenter'].append(ele.data['surf_decenter'][s])
                 self.data['surf_tilt'].append(ele.data['surf_tilt'][s])
                 self.data['n'].append(n)
+                self.data['t10'].append(t10)
                 self.data['ismirror'].append(ele.ismirror or ele.data['coating'][s][0] == 'MIRROR')
                 # coating
                 coating_key = self._add_coating_data(ele.data['coating'][s])
@@ -193,7 +200,9 @@ class Lenssystem():
 
         if self.imagemat:
             n = glasscatalog.get_n(self.imagemat, self.wl)
+            t10 = glasscatalog.get_t(self.imagemat, self.wl)
             self.data['n'][-1] = n
+            self.data['t10'][-1] = t10
         self.isbuilt = True
         self.num_surfaces = surfacecount
         self.maximum_radius = maxrad
@@ -218,6 +227,7 @@ class Lenssystem():
         self.data['surf_decenter'].append(None)
         self.data['surf_tilt'].append(None)
         self.data['n'].append(n)
+        self.data['t10'].append(t10)
         self.data['ismirror'].append(False)
         coating_key = self._add_coating_data(['FIXVALUE', 0.05])
         coating_entry = [coating_key, ['FIXVALUE', None, None]]
