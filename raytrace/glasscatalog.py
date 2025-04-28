@@ -271,7 +271,7 @@ def _get_t_from_catalog(glassname, catalog_name, wl, substitute_prefix=None):
         t_data = CATALOG_MAP[catalog_name]['t-' + glassname]
         wl_data = [_[0] for _ in t_data]
         t_data = [_[1] for _ in t_data]
-        t = np.interp(wl, wl_data, t_data)
+        t = np.interp(wl*1000, wl_data, t_data)
         return t
     else:
         return -1
