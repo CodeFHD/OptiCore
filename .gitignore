@@ -6,3 +6,4 @@
 *.bak
 
 bl_optics/test_zemax_library.py
+raytrace/ghostrender.cfg
