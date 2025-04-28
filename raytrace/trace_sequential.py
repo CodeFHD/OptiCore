@@ -143,13 +143,13 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
 
         # calculate lens intersection points
         if surftype == 'aspheric':
-            P, N, idx_fail = rt_intersect_asph.intersect_asphere(O, D, C_CT, rad, r, k, A)
+            P, N, t, idx_fail = rt_intersect_asph.intersect_asphere(O, D, C_CT, rad, r, k, A)
         elif surftype == 'toric':
             z_fun_params = [r, r2, surf_rotation]
-            P, N, idx_fail = rt_intersect_asph.intersect_implicit(O, D, C_CT, rad, get_z_toric, z_fun_params,
+            P, N, t, idx_fail = rt_intersect_asph.intersect_implicit(O, D, C_CT, rad, get_z_toric, z_fun_params,
                                                                   N_fun=get_N_toric)
         else:
-            P, N, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, rad,
+            P, N, t, idx_fail = rt_intersect.lens_intersect(O, D, C_CT, r, rad,
             k=k, A=A, surf_rotation=surf_rotation, surfshape=surftype, direction=direction)#*reflectionstate)
         
         # calculate new ray directions
@@ -158,10 +158,35 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
         else:
             D_new = rt_intersect.reflect_ray(D, N)
 
-        # adjust ray intensity:
+        # Adjust ray intensity by bulk transmission.
+        # Need value from next or previous surface depending on direction.
+        I_new = None
+        if direction == 1:
+            t10 = ld['t10'][lastsurface]
+        else:
+            t10 = ld['t10'][idx_s]
+        if t10 is not None:
+            if t10 == 1:
+                # Skip computation for 100% transmission
+                pass
+            elif t10 == 0:
+                # No transmission effectively means fail
+                P[:,:] = float('nan')
+                idx_fail = np.isnan(P[:,0])
+                rays.update(P, D_new, None, None, idx_fail, N=N)
+                return rays
+            else:
+                I = rays.get_I()
+                bulk_factor = t10**(t/10)
+                I_new = I*bulk_factor
+
+        # Adjust ray intensity by coating:
         coating = ld['coating'][idx_s]
         if coating[0] is not None:
-            I = rays.get_I()
+            if I_new is None:
+                I = rays.get_I()
+            else:
+                I = I_new
             ckey = coating[0]
             if ckey == 'MIRROR':
                 I_new = I
@@ -224,7 +249,7 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
     # trace detector
     if trace_detector:
         O, D = rays.get_rays()
-        P, N, idx_fail = rt_intersect.rectangle_intersect(O, D, lens.detector['Quad'])
+        P, N, t, idx_fail = rt_intersect.rectangle_intersect(O, D, lens.detector['Quad'])
         rays.D_tosensor = np.array(rays.D)
         rays.update(P, None, None, None, idx_fail, N=N)
 

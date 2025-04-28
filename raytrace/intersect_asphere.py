@@ -198,7 +198,7 @@ def intersect_asphere(O, D, C, lrad, rad, k, A):
 
     
     idx_fail = np.isnan(P[:,0])
-    return P, N, idx_fail 
+    return P, N, t, idx_fail 
 
 
 
@@ -335,4 +335,4 @@ def intersect_implicit(O, D, C, lrad, z_fun, z_fun_params, N_fun=None):
     P[Prad > lrad] = float('nan') # TODO: remove this, only create idx_fail, and let rays.update() take care of the rest ?
     
     idx_fail = np.isnan(P[:,0])
-    return P, N, idx_fail 
+    return P, N, t, idx_fail 

@@ -50,7 +50,7 @@ def sphere_intersect(O, D, C, r, direction=1):
     N = P - C # surface normal at intersection point
     # Normalize the surface-normals
     N = (N.T/np.sqrt(np.einsum('ij,ij->i',N,N))).T
-    return P, N
+    return P, N, t
 
 def intersect_cylinder(O, D, C, surf_rotation, r):
     """
@@ -111,10 +111,14 @@ def intersect_cylinder(O, D, C, surf_rotation, r):
     # Normalize the surface-normals
     N = (N.T/np.sqrt(np.einsum('ij,ij->i',N,N))).T
 
-    # Step 4: Transform point and normal back into original coordiante system
+    # Step 4: Transform point and normal back into original coordinate system
     P = P + C
+
+    # Step 5: calculate ray-t
+    t_3d = P - O
+    t = np.sqrt(np.einsum('ij,ij->i', t_3d, t_3d))
         
-    return P, N
+    return P, N, t
 
 def intersect_sphere(O, D, C, r, k):
     n_rays = O.shape[0]
@@ -154,6 +158,7 @@ def intersect_sphere(O, D, C, r, k):
     absP2 = np.einsum('ij,ij->i',P2,P2)
     idx = absP2 < absP1
     P[idx] = P2[idx]
+    t1[idx] = t2[idx]
     
     # Step 3: Calculate Normal
     C2 = [0, 0, r]
@@ -164,7 +169,7 @@ def intersect_sphere(O, D, C, r, k):
     # Step 4: Transform point and normal back into original coordiante system
     P = P + C
         
-    return P, N
+    return P, N, t1
 
 def intersect_conic(O, D, C, r, k):
     n_rays = O.shape[0]
@@ -201,6 +206,7 @@ def intersect_conic(O, D, C, r, k):
     absP2 = np.einsum('ij,ij->i',P2,P2)
     idx = absP2 < absP1
     P[idx] = P2[idx]
+    t1[idx] = t2[idx]
 
     # Step 3: Calculate Normal
     R2 = P[:,0]*P[:,0] + P[:,1]*P[:,1]
@@ -215,18 +221,18 @@ def intersect_conic(O, D, C, r, k):
     # Step 4: Transform point and normal back into original coordiante system
     P = P + C
         
-    return P, N
+    return P, N, t1
     
 # Combine sphere_intersect with a check for aperture to create lens intersection
 def lens_intersect(O, D, C, r, rad, k=0, A=[0], surf_rotation=0, surfshape='spherical', direction=1, ):#, surface=-1):
     if surfshape == 'flat':
-        P, _, N, idx_fail, _ = circle_intersect(O, D, C[2], rad)
+        P, _, N, t, idx_fail, _ = circle_intersect(O, D, C[2], rad)
     elif surfshape == 'conical':
-        P, N = intersect_conic(O, D, C, r, k)
+        P, N, t = intersect_conic(O, D, C, r, k)
     elif surfshape == 'cylindrical':
-        P, N = intersect_cylinder(O, D, C, surf_rotation, r)
+        P, N, t = intersect_cylinder(O, D, C, surf_rotation, r)
     else:
-        P, N = intersect_sphere(O, D, C, r, 0)
+        P, N, t = intersect_sphere(O, D, C, r, 0)
         #P, N = sphere_intersect(O, D, C, r, direction=direction)#, surface=surface)
     #check if within lens radius, else set NaN
     diff1 = P[:,0]-C[0]
@@ -234,7 +240,7 @@ def lens_intersect(O, D, C, r, rad, k=0, A=[0], surf_rotation=0, surfshape='sphe
     Prad = np.sqrt(diff1*diff1 + diff2*diff2)
     P[Prad > rad] = float('nan') # TODO: remove this, only create idx_fail, and let rays.update() take care of the rest ?
     idx_fail = np.isnan(P[:,0])
-    return P, N, idx_fail
+    return P, N, t, idx_fail
 
 # Circle intersect is used e.g. for planar faces
 def circle_intersect(O, D, zcirc, r, pass_inside=True, pass_outside=False):
@@ -274,7 +280,7 @@ def circle_intersect(O, D, zcirc, r, pass_inside=True, pass_outside=False):
 
     if P_inside is None: idx_fail_i = None
     if P_outside is None: idx_fail_o = None
-    return P_inside, P_outside, N, idx_fail_i, idx_fail_o
+    return P_inside, P_outside, N, t, idx_fail_i, idx_fail_o
 
 # Ray-Triangle intersection
 def is_point_in_tri(P, Tri, N):
@@ -286,7 +292,7 @@ def is_point_in_tri(P, Tri, N):
     s = s0 & s1 & s2
     return s
 
-def triangle_intersect(O, D, Tri, return_t=False):
+def triangle_intersect(O, D, Tri):
     """
     O is shape (N,3) 
     D is shape (N,3)
@@ -318,11 +324,8 @@ def triangle_intersect(O, D, Tri, return_t=False):
     P[~s] = float('nan')
 
     idx_fail = np.isnan(P[:,0])
-    
-    if return_t:
-        t[idx_fail] = float('nan')
-        return t
-    return P, N, idx_fail
+    t[idx_fail] = float('nan')
+    return P, N, t, idx_fail
 
 def rectangle_intersect(O, D, Quad, return_t=False):
     """
@@ -335,25 +338,24 @@ def rectangle_intersect(O, D, Quad, return_t=False):
         return O, D, np.isnan(O[:,0])
     Tri1 = np.array([Quad[0], Quad[1], Quad[3]])
     Tri2 = np.array([Quad[1], Quad[2], Quad[3]])
-    if return_t:
-        t1 = triangle_intersect(O, D, Tri1, return_t=True)
-        t2 = triangle_intersect(O, D, Tri2, return_t=True)
-        idx = np.where(np.isnan(t1))[0]
-        t1[idx] = t2[idx]
-        return t1
-    P1, N1, idx_fail1 = triangle_intersect(O, D, Tri1)
-    P2, N2, idx_fail2 = triangle_intersect(O, D, Tri2)
+    P1, N1, t1, idx_fail1 = triangle_intersect(O, D, Tri1)
+    P2, N2, t2, idx_fail2 = triangle_intersect(O, D, Tri2)
     P1[~idx_fail2] = P2[~idx_fail2]
     N1[~idx_fail2] = N2[~idx_fail2]
+    t1[~idx_fail2] = t2[~idx_fail2]
     idx_fail1[~idx_fail2] = idx_fail2[~idx_fail2]
-    return P1, N1, idx_fail1
+    if return_t:
+        # function is used several times where only t is needed.
+        return t1
+    return P1, N1, t1, idx_fail1
 
 def aperture_intersect(O, D, r_ap, zap, n_blades=7, pass_inside=False):
     if n_blades < 3:
         #print('WARNING: Number of Blades below 3 doesnt make sense! Tracing circular aperture')
         n_blades = 0
     if n_blades == 0:
-        P_inside, P_outside, N, idx_fail_i, idx_fail_o = circle_intersect(O, D, zap, r_ap, pass_inside=pass_inside, pass_outside=True)
+        # This function does not return t because aperture tracing is only used fore pass/fail purposes
+        P_inside, P_outside, N, _, idx_fail_i, idx_fail_o = circle_intersect(O, D, zap, r_ap, pass_inside=pass_inside, pass_outside=True)
         return P_inside, P_outside, N, idx_fail_i, idx_fail_o
     
     P_inside = None
@@ -386,6 +388,7 @@ def aperture_intersect(O, D, r_ap, zap, n_blades=7, pass_inside=False):
     #surface normal is in negative direction by definition
     N = np.array([[0,0,-1.] for i in range(P.shape[0])])
     
+    # This function does not return t because aperture tracing is only used fore pass/fail purposes
     return P_inside, P_outside, N, idx_fail_i, idx_fail_o
 
 
