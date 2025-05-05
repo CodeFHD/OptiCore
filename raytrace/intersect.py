@@ -354,7 +354,7 @@ def aperture_intersect(O, D, r_ap, zap, n_blades=7, pass_inside=False):
         #print('WARNING: Number of Blades below 3 doesnt make sense! Tracing circular aperture')
         n_blades = 0
     if n_blades == 0:
-        # This function does not return t because aperture tracing is only used fore pass/fail purposes
+        # This function does not return t because aperture tracing is only used for pass/fail purposes
         P_inside, P_outside, N, _, idx_fail_i, idx_fail_o = circle_intersect(O, D, zap, r_ap, pass_inside=pass_inside, pass_outside=True)
         return P_inside, P_outside, N, idx_fail_i, idx_fail_o
     
@@ -388,7 +388,7 @@ def aperture_intersect(O, D, r_ap, zap, n_blades=7, pass_inside=False):
     #surface normal is in negative direction by definition
     N = np.array([[0,0,-1.] for i in range(P.shape[0])])
     
-    # This function does not return t because aperture tracing is only used fore pass/fail purposes
+    # This function does not return t because aperture tracing is only used for pass/fail purposes
     return P_inside, P_outside, N, idx_fail_i, idx_fail_o
 
 
