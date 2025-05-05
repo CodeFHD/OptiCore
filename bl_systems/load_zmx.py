@@ -561,8 +561,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         if self.addsensor:
             add_sensor(self, context, sensor_sizex, sensor_sizey, zsensor, thicksensor=self.thicksensor, sensorthickness=sensorthickness)
             bpy.ops.transform.translate(value=(-zsensor, 0, 0))
-            obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
-            created_other.append(obj_name)
+            obj_name_sensor = bpy.context.selected_objects[0].name # assuming only one is selected
+            created_other.append(obj_name_sensor)
 
         # add camera
         if self.addsensor and self.addcamera:
@@ -580,6 +580,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 cam.data.luxcore.imagepipeline.tonemapper.use_autolinear = True
             obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
             created_other.append(obj_name)
+            # Set the sensor as the active object, otherwise the camera causes issues when toggling edit mode
+            bpy.context.view_layer.objects.active = bpy.data.objects[obj_name_sensor]
 
         # create housing
         # only makes sense if lenses were created, otherwise verts_outline are empty
@@ -746,6 +748,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         # Select a few objects at the end
         # If ray fans were added, select the last one
         # Else, select all lenses
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
         bpy.ops.object.select_all(action='DESELECT')
         if len(created_rayfans) > 0:
             objname = created_rayfans[-1]
