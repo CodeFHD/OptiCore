@@ -29,7 +29,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-def exec_trace(lens, rays, surfs=None, trace_detector=True):
+def exec_trace(lens, rays, surfs=None, trace_detector=True, t_detector=None, trace_reverse=False):
     """
     This function performs a trace thorugh all surfaces
 
@@ -44,6 +44,10 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
     trace_detector: bool
         If True, performs the ray tracing to the sensor as the last step.
         If False, allows an external final trace, e.g. to the Blender scene
+    t_detector: float
+        If not None, the final rays will be projected by a fixed ray-t along their final direction
+    trace_reverse: bool
+        If True, handle first/last surface assumptions differently (detector assumed before first surface, not after last)
 
     Returns
     -------
@@ -57,7 +61,10 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
     elif surfs is None:
         # default to just tracing straight through the surfaces
         surfs = [i+1 for i in range(lens.num_surfaces)]
-    lastsurface = surfs[0] - 1
+    if trace_reverse:
+        lastsurface = surfs[0] + 1
+    else:
+        lastsurface = surfs[0] - 1
     n_surfs = len(surfs)
     ld = lens.data # abbreviation
     reflectionstate = 1 # TODO: merge this into a better direction handling mechanism
@@ -75,6 +82,8 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
         reflectionstate = reflectionstate*mirrorfactor
         if i < (n_surfs-1):
             nextsurface = surfs[i+1]
+        elif trace_reverse:
+            nextsurface = 0
         else:
             nextsurface = max(surfs)+1
         if nextsurface == lastsurface:
@@ -249,7 +258,12 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True):
     # trace detector
     if trace_detector:
         O, D = rays.get_rays()
-        P, N, t, idx_fail = rt_intersect.rectangle_intersect(O, D, lens.detector['Quad'])
+        if t_detector is None:
+            P, N, t, idx_fail = rt_intersect.rectangle_intersect(O, D, lens.detector['Quad'])
+        else:
+            P = O + (t_detector*D.T).T
+            N = None
+            idx_fail = np.isnan(P[:,0])
         rays.D_tosensor = np.array(rays.D)
         rays.update(P, None, None, None, idx_fail, N=N)
 

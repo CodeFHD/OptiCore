@@ -175,15 +175,17 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
            )
     fantype : EnumProperty(
            name="Fan Type",
-           items = {("2D","2D",""),
+           items = (("2D","2D",""),
+                    ("2D_finite","2D - finite",""),
                     ("3D_tri","3D tris",""),
                     ("3D_tri_finite","3D tris - finite",""),
+                    ("3D_rings", "3D rings", ""),
+                    ("3D_rings_finite", "3D rings - finite", ""),
                     ("3D_random","3D random",""),
                     ("3D_random_finite","3D random - finite",""),
                     ("3D_random_sun","3D random - sun",""),
-                    ("2D_finite","2D - finite",""),
-                    ("3D_rings", "3D rings", ""),
-                    ("3D_rings_finite", "3D rings - finite", ""),},
+                    ("2D_aperture_trace","Aperture trace - 2D",""),
+                    ("3D_aperture_trace","Aperture trace - 3D",""),),
            default = "2D",
            description="Ray Fan Type",
            #options={'HIDDEN'},
@@ -598,19 +600,27 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         # create ray fans    
         if self.addrayfan:
             t40 = time.perf_counter()
+            # preprocess the lens for pupil location and aberration and get the rotation point for the ray fan
+            
+
             # try to convert the angles and clamp between -90 and 90 degrees
             fanangles = [self.fanangle1]
-            try:
-                if not self.fanangle_additional in ["", "None", "none", "NONE"]:
-                    fanangles_add = [max(min(float(a), 89.99), -89.99) for a in self.fanangle_additional.split(";")]
-                    fanangles_add = [angle*np.pi/180 for angle in fanangles_add]
-                    fanangles = fanangles_add + fanangles # the "main" fan angle is the last of the list for historic reasons
-            except:
-                print("FANANGLE ERROR")
+            if not self.fantype in ['2D_aperture_trace', '3D_aperture_trace']:
+                try:
+                    if not self.fanangle_additional in ["", "None", "none", "NONE"]:
+                        fanangles_add = [max(min(float(a), 89.99), -89.99) for a in self.fanangle_additional.split(";")]
+                        fanangles_add = [angle*np.pi/180 for angle in fanangles_add]
+                        fanangles = fanangles_add + fanangles # the "main" fan angle is the last of the list for historic reasons
+                except:
+                    print("FANANGLE ERROR")
 
             for fanangle in fanangles:
                 # set up the rays
-                initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, fanangle, self.fanangle2, self.fanangle3] 
+                if self.fantype in ['2D_aperture_trace', '3D_aperture_trace']:
+                    z_ap = lens.apertures[0]['z_ap']
+                    initparams = [self.nrays, 0, z_ap, fanangle, self.fanangle2, self.fanangle3] 
+                else:
+                    initparams = [self.nrays, self.fandiam*lens.data['rCA'][1], -1*self.fandist, fanangle, self.fanangle2, self.fanangle3] 
                 rays = rayfan.RayFan(self.fantype, initparams, store_history=True)
                 # try to parse ghost_oder
                 ghost_order = self.ghost_order
@@ -636,9 +646,17 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                 if not custom_surflist_valid:
                     surflist = [i for i in range(1, nos + 1)] # standard surface list for non-ghost trace
                 lens.surf_sequence = surflist
+                t_detector = None
+                trace_reverse = False
+                if self.fantype in ['2D_aperture_trace', '3D_aperture_trace']:
+                    idx_ap = lens.apertures[0]['idx_surface']
+                    surflist = [i for i in range(1, idx_ap + 1)][::-1]
+                    lens.surf_sequence = surflist
+                    t_detector = -20
+                    trace_reverse = True
                 debugprint('surflist', surflist)
                 trace_detector = not self.tracetoscene and not self.excludedetector
-                rays = exec_trace(lens, rays, surflist, trace_detector=trace_detector)
+                rays = exec_trace(lens, rays, surflist, trace_detector=trace_detector, t_detector=t_detector, trace_reverse=trace_reverse)
                 if trace_detector and self.autofocus:
                     retval = rays.autofocus(EFL=self.flen_intern)
                     if retval is not None:
