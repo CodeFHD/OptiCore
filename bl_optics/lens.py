@@ -53,31 +53,31 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
     
     display_option : EnumProperty(
         name="Settings",
-        items = {("default","Most Important",""),
+        items = (("default","Most Important",""),
                  ("optical","Optical Design",""),
                  ("geometry","Model Geometry",""),
                  ("rayfan","Ray Tracing",""),
-                 ("paraxial","Paraxial Optics",""),},
+                 ("paraxial","Paraxial Optics",""),),
         default = "default",
         description="Select which settings are displayed in this window.",
            )
     """Optical layout"""
     makedoublet : EnumProperty(
         name="Lens configuration",
-        items = {("1", "Singlet", ""),
+        items = (("1", "Singlet", ""),
                  ("2", "Doublet", ""),
-                 ("3", "Triplet", "")},
+                 ("3", "Triplet", "")),
         default="1",
         )
     squarelens : BoolProperty(
             name="Square Lens",
             default=False,
            )
-    ltype_options = {("flat", "Flat", ""),
+    ltype_options = (("flat", "Flat", ""),
                     ("rotational","Standard",""),
                     ("cylindrical","Cylindrical",""),
                     #("cylindricY","Cylindrical (Y)",""),
-                    ("toric", "Toric", "")}
+                    ("toric", "Toric", ""))
     ltype1 : EnumProperty(
            name="",
            items = ltype_options,
@@ -362,15 +362,15 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     fantype : EnumProperty(
            name="Ray Fan Type",
-           items = {("2D","2D",""),
+           items = (("2D","2D",""),
+                    ("2D_finite","2D - finite",""),
                     ("3D_tri","3D tris",""),
                     ("3D_tri_finite","3D tris - finite",""),
+                    ("3D_rings", "3D rings", ""),
+                    ("3D_rings_finite", "3D rings - finite", ""),
                     ("3D_random","3D random",""),
                     ("3D_random_finite","3D random - finite",""),
-                    ("3D_random_sun","3D random - sun",""),
-                    ("2D_finite","2D - finite",""),
-                    ("3D_rings", "3D rings", ""),
-                    ("3D_rings_finite", "3D rings - finite", ""),},
+                    ("3D_random_sun","3D random - sun",""),),
            default = "2D",
            description="Ray Fan Type",
            #options={'HIDDEN'},
@@ -432,13 +432,13 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
            )
     solve_for : EnumProperty(
         name="Autosolver",
-        items = {("r1","Surface 1 Radius",""),
+        items = (("r1","Surface 1 Radius",""),
                  ("r2","Surface 2 Radius",""),
                  ("r3","Surface 3 Radius",""),
                  ("r4","Surface 4 Radius",""),
                  ("n1","Glass 1 index",""),
                  ("n2","Glass 2 index",""),
-                 ("n3","Glass 3 index",""),},
+                 ("n3","Glass 3 index",""),),
         default = "r1",
         description="Select which parameter to automatically optimize.",
            )

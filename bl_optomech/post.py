@@ -39,9 +39,9 @@ class OBJECT_OT_add_post(Operator, AddObjectHelper):
     
     diam : EnumProperty(
            name="Diameter",
-           items = {("0.5","0.5-inch",""),
+           items = (("0.5","0.5-inch",""),
                     ("1.0","1.0-inch",""),
-                    ("1.5","1.0-inch","")},
+                    ("1.5","1.0-inch","")),
            default = "0.5",
            description="Post diameter",
            #options={'HIDDEN'},

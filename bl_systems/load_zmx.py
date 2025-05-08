@@ -61,8 +61,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
     
     display_option : EnumProperty(
         name="Settings",
-        items = {("default","Import",""),
-                 ("luxcore","LuxCore Features","")},
+        items = (("default","Import",""),
+                 ("luxcore","LuxCore Features","")),
         default = "default",
         description="Select which settings are displayed in this window.",
            )
@@ -274,8 +274,8 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         )
     origin_position : EnumProperty(
         name="Origin",
-        items = {("first_vertex","First Lens",""),
-                ("sensor","Sensor",""),},
+        items = (("first_vertex","First Lens",""),
+                ("sensor","Sensor",""),),
         default = "first_vertex",
         description="Determines which component of the lens is placed at the location of the 3D cursor",
         #options={'HIDDEN'},
@@ -600,9 +600,6 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
         # create ray fans    
         if self.addrayfan:
             t40 = time.perf_counter()
-            # preprocess the lens for pupil location and aberration and get the rotation point for the ray fan
-            
-
             # try to convert the angles and clamp between -90 and 90 degrees
             fanangles = [self.fanangle1]
             if not self.fantype in ['2D_aperture_trace', '3D_aperture_trace']:

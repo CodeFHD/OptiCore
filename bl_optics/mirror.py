@@ -36,16 +36,16 @@ class OBJECT_OT_add_mirror(Operator, AddObjectHelper):
     
     mtype : EnumProperty(
            name="Surface Shape",
-           items = {("parabolic","Parabolic",""),
+           items = (("parabolic","Parabolic",""),
                     ("spherical","Spherical",""),
-                    ("aspheric", "Aspheric", "")},
+                    ("aspheric", "Aspheric", "")),
            default = "parabolic",
            description="Shape of Mirror Surface",
            )
     opos : EnumProperty(
            name="Origin position",
-           items = {("FP","Focal Point",""),
-                    ("MC","Mirror Center","")},
+           items = (("FP","Focal Point",""),
+                    ("MC","Mirror Center","")),
            default = "FP",
            description="Position of the Mesh Origin w.r.t. optical properties",
            )
