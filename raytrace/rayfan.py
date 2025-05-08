@@ -45,6 +45,38 @@ def rayfan2D_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     D = D.T
     return O, D
 
+def rayfan2D_aperture_trace(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+    # Specifically for reverse aperture tracing.
+    # Variables used in the following way for this function:
+    # rad: radial position inside aperture
+    # rayfanz: aperture location along optical axis
+    # theta: half-angle of the fan (should be passed as pi/2 in general)
+    # phi: polar angle inside aperture
+    # alpha: Rotation of 2D-Fan around optical axis
+    ca, sa = np.cos(alpha), np.sin(alpha)
+    cp, sp = np.cos(phi), np.sin(phi)
+    O = np.array([[rad*cp, rad*sp, rayfanz] for _ in range(Nrays)])
+    D = np.array([[ca*np.sin(i), sa*np.sin(i), np.cos(i)] for i in np.linspace(0, theta, Nrays, endpoint=True)])
+    return O, D
+
+def rayfan3D_aperture_trace(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+    # 3D version of rayfan2D_aperture_trace.
+    # Use 2D for rotationally-symmetric lenses, 3D for e.g. anamorphics
+    N2 = 8 # fixed value so that the first ring has 8 points
+    N1 = int((1 + np.sqrt(Nrays))/ 2)
+    if N1 < 4: N1 = 4 # minimum number of rays for a 3D-distribution
+    N_total = 1 + int(N1*(N1 - 1)*N2/2)
+    cp, sp = np.cos(phi), np.sin(phi)
+    O = np.array([[rad*cp, rad*sp, rayfanz] for _ in range(N_total)])
+    D = [[0., 0., 1.]]
+    for i in range(1, N1):
+        t = theta*i/(N1-1)
+        ct, st = np.cos(t), np.sin(t)
+        d = [[st*np.cos(p + alpha), st*np.sin(p + alpha), ct] for p in np.linspace(0, np.pi, i*N2, endpoint = True)]
+        D = D + d
+    D = np.array(D)
+    return O, D
+
 def rayfan3D_rings(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     O = []
     N2 = 8 # fixed value so that the first ring has 8 points
@@ -244,6 +276,8 @@ DISTRIBUTIONS = {'2D': rayfan2D,
                  '2D_uniform': rayfan2D,
                  '2D_random': None,
                  '2D_finite': rayfan2D_finite,
+                 '2D_aperture_trace': rayfan2D_aperture_trace,
+                 '3D_aperture_trace': rayfan3D_aperture_trace,
                  '3D': rayfan3D_tri,
                  '3D_tri': rayfan3D_tri,
                  '3D_tri_finite': rayfan3D_tri_finite,
