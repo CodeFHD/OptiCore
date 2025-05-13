@@ -25,17 +25,27 @@ pi2 = 2*np.pi # often used
 
 from ..utils import geometry
 
-def rayfan2D(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
-    rayfany = -rayfanz*np.tan(theta)
-    O_0 = np.array([[i*np.cos(alpha), i*np.sin(alpha), 0] for i in np.linspace(-rad, rad, Nrays)])
-    O = [[i*np.cos(alpha) + rayfany*np.cos(phi), i*np.sin(alpha) + rayfany*np.sin(phi), rayfanz] for i in np.linspace(-rad, rad, Nrays)]
+"""
+NOTES ABOUT GEOMETRY:
+- theta is interpreted as a rotation about the y-axis, so that nominal displacement is along x-axis!
+"""
+
+def rayfan2D(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
+    print("ALPHA", alpha)
+    # 2D ray fan of source at infinity
+    ct, st = np.cos(-theta), np.sin(-theta)
+    cp, sp = np.cos(phi), np.sin(phi)
+    ca, sa = np.cos(alpha), np.sin(alpha)
+    x0, y0, z0 = O_EP
+    D = [[st*cp, st*sp, ct] for _ in range(Nrays)]
+    D = np.array(D)
+    O = [[x0 + r*ca*ct, y0 + r*sa, z0 - r*ca*st] for r in np.linspace(-rad, rad, Nrays, endpoint=True)]
     O = np.array(O)
-    D = O_0 - O
-    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
-    D = D.T
+    t = (rayfanz - O[:,2])/ct # distance ray fan will start beyond EP location.
+    O = O + (t*D.T).T
     return O, D
 
-def rayfan2D_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+def rayfan2D_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     rayfany = -rayfanz*np.tan(theta)
     O_0 = np.array([[i*np.cos(alpha), i*np.sin(alpha), 0] for i in np.linspace(-rad, rad, Nrays)])
     O = [[rayfany*np.cos(phi), rayfany*np.sin(phi), rayfanz] for i in np.linspace(-rad, rad, Nrays)]
@@ -45,7 +55,7 @@ def rayfan2D_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     D = D.T
     return O, D
 
-def rayfan2D_aperture_trace(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+def rayfan2D_aperture_trace(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     # Specifically for reverse aperture tracing.
     # Variables used in the following way for this function:
     # rad: radial position inside aperture
@@ -59,7 +69,7 @@ def rayfan2D_aperture_trace(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     D = np.array([[ca*np.sin(i), sa*np.sin(i), np.cos(i)] for i in np.linspace(0, theta, Nrays, endpoint=True)])
     return O, D
 
-def rayfan3D_aperture_trace(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+def rayfan3D_aperture_trace(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     # 3D version of rayfan2D_aperture_trace.
     # Use 2D for rotationally-symmetric lenses, 3D for e.g. anamorphics
     N2 = 8 # fixed value so that the first ring has 8 points
@@ -77,30 +87,31 @@ def rayfan3D_aperture_trace(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     D = np.array(D)
     return O, D
 
-def rayfan3D_rings(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
-    O = []
+def rayfan3D_rings(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     N2 = 8 # fixed value so that the first ring has 8 points
     N1 = int((1 + np.sqrt(Nrays))/2)
     if N1 < 4: N1 = 4 # minimum number of rays for a 3D-distribution
-    O.append([0, 0, rayfanz]) # center point
+    Nrays = 1 + int(N1*(N1 - 1)*N2/2) # replace with new total value
+    ct, st = np.cos(-theta), np.sin(-theta)
+    cp, sp = np.cos(phi), np.sin(phi)
+    # ca, sa = np.cos(alpha), np.sin(alpha)
+    x0, y0, z0 = O_EP
+    D = [[st*cp, st*sp, ct] for _ in range(Nrays)]
+    D = np.array(D)
+    O = [O_EP]
     for i in range(1, N1):
         r = rad*i/(N1 - 1)
-        O_temp = [[r*np.sin(pi2*j/(i*N2) - alpha), r*np.cos(pi2*j/(i*N2) - alpha), rayfanz] for j in range(i*N2)]
+        x = [r*np.cos(pi2*j/(i*N2) - alpha)*ct for j in range(i*N2)]
+        y = [r*np.sin(pi2*j/(i*N2) - alpha) for j in range(i*N2)]
+        z = [-1*r*np.cos(pi2*j/(i*N2) - alpha)*st for j in range(i*N2)]
+        O_temp = [[x0 + x[j]*cp - y[j]*sp, y0 + x[j]*sp + y[j]*cp, z0 + z[j]] for j in range(i*N2)]
         O += O_temp
     O = np.array(O)
-    O_0 = np.array([[O[i,0], O[i,1], 0] for i in range(O.shape[0])])
-    if theta != 0:
-        rotmat = geometry.get_rotmat_y(-theta)
-        O = np.matmul(rotmat, (O-O_0).T).T + O_0
-    if phi != 0:
-        rotmat = geometry.get_rotmat_z(phi)
-        O = np.matmul(rotmat, (O-O_0).T).T + O_0
-    D = O_0 - O
-    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
-    D = D.T
+    t = (rayfanz - O[:,2])/ct # distance ray fan will start beyond EP location.
+    O = O + (t*D.T).T
     return O, D
 
-def rayfan3D_rings_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+def rayfan3D_rings_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     N2 = 8 # fixed value so that the first ring has 8 points
     N1 = int((1 + np.sqrt(Nrays))/ 2)
     if N1 < 4: N1 = 4 # minimum number of rays for a 3D-distribution
@@ -120,6 +131,7 @@ def rayfan3D_rings_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     return O, D
 
 def get_Nrays_trifan(Nrays, rad):
+    if Nrays < 25: Nrays = 25 # Minimum for this distribution
     # separate this function to be called in other parts of the code
     Nrays_y = int(np.sqrt(Nrays)) # numhber of rays along x-axis
     Nrays_y = Nrays_y + 1 - Nrays_y%2 # make sure it is an odd number
@@ -130,33 +142,30 @@ def get_Nrays_trifan(Nrays, rad):
     W_half = h*(Nrays_x - 1)/2
     return Nrays_x, Nrays_y, a, h, W_half
 
-def rayfan3D_tri(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
-    # sample lens with equilateral triangles
+def rayfan3D_tri(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     Nrays_x, Nrays_y,a, h, W_half = get_Nrays_trifan(Nrays, rad)
+    print("UUUU", Nrays_x, Nrays_y)
+    Nrays = int(Nrays_x*Nrays_y - (Nrays_x-1)//2) # replace with new total value
+    # sample lens with equilateral triangles
+    ct, st = np.cos(-theta), np.sin(-theta)
+    cp, sp = np.cos(phi), np.sin(phi)
+    # ca, sa = np.cos(alpha), np.sin(alpha)
+    x0, y0, z0 = O_EP
+    D = [[st*cp, st*sp, ct] for _ in range(Nrays)]
+    D = np.array(D)
     O = []
-    O_0 = []
     for i in range(Nrays_x):
-        x = i*h - W_half
-        O_temp = [[x, j*a - rad + i%2*a/2, rayfanz] for j in range(Nrays_y - i%2)]
+        x = [(i*h - W_half)*ct for j in range(Nrays_y - i%2)]
+        y = [(j*a - rad + i%2*a/2) for j in range(Nrays_y - i%2)]
+        z = [-1*(i*h - W_half)*st for j in range(Nrays_y - i%2)]
+        O_temp = [[x0 + x[j]*cp - y[j]*sp, y0 + x[j]*sp + y[j]*cp, z0 + z[j]] for j in range(Nrays_y - i%2)]
         O += O_temp
     O = np.array(O)
-    O_0 = np.array([[O[i,0], O[i,1], 0] for i in range(O.shape[0])])
-    if alpha != 0:
-        rotmat = geometry.get_rotmat_z(alpha)
-        O = np.matmul(rotmat, (O).T).T
-        O_0 = np.matmul(rotmat, (O_0).T).T
-    if theta != 0:
-        rotmat = geometry.get_rotmat_y(-theta)
-        O = np.matmul(rotmat, (O-O_0).T).T + O_0
-    if phi != 0:
-        rotmat = geometry.get_rotmat_z(phi)
-        O = np.matmul(rotmat, (O-O_0).T).T + O_0
-    D = O_0 - O
-    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
-    D = D.T
+    t = (rayfanz - O[:,2])/ct # distance ray fan will start beyond EP location.
+    O = O + (t*D.T).T
     return O, D
 
-def rayfan3D_tri_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+def rayfan3D_tri_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     # sample lens with equilateral triangles
     Nrays_x, Nrays_y, a, h, W_half = get_Nrays_trifan(Nrays, rad)
     O_0 = []
@@ -176,30 +185,27 @@ def rayfan3D_tri_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     D = D.T
     return O, D
 
-def rayfan3D_uniformdiskrandom(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+def rayfan3D_uniformdiskrandom(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
+    # alpha makes no sense in random functions, ignoring here
     seed = int.from_bytes(os.urandom(4), sys.byteorder)
     rng = np.random.default_rng(seed)
     u1 = rng.random(Nrays)
     u2 = rng.random(Nrays)
+    ct, st = np.cos(-theta), np.sin(-theta)
+    cp, sp = np.cos(phi), np.sin(phi)
+    # ca, sa = np.cos(alpha), np.sin(alpha)
+    x0, y0, z0 = O_EP
+    D = [[st*cp, st*sp, ct] for _ in range(Nrays)]
+    D = np.array(D)
     Ox = rad * np.sqrt(u1) * np.sin(2*np.pi*u2)
     Oy = rad * np.sqrt(u1) * np.cos(2*np.pi*u2)
-    Oz = np.zeros(Nrays) + rayfanz
-    O = np.vstack((Ox, Oy, Oz)).T
+    O = [[x0 + Ox[i]*ct*cp - Oy[i]*sp, y0 + Ox[i]*ct*sp + Oy[i]*cp, z0 - Ox[i]*st] for i in range(Nrays)]
     O = np.array(O)
-    O_0 = np.array([[O[i,0], O[i,1], 0] for i in range(O.shape[0])])
-    # alpha rotation makes no sense for random sampling, omitting here
-    if theta != 0:
-        rotmat = geometry.get_rotmat_y(-theta)
-        O = np.matmul(rotmat, (O-O_0).T).T + O_0
-    if phi != 0:
-        rotmat = geometry.get_rotmat_z(phi)
-        O = np.matmul(rotmat, (O-O_0).T).T + O_0
-    D = O_0 - O
-    D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
-    D = D.T
+    t = (rayfanz - O[:,2])/ct # distance ray fan will start beyond EP location.
+    O = O + (t*D.T).T
     return O, D
 
-def rayfan3D_uniformdiskrandom_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+def rayfan3D_uniformdiskrandom_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     seed = int.from_bytes(os.urandom(4), sys.byteorder)
     rng = np.random.default_rng(seed)
     u1 = rng.random(Nrays)
@@ -210,13 +216,13 @@ def rayfan3D_uniformdiskrandom_finite(Nrays, rad, rayfanz=-20, theta=0, phi=0, a
     O = [[rayfany*np.cos(phi), rayfany*np.sin(phi), rayfanz] for i in range(Nrays)] # actual origin, all at the same point
     O = np.array(O)
     O_0 = np.vstack((Ox, Oy, np.zeros(Nrays))).T
-    # alpha rotation makes no sense for random sampling, omitting here
     D = O_0 - O
     D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
     D = D.T
     return O, D
 
-def rayfan3D_square(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+"""
+def rayfan3D_square(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     Nrays = int(np.sqrt(Nrays))
     O = [[rad*(2*j/(Nrays-1) - 1), rad*(2*i/(Nrays-1) - 1), rayfanz] for j in range(Nrays) for i in range(Nrays)]
     D = [[0,0,1.] for i in range(len(O))]
@@ -228,20 +234,19 @@ def rayfan3D_square(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
         O = np.matmul(rotmat, (O-O_0).T).T + O_0
         D = np.matmul(rotmat, D.T).T
     return O, D
+"""
 
-def rayfan3D_sun(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
+def rayfan3D_sun(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     # This function is designed to excplicitly sample a 32-arcmin source at infinity
     # independently sample the aperture (as in rayfan3D_uniformdiskrandom)
     # and the direction in a cone
     seed = int.from_bytes(os.urandom(4), sys.byteorder)
     rng = np.random.default_rng(seed)
-    # sampling the aperture at z=0
-    u1 = rng.random(Nrays)
-    u2 = rng.random(Nrays)
-    Ox = rad * np.sqrt(u1) * np.sin(2*np.pi*u2)
-    Oy = rad * np.sqrt(u1) * np.cos(2*np.pi*u2)
-    Oz = np.zeros(Nrays)
-    O = np.vstack((Ox, Oy, Oz)).T
+    ct, st = np.cos(-theta), np.sin(-theta)
+    # cp, sp = np.cos(phi), np.sin(phi)
+    # ca, sa = np.cos(alpha), np.sin(alpha)
+    # x0, y0, z0 = O_EP
+
     # sampling the cone
     # Using variables T and P as theta and phi inside the cone
     # to distinguish from theta, phi describing the axis of the cone
@@ -257,16 +262,34 @@ def rayfan3D_sun(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0):
     D = np.column_stack((np.cos(P)*sinT, np.sin(P)*sinT, cosT))
     # rotate D by theta_phi
     if theta != 0:
-        rotmat = geometry.get_rotmat_y(-theta)
-        D = np.matmul(rotmat, D.T).T
+        rotmat_theta = geometry.get_rotmat_y(-theta)
+        D = np.matmul(rotmat_theta, D.T).T
     if phi != 0:
-        rotmat = geometry.get_rotmat_z(phi)
-        D = np.matmul(rotmat, D.T).T
-    # normalize D to mkae sure there are no conversion errors left
+        rotmat_phi = geometry.get_rotmat_z(phi)
+        D = np.matmul(rotmat_phi, D.T).T
+    # normalize D to make sure there are no conversion errors left
     D = D.T / np.sqrt(np.einsum('ij,ij->i', D, D)) # normalize
     D = D.T
+
+    # sampling the aperture at z=0
+    u1 = rng.random(Nrays)
+    u2 = rng.random(Nrays)
+    Ox = rad * np.sqrt(u1) * np.sin(2*np.pi*u2)
+    Oy = rad * np.sqrt(u1) * np.cos(2*np.pi*u2)
+    Oz = np.zeros(Nrays)
+    O = np.vstack((Ox, Oy, Oz)).T
+    # rotate O by theta_phi
+    if theta != 0:
+        O = np.matmul(rotmat_theta, O.T).T
+    if phi != 0:
+        O = np.matmul(rotmat_phi, O.T).T
+    # translate O from origin to O_EP
+    O = O + np.array(O_EP)
+
     # project O from the aperture along negative D
-    O = O + rayfanz*D
+    t = (rayfanz - O[:,2])/ct # distance ray fan will start beyond EP location.
+    O = O + (t*D.T).T
+
     return O, D
 
 
