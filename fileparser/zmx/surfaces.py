@@ -65,8 +65,7 @@ def parse_zmx_surface(surflines):
     # get the surface type first in order to know how to interpret the rest
     surftype = _type_from_surflines(surflines)
     if not surftype in SUPPORTED_SURFTYPES:
-        print(f'ERROR: Zemax surface type "{surftype}" not implemented in OptiCore. Please open a support ticket on GitHub and include a .zmx file ')
-        return None
+        raise ValueError(f'ERROR: Zemax surface type "{surftype}" not implemented in OptiCore. Please open a support ticket on GitHub and include a .zmx file ')
 
     # search the parameters
     for line in surflines:

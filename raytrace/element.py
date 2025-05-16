@@ -87,12 +87,10 @@ class Element():
         function to append appropriately to the data structure
         """
         if not surftype in ALLOWED_SURFTYPES:
-            print('ERROR: Element.add_surface received unknown surftype:', surftype)
-            return
+            raise ValueError('ERROR: Element.add_surface received unknown surftype:', surftype)
 
         if len(self.data['radius']) != len(self.data['CT']):
-            print('ERROR in Element.add_surface: Mismatch of data structure length. Possibly trying to append to completed element?')
-            return
+            raise ValueError('ERROR in Element.add_surface: Mismatch of data structure length. Possibly trying to append to completed element?')
 
         if rCA_short is None: rCA_short = rCA
 

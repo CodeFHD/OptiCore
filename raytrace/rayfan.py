@@ -336,8 +336,7 @@ class RayFan():
         self.N = [] # for storing normal vectors
         if self.distribution:
             if not self.distribution in DISTRIBUTIONS:
-                print(f'ERROR: Ray fan distribution "{self.distribution}" is not implemented!')
-                return
+                raise ValueError(f'ERROR: Ray fan distribution "{self.distribution}" is not implemented!')
             O, D = DISTRIBUTIONS[self.distribution](*self.initparams)
             self.n_rays = O.shape[0]
             self.O = O
@@ -423,8 +422,7 @@ class RayFan():
     
     def autofocus(self, EFL=None):
         if self.D_tosensor is None:
-            print('Error in Rayfan: Called autofocus() without D_tosensor defined.')
-            return None
+            raise Exception('Error in Rayfan: Called autofocus() without D_tosensor defined.')
         if EFL is None:
             # if no EFL is given, take BFL from rays
             EFL = 1

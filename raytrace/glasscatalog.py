@@ -107,7 +107,7 @@ def n_Air(wl):
 
 def nSellmeier(wl, C, coefficientorder='sorted'):
     if not len(C)%2 == 0:
-        print(f'ERROR: Number of coefficients supplied to nSellmeier() must be even. Returning default value n={N_FALLBACK}')
+        print(f'WARNING: Number of coefficients supplied to nSellmeier() must be even. Returning default value n={N_FALLBACK}')
         return N_FALLBACK
     n_terms = (len(C))//2
     wl2 = wl**2
@@ -120,12 +120,12 @@ def nSellmeier(wl, C, coefficientorder='sorted'):
         n2 = 1 + sum(terms)
         return np.sqrt(n2)
     else:
-        print(f'ERROR: Invalid argument for coefficientorder in nSellmeier(): {coefficientorder}. Returning default value n={N_FALLBACK}')
+        print(f'WARNING: Invalid argument for coefficientorder in nSellmeier(): {coefficientorder}. Returning default value n={N_FALLBACK}')
         return N_FALLBACK
 
 def nPolynominal(wl, C, npos=1, nneg=1):
     if not len(C) == (1 + npos + nneg):
-        print(f'ERROR: Number of coefficients supplied to nPolynominal() must be equal to 1 + npos + nneg. Returning default value n={N_FALLBACK}')
+        print(f'WARNING: Number of coefficients supplied to nPolynominal() must be equal to 1 + npos + nneg. Returning default value n={N_FALLBACK}')
         return N_FALLBACK
     # This is essentially the same as Equation 3 of refractiveindex.info
     constterm = C[0]
@@ -408,7 +408,7 @@ def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
     if debug_glassname:
         return glassname # for automatic analysis of missing glasses
     else:
-        print(f'ERROR: Glass type {glassname} not defined in any list! Defaulting to n={N_FALLBACK}...')
+        print(f'WARNING: Glass type {glassname} not defined in any list! Defaulting to n={N_FALLBACK}...')
         return N_FALLBACK
 
     
