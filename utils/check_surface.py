@@ -110,11 +110,7 @@ def get_surface_subtype(r, k, A):
 
     return surf_subtype
 
-def check_surface(lrad, flrad, RX, kX, AX, RY, kY, AY, surftype, squarelens, rd=0):
-    # rd is short for recursiondepth
-    if rd > 2:
-        print("ERROR: check_surface() appears to be caught in a loop!!!")
-        return None
+def check_surface(lrad, flrad, RX, kX, AX, RY, kY, AY, surftype, squarelens):
     
     # special case of flat surface will be used in multiple cases
     returnvalues_flat = (lrad, 0, 0, 'flat', 'flat', 'flat', 0, 0, [0], 0)
@@ -177,15 +173,12 @@ def check_surface(lrad, flrad, RX, kX, AX, RY, kY, AY, surftype, squarelens, rd=
         if surf_subtype_Y == 'flat' and not surf_subtype_X == 'flat':
             # equivalent to a cylinder, X-axis already valid
             surftype = 'cylindrical'
-            # perform a recursion because this will resolve the proper evaluation of the cylinder surface
-            # return check_surface(lrad, flrad, RX, kX, AX, RY, kY, AY, surftype, squarelens, rd=rd+1)
         elif surf_subtype_X == 'flat' and not surf_subtype_Y == 'flat':
             # equivalent to a cylinder, flip parameters
             surftype = 'cylindrical'
             surf_subtype_X, surf_subtype_Y = surf_subtype_Y, surf_subtype_X
             RX, kX, AX, RY, kY, AY = RY, kY, AY, RX, kX, AX
             dSurfrot = np.pi/2
-            # return check_surface(lrad, flrad, RX, kX, AX, RY, kY, AY, surftype, squarelens, rd=rd+1)
 
     """ Default return case """
     return lrad_surf, hasfl, flrad, surftype, surf_subtype_X, surf_subtype_Y, RX, kX, AX, dSurfrot
