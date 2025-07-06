@@ -27,7 +27,7 @@ from .surfaces import parse_zmx_surface, get_stop
 
 from ...utils import debugprint
 
-# Because of FLoat rounding, values are rounded to these digits for comparison
+# Because of float rounding, values are rounded to these digits for comparison
 EPSILON_DIGITS = 3
 
 def _split_opened_zmx(f):
