@@ -21,9 +21,9 @@ import os
 import re
 import numpy as np
 
-from ...raytrace.element import Element
 from ...raytrace.lenssystem import Lenssystem
 from .surfaces import parse_zmx_surface, get_stop
+from ..utils import create_elements, get_encoding
 
 from ...utils import debugprint
 
@@ -72,13 +72,7 @@ def _split_opened_zmx(f):
 
 def split_zmx_file(filename):
     # check encoding of file
-    f = open(filename, 'rb')
-    data = f.read(2)
-    if data == b'\xff\xfe':
-        encoding = 'utf-16-le'
-    else:
-        encoding = 'utf-8'
-    f.close()
+    encoding = get_encoding(filename)
 
     # split he(ader), su(rfaces), fo(oter)
     with open (filename, 'r', encoding=encoding) as f:    
@@ -218,55 +212,6 @@ def identify_elements(surf_infos):
         idx_elements.append(cur_element)
         
     return idx_elements, idx_order, CT_cumulative
-
-def create_elements(surf_infos, idx_elements, CT_cumulative):
-    elements = []
-    # firstElement = True
-    direction = 1 # at a mirror, the direction is flipped and CT is negative
-    for i, idx_list in enumerate(idx_elements):
-        ele = Element()
-        if len(idx_list) == 1:
-            if surf_infos[idx_list[0]]['glass'] == 'MIRROR':
-                ele.ismirror = True
-        # Fill the element data
-        for j, idx in enumerate(idx_list):
-            ismirror = surf_infos[idx]['glass'] == 'MIRROR'
-            if ismirror:
-                coating = ['MIRROR', None, None]
-            else:
-                coating = surf_infos[idx]['coating'] 
-
-            r1 = surf_infos[idx]['radius']
-            r2 = surf_infos[idx]['radius2']
-            asph1 = surf_infos[idx]['asph']
-            asph2 = surf_infos[idx]['asph2']
-            surf_rotation = surf_infos[idx]['surf_rotation']
-
-            surftype = surf_infos[idx]['type']
-            lenstype = surf_infos[idx]['ltype']
-            ele.outline_shape = surf_infos[idx]['outline_shape'] # Assumption that there is no mix between sufaces for one element
-
-            ele.add_surface(surftype, lenstype=lenstype, radius = r1, radius2 = r2, asph = asph1, asph2 = asph2, rCA = surf_infos[idx]['rCA'], CT = CT_cumulative[idx]*direction, material = surf_infos[idx]['glass'], coating = coating, surf_rotation=surf_rotation)
-            
-        # get the element offsets
-        if i == 0:
-            dz = 0
-        else:
-            CT_list = [surf_infos[j]['CT'] for j in range(idx_elements[i-1][-1], idx_list[0])]
-            dz = sum(CT_list)
-        #if direction == -1:
-        #    ele.reverse()
-        ele.direction = direction    
-        if ele.ismirror:
-            direction = -1*direction
-        elements.append([ele, dz])
-        debugprint()
-        debugprint('FINISHED ELEMENT')
-        debugprint()
-    # get the sensor distance
-    CT_list = [surf_infos[j]['CT'] for j in range(idx_elements[-1][-1], len(surf_infos))]
-    dz_sensor = sum(CT_list)
-    return elements, dz_sensor
 
 def load_from_zmx(filename, testmode=False, logfile=None):
     pixelpitch = 0.01 # default because that is not stored in zmx files AFAIK

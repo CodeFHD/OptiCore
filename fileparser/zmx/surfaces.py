@@ -19,7 +19,7 @@ along with OptiCore. If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 
-from .zmx2oc import determine_OC_surftype
+from ..utils import determine_OC_surftype
 from ...utils.check_surface import surftype_zmx2ltype
 
 SUPPORTED_SURFTYPES =['STANDARD', 'EVENASPH', 'BICONICX', 'TOROIDAL']
