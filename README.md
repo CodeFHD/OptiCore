@@ -30,6 +30,7 @@ It should be noted however, that OptiCore is completely independent from any ren
 Below, you will find a brief description of the available optical elements and features. You can also find tutorial videos on my YouTube-channel [HowToPrint](https://www.youtube.com/@howtoprint6002). Please don't hesitate to open a GitHub-Issue or -Discussion if you have any questions or feature requests.
 
 ## Table of Contents
+* [Installation](#installation)
 * [Optical Elements](#optical-elements)
   * [Lens](#lens)
   * [Square Lens](#square-lens)
@@ -40,6 +41,16 @@ Below, you will find a brief description of the available optical elements and f
 * [Optomechanics](#optomechanics)
   * [Breadboard](#breadboard)
   * [Post](#post)
+
+## Installation
+
+OptiCore is installed in Blender as an addon.
+
+First, to download the latest version of OptiCore, navigate to the GitHub repository: <https://github.com/CodeFHD/OptiCore>
+Then, in the upper right corner click on "Code", and then on "Download ZIP". See the screenshot for help:
+![Where to download the OptiCore addon](/media/dl_addon.png)
+
+After downloading the zip file, in Blender, go to Edit > Preferences > Add-ons. Click in the arrow in the upper right corner to open up a menu and select "Install from disk". Select the zip-file of OptiCore, which will start the installation.
 
 ## Optical Elements
 
