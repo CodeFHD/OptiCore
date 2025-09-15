@@ -222,12 +222,22 @@ def load_from_zmx(filename, testmode=False, logfile=None):
 
     # parse each surface and extract its parameters
     surf_infos = {}
+    idx_offset = 0
+    shift_cumul = np.array([0, 0])
+    rot_cumul = np.array([0, 0, 0])
     for idx, surface in su.items():
         surf_info = parse_zmx_surface(surface)
+        if surf_info['type'] == 'COORDBRK':
+            shift_cumul += surf_info['shift']
+            rot_cumul += surf_info['rot']
+            idx_offset += 1
+            continue
+        elif surf_info['type'] == 'DUMMY':
+            pass
         # make coating filename absolute paths
         if surf_info['coating'][0] in ['DATA']:
             surf_info['coating'][1] = os.path.join(file_path, surf_info['coating'][1])
-        surf_infos[idx] = surf_info
+        surf_infos[idx - idx_offset] = surf_info
 
     # identify elements, or groups, i.e. cemented pieces
     idx_elements, idx_order, CT_cumulative = identify_elements(surf_infos)

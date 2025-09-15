@@ -64,6 +64,25 @@ def parse_zmx_surface(surflines):
 
     # get the surface type first in order to know how to interpret the rest
     surftype = _type_from_surflines(surflines)
+    # COORDBRK gets special treatment
+    if surftype == 'COORDBRK':
+        for line in surflines:
+            if line.startswith('PARM1'):
+                shiftX = float(line.split()[1])
+            elif line.startswith('PARM2'):
+                shiftY = float(line.split()[1])
+            elif line.startswith('PARM3'):
+                rotX = float(line.split()[1])
+            elif line.startswith('PARM4'):
+                rotY = float(line.split()[1])
+            elif line.startswith('PARM5'):
+                rotZ = float(line.split()[1])
+        #surf_info['type'] = 'COORDBRK'
+        surf_info['shift'] = np.array([shiftX, shiftY])
+        surf_info['rot'] = np.array([rotX, rotY, rotZ])
+        #return surf_info
+    
+    # "Regular" surfaces
     if not surftype in SUPPORTED_SURFTYPES:
         raise ValueError(f'ERROR: Zemax surface type "{surftype}" not implemented in OptiCore. Please open a support ticket on GitHub and include a .zmx file ')
 
@@ -146,7 +165,7 @@ def parse_zmx_surface(surflines):
         surf_rotation = 0
 
     # fill the return dictionary
-    surf_info['type'] = surftype # 'type' is teh OptiCore surftype, i.e. base shape types w/o direction
+    surf_info['type'] = surftype # 'type' is the OptiCore surftype, i.e. base shape types w/o direction
     surf_info['ltype'] = ltype # ltype is for the Lens class, may include directions, like cylindricalX
     surf_info['isstop'] = isstop
     surf_info['radius'] = radiusX
