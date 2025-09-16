@@ -1179,11 +1179,9 @@ def add_lens(self, context, paramdict=None):
                 mesh.polygons[i + nFaces_at_segment[4]].select=True
         # side 3
         if md in ['3']:
-            nfaces = nFaces_at_segment[5] - nFaces_at_segment[4] - dshape
+            nfaces = nFaces_at_segment[7] - nFaces_at_segment[6] - dshape
             for i in range(nfaces):
-                mesh.polygons[i + nFaces_at_segment[4]].select=True
-            for i in range(nfaces):
-                mesh.polygons[i + nFaces_at_segment[5]].select=True
+                mesh.polygons[i + nFaces_at_segment[6]].select=True
         # assign the material
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
         obj.active_material_index = obj.data.materials.find(material_edge)
