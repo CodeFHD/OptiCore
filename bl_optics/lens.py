@@ -469,6 +469,11 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             description="Material Surface 4",
             default="",
            )
+    material_edge : StringProperty(
+            name="Material Edge",
+            description="Material Edge",
+            default="",
+           )
     num1 : IntProperty(
            name="N1",
            default = 32,
@@ -639,6 +644,7 @@ class OBJECT_OT_add_lens(bpy.types.Operator, AddObjectHelper):
             col.prop_search(self, "material_name2", bpy.data, "materials", icon="NONE")
             col.prop_search(self, "material_name3", bpy.data, "materials", icon="NONE")
             col.prop_search(self, "material_name4", bpy.data, "materials", icon="NONE")
+            col.prop_search(self, "material_edge", bpy.data, "materials", icon="NONE")
             col.prop(self, 'shade_smooth')
         if disp == 'rayfan':
             col.prop(self, 'flen')
@@ -791,7 +797,7 @@ def add_lens(self, context, paramdict=None):
         material_name2 = self.material_name2
         material_name3 = self.material_name3
         material_name4 = self.material_name4
-        material_edge = ''
+        material_edge = self.material_edge
         material_dface = ''
         shade_smooth = self.shade_smooth
         smooth_type = self.smooth_type
