@@ -31,7 +31,6 @@ NOTES ABOUT GEOMETRY:
 """
 
 def rayfan2D(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
-    print("ALPHA", alpha)
     # 2D ray fan of source at infinity
     ct, st = np.cos(-theta), np.sin(-theta)
     cp, sp = np.cos(phi), np.sin(phi)
@@ -144,7 +143,6 @@ def get_Nrays_trifan(Nrays, rad):
 
 def rayfan3D_tri(Nrays, rad, rayfanz=-20, theta=0, phi=0, alpha=0, O_EP=[0,0,0]):
     Nrays_x, Nrays_y,a, h, W_half = get_Nrays_trifan(Nrays, rad)
-    print("UUUU", Nrays_x, Nrays_y)
     Nrays = int(Nrays_x*Nrays_y - (Nrays_x-1)//2) # replace with new total value
     # sample lens with equilateral triangles
     ct, st = np.cos(-theta), np.sin(-theta)
