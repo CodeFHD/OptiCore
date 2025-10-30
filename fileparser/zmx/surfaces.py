@@ -22,7 +22,7 @@ import numpy as np
 from ..utils import determine_OC_surftype
 from ...utils.check_surface import surftype_zmx2ltype
 
-SUPPORTED_SURFTYPES =['STANDARD', 'EVENASPH', 'BICONICX', 'TOROIDAL']
+SUPPORTED_SURFTYPES =['STANDARD', 'EVENASPH', 'BICONICX', 'TOROIDAL', 'COORDBRK']
 
 
 def _type_from_surflines(surflines):
@@ -67,20 +67,23 @@ def parse_zmx_surface(surflines):
     # COORDBRK gets special treatment
     if surftype == 'COORDBRK':
         for line in surflines:
-            if line.startswith('PARM1'):
-                shiftX = float(line.split()[1])
-            elif line.startswith('PARM2'):
-                shiftY = float(line.split()[1])
-            elif line.startswith('PARM3'):
-                rotX = float(line.split()[1])
-            elif line.startswith('PARM4'):
-                rotY = float(line.split()[1])
-            elif line.startswith('PARM5'):
-                rotZ = float(line.split()[1])
-        #surf_info['type'] = 'COORDBRK'
-        surf_info['shift'] = np.array([shiftX, shiftY])
-        surf_info['rot'] = np.array([rotX, rotY, rotZ])
-        #return surf_info
+            if line.startswith('PARM 1'):
+                shiftX = float(line.split()[2])
+            elif line.startswith('PARM 2'):
+                shiftY = float(line.split()[2])
+            elif line.startswith('PARM 3'):
+                rotX = float(line.split()[2])
+            elif line.startswith('PARM 4'):
+                rotY = float(line.split()[2])
+            elif line.startswith('PARM 5'):
+                rotZ = float(line.split()[2])
+            elif line.startswith('DISZ'):
+                CT = float(line.split()[1])
+        surf_info['type'] = 'COORDBRK'
+        surf_info['shift'] = np.array([shiftX, shiftY], dtype=np.float64)
+        surf_info['rot'] = np.array([rotX, rotY, rotZ], dtype=np.float64)
+        surf_info['CT'] = CT
+        return surf_info
     
     # "Regular" surfaces
     if not surftype in SUPPORTED_SURFTYPES:
