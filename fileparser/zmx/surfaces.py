@@ -22,7 +22,7 @@ import numpy as np
 from ..utils import determine_OC_surftype
 from ...utils.check_surface import surftype_zmx2ltype
 
-SUPPORTED_SURFTYPES =['STANDARD', 'EVENASPH', 'BICONICX', 'TOROIDAL', 'COORDBRK']
+SUPPORTED_SURFTYPES =['STANDARD', 'EVENASPH', 'XASPHERE', 'BICONICX', 'TOROIDAL', 'COORDBRK']
 
 
 def _type_from_surflines(surflines):
@@ -31,10 +31,6 @@ def _type_from_surflines(surflines):
         # Get the tr
         if line.startswith('TYPE'):
             surftype = line.split()[1]
-            # had some files where XASPHERE was used in addition to EVENASPH
-            # It seems that in those cases, EVENASPH only goes up to 8th-order coefficients and XASPHERE also to higher ones. Otehr differences I did not find reference to online.
-            # For that reason, treating them as the same here.
-            if surftype == 'XASPHERE': surftype = 'EVENASPH'
     return surftype
 
 def parse_zmx_surface(surflines):
@@ -47,10 +43,10 @@ def parse_zmx_surface(surflines):
     surftype = None
     isstop = False
     radiusX = None
-    kX = None
+    kX = 0
     AX = []
     radiusY = None
-    kY = None
+    kY = 0
     AY = []
     CT = None
     hasglass = False
@@ -61,6 +57,10 @@ def parse_zmx_surface(surflines):
     rCA_short = None
     lrad = None
     coating = ['FRESNEL_0', None, None]
+    radscale = 1 # radius scaling needed for XASPHERE surfaces
+
+    # variables for handling special cases
+    has_PARM = False
 
     # get the surface type first in order to know how to interpret the rest
     surftype = _type_from_surflines(surflines)
@@ -125,8 +125,9 @@ def parse_zmx_surface(surflines):
 
         # surftype-dependent parameters
         elif line.startswith('PARM'):
+            has_PARM = True
             iparm = int(line.split()[1])
-            if surftype == 'EVENASPH':
+            if surftype in ['EVENASPH', 'XASPHERE']:
                 if iparm == 1:
                     # I have yet to see a file that has a power-2 coefficient
                     # (assuming iparm == 1 is for power 2 coefficient)
@@ -142,7 +143,24 @@ def parse_zmx_surface(surflines):
                 surf_rotation = float(line.split()[2])
         elif line.startswith('XDAT'):
             iparm = int(line.split()[1])
-            if surftype == 'TOROIDAL' and iparm == 2:
+            if surftype == 'XASPHERE':
+                if has_PARM:
+                    raise NotImplementedError("XASPHERE has both PARM and XDAT data! This case is unknown!")
+                if iparm == 1:
+                    num_coeffs = int(float(line.split()[2]))
+                elif iparm == 2:
+                    radscale = float(line.split()[2])
+                elif iparm == 3:
+                   # TODO: Add power-2 and refactor rest of code to account for this
+                    pass
+                elif iparm > num_coeffs + 2:
+                    # ignore more than defined
+                    pass
+                else:
+                    coeff = float(line.split()[2])
+                    coeff = coeff / radscale**(2*(iparm - 2))
+                    AX.append(coeff)
+            elif surftype == 'TOROIDAL' and iparm == 2:
                 radiusY = float(line.split()[2])
     
     # determine the surface type in the OptiCore scheme
