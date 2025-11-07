@@ -168,7 +168,7 @@ class Lenssystem():
                     t10 = glasscatalog.get_t(self.ambimat, self.wl)
                     tmp_gname = self.ambimat
                 else:
-                    n = glasscatalog.get_n(ele.data['material'][s], self.wl)
+                    n = glasscatalog.get_n(ele.data['material'][s], self.wl, backup_neve=ele.data['material_neve'][s])
                     t10 = glasscatalog.get_t(ele.data['material'][s], self.wl)
                     tmp_gname = ele.data['material'][s]
                 if self.testmode:

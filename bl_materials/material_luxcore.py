@@ -118,8 +118,9 @@ def glass_from_Element_luxcore(ele, wl, mat_refract_only=False):
     for i in range(num_glasses):
         # bulk material
         glassname = ele.data['material'][i]
+        glass_neve = ele.data['material_neve'][i]
         glassname_is_dummy = glassname.startswith('FIXVALUE_') or glassname.startswith('___BLANK')
-        n = glasscatalog.get_n(glassname, wl)
+        n = glasscatalog.get_n(glassname, wl, backup_neve=glass_neve)
         n_list.append(n)
         if glassname_is_dummy:
             glassname = f'Glass-{n:.5f}'

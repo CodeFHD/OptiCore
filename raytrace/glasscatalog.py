@@ -357,7 +357,7 @@ def get_t(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
     # Do nothing here, this case is handled by get_n
 
 
-def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False):
+def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_glassname=False, backup_neve=None):
     """
     Wavelength is given in micrometers
     """
@@ -407,6 +407,10 @@ def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
     # Case 3: Material not found
     if debug_glassname:
         return glassname # for automatic analysis of missing glasses
+    elif backup_neve is not None:
+        n = nAbbe(wl, backup_neve)
+        print(f'WARNING: Glass type {glassname} not defined in any list! used backup data to estimate n={n}...')
+        return n
     else:
         print(f'WARNING: Glass type {glassname} not defined in any list! Defaulting to n={N_FALLBACK}...')
         return N_FALLBACK

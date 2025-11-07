@@ -53,6 +53,7 @@ def parse_zmx_surface(surflines):
     ismirror = False
     outline_shape = 'circular'
     glass = None
+    glass_neve = None
     rCA = None
     rCA_short = None
     lrad = None
@@ -102,6 +103,10 @@ def parse_zmx_surface(surflines):
         elif line.startswith('GLAS'):
             hasglass = True
             glass = line.split()[1]
+            ne = float(line.split()[4])
+            ve = float(line.split()[5])
+            if ne > 0 and ve > 0:
+                glass_neve = [ne, ve]
             if glass == '___BLANK':
                 glass = ' '.join(line.split()[1:])
             if glass == 'MIRROR':
@@ -200,6 +205,7 @@ def parse_zmx_surface(surflines):
     surf_info['hasglass'] = hasglass
     surf_info['ismirror'] = ismirror
     surf_info['glass'] = glass
+    surf_info['glass_neve'] = glass_neve
     surf_info['rCA'] = rCA
     surf_info['rCA_short'] = rCA_short
     surf_info['lrad'] = lrad

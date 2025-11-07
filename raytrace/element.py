@@ -66,6 +66,7 @@ class Element():
         # """lists with length n_surfaces - 1"""
         self.data['CT'] = [] # Center thickness
         self.data['material'] = [] # Glass type specifiers
+        self.data['material_neve'] = [] # Additional backup values of refractive index and Abbe number in case the glass type is not in the catalogs.
         
         # TEMPLATE
         # self.data[''] = []
@@ -81,7 +82,7 @@ class Element():
         # self.orientation = [0, 0, 0] # angles in spherical coordiantes [latitude, longitude, axis roll] to specify how this Element shall be oriented in 3D-space. Order of application: 1. Roll aorund z-axis, 2. latitude around x-axis, 3. longitude around y-axis.
 
     def add_surface(self, surftype, lenstype='rotational', radius=None, asph=[None, None], radius2=None, asph2=[None, None],
-                    coating=[None, None, None], rCA=None, rCA_short = None, lrad=None, CT=None, material=None,
+                    coating=[None, None, None], rCA=None, rCA_short = None, lrad=None, CT=None, material=None, material_neve=None,
                     surf_decenter=None, surf_tilt=None, surf_rotation=0):
         """
         function to append appropriately to the data structure
@@ -106,6 +107,7 @@ class Element():
         if CT is not None:
             self.data['CT'].append(CT)
             self.data['material'].append(material)
+            self.data['material_neve'].append(material_neve)
 
         if surftype == 'flat':
             self.data['radius'].append(0)
