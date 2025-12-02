@@ -174,6 +174,7 @@ def intersect_sphere(O, D, C, r, k):
 def intersect_conic(O, D, C, r, k):
     n_rays = O.shape[0]
     ones = np.ones(n_rays)
+    sigr = np.sign(r).astype(int)
     
     # Step 1: transform ray into local coordinate system 
     O = O - C
@@ -185,28 +186,18 @@ def intersect_conic(O, D, C, r, k):
     b = 2.*(np.einsum('ij,ij->i', O, D) - Dz*r + k*Oz*Dz)
     c = np.einsum('ij,ij->i', O, O) - 2*Oz*r + k*Oz*Oz
     root2 = b*b - 4*a*c
-    # get the two possible roots
-    t1 = (-b - np.sqrt(root2)) / (2*a)
-    t2 = (-b + np.sqrt(root2)) / (2*a)
+    # get the ray-t
+    t = (-b - sigr * np.sqrt(root2)) / (2*a)
     # special case of a == 0 breaks quadratic roots
     if np.any(a==0):
         idxa = a==0
         ta = -c/b
-        t1[idxa] = ta[idxa]
+        t[idxa] = ta[idxa]
     
-    # test both t-values and determine plausible intersection
-    # intersection closer to Origin (0, 0, 0) will win here because we are working in local coordinates    
-    # Get Points
-    td1 = (t1*D.T).T # The transpose here is because of the shapes of the arrays
-    P = O + td1 # intersection point
-    td2 = (t2*D.T).T # The transpose here is because of the shapes of the arrays
-    P2 = O + td2 # intersection point
-    # Distance to origin
-    absP1 = np.einsum('ij,ij->i',P,P)
-    absP2 = np.einsum('ij,ij->i',P2,P2)
-    idx = absP2 < absP1
-    P[idx] = P2[idx]
-    t1[idx] = t2[idx]
+    # Compute intersection points
+    # The transpose here is because of the shapes of the arrays
+    td = (t*D.T).T # The transpose here is because of the shapes of the arrays
+    P = O + td # intersection point
 
     # Step 3: Calculate Normal
     R2 = P[:,0]*P[:,0] + P[:,1]*P[:,1]
@@ -221,7 +212,7 @@ def intersect_conic(O, D, C, r, k):
     # Step 4: Transform point and normal back into original coordiante system
     P = P + C
         
-    return P, N, t1
+    return P, N, t
     
 # Combine sphere_intersect with a check for aperture to create lens intersection
 def lens_intersect(O, D, C, r, rad, k=0, A=[0], surf_rotation=0, surfshape='spherical', direction=1, ):#, surface=-1):
