@@ -23,7 +23,7 @@ import pickle
 import numpy as np
 
 modulepath = os.path.dirname(__file__)
-glasscatdir = os.path.join(modulepath, 'glasscatalog_data')
+glasscatdir = os.path.join(modulepath, os.pardir, 'data', 'glasscatalogs')
 
 N_FALLBACK = 1.6
 
@@ -61,11 +61,11 @@ Section: Special definitions e.g. for legacy materials not included in known dat
 When using the coefficient_special dictionary, entries must contain the formula-name as the first element, then coefficients in appropriate format.
 """
 
-if not 'H-ZLAF55A' in coefficients_CDGM:
-    coefficients_CDGM['H-ZLAF55A'] = ['Poly-1-4'] + [3.2808637, -1.9066608e-2, 2.8540621e-2, 1.2586912e-3, -5.2847729e-5, 4.2263573e-6]
+if not 'n-H-ZLAF55A' in coefficients_CDGM:
+    coefficients_CDGM['n-H-ZLAF55A'] = ['Poly-1-4'] + [3.2808637, -1.9066608e-2, 2.8540621e-2, 1.2586912e-3, -5.2847729e-5, 4.2263573e-6]
 
 coefficients_special = {}
-coefficients_special['Schott_F7'] = ['tabulated_n', [0.440, 0.4861, 0.5876, 0.6563, 0.700], [1.647073, 1.6378, 1.625358, 1.620207, 1.617707]]
+coefficients_special['Schott_n-F7'] = ['tabulated_n', [0.440, 0.4861, 0.5876, 0.6563, 0.700], [1.647073, 1.6378, 1.625358, 1.620207, 1.617707]]
 
 
 """
@@ -367,7 +367,9 @@ def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
 
     # Case 1: Special cases outside of catalog handling
     if glassname == 'VACUUM':
-        return 1./n_Air(wl) # Common practise in optics design to specify refractive index relative to (standard-)air rather than vacuum. TODO: Needs double-check if all manufacturers follow the same logic.
+        # Common practise in optics design to specify refractive index relative to (standard-)air rather than vacuum.
+        # TODO: Needs double-check if all manufacturers follow the same logic.
+        return 1./n_Air(wl)
         # return 1. # Vacuum-based definition
     elif glassname == 'AIR':
         # It is common that refrctive indices are specified relative to air instead of vacuum
