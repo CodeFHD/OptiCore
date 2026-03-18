@@ -85,7 +85,7 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True, t_detector=None, tra
         elif trace_reverse:
             nextsurface = 0
         else:
-            nextsurface = max(surfs)+1
+            nextsurface = lens.num_surfaces # num_surfaces includes a dummy surface which we need to subtract here
         if nextsurface == lastsurface:
             # case ghost
             refract = -1
