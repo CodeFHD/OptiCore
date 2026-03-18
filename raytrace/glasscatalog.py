@@ -410,6 +410,8 @@ def get_n(glassname, wl=0.5875618, catalog_order=CATALOG_ORDER_DEFAULT, debug_gl
     if debug_glassname:
         return glassname # for automatic analysis of missing glasses
     elif backup_neve is not None:
+        if backup_neve[1] == 0:
+            return backup_neve[0]
         n = nAbbe(wl, backup_neve)
         print(f'WARNING: Glass type {glassname} not defined in any list! used backup data to estimate n={n}...')
         return n

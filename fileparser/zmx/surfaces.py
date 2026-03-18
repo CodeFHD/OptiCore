@@ -109,7 +109,7 @@ def parse_zmx_surface(surflines):
                 # Note: ne and ve may not be accurate estimates in every file
                 ne = float(line.split()[4])
                 ve = float(line.split()[5])
-                if ne > 0 and ve > 0:
+                if ne > 0 and ve >= 0:
                     glass_neve = [ne, ve]
             if glass == '___BLANK':
                 glass = ' '.join(line.split()[1:])
