@@ -435,3 +435,15 @@ def reflect_ray(D, N):
     s = np.sign(-NdotD).astype(int)
     Dnew = (D.T - N.T*2*NdotD).T
     return Dnew
+
+# Diffraction
+def diffract_ray(D, N, g_lpmm, order, wl_nm):
+    if np.all(np.isnan(D)):
+        return D
+    gml = g_lpmm * order * wl_nm * 1e-6
+    # calculate the input angle
+    NdotD = np.einsum('ij,ij->i', N,D)
+    theta_i = np.arccos(np.abs(NdotD))
+    # calculate the output angle
+    theta_m = np.arcsin(theta_i * gml)
+    return theta_m

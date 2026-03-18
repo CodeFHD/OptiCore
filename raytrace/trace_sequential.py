@@ -162,7 +162,9 @@ def exec_trace(lens, rays, surfs=None, trace_detector=True, t_detector=None, tra
             k=k, A=A, surf_rotation=surf_rotation, surfshape=surftype, direction=direction)#*reflectionstate)
         
         # calculate new ray directions
-        if refract == 1:
+        if surftype == 'diffractiongrating':
+            pass
+        elif refract == 1:
             D_new = rt_intersect.refract_ray(D, N, n1, n2)
         else:
             D_new = rt_intersect.reflect_ray(D, N)
