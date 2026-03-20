@@ -136,10 +136,10 @@ def identify_elements(surf_infos):
         abspos_here = round(abspos, EPSILON_DIGITS) # abspos needs to be incremented whatever happens, but the value before increment counts
         abspos = abspos + surf_infos[i]['CT'] # carry without rounding
         abspos_r = round(abspos, EPSILON_DIGITS)
-                          
-        isdummy = ((glasstype_here == glasstype_prev) or (not glasstype_here and not glass_prev and cur_element == [])) and not mirror_here
+
         # case 1: The surface is a dummy
-        # no glass, nor refraction; no mirror, no reflection
+        # no glass, no refraction; no mirror, no reflection                 
+        isdummy = ((glasstype_here == glasstype_prev) or (not glasstype_here and not glass_prev and cur_element == [])) and not mirror_here
         if isdummy:
             debugprint('DUMMY')
             debugprint(abspos_here, absrad_here, abspos_last, absrad_last, glass_here)
@@ -176,6 +176,7 @@ def identify_elements(surf_infos):
                 idx_order.append(prev_idx + 1) # the tracer later counts starting at surface 1
             abspos_last = abspos_at_idx[prev_idx]
             absrad_last = radius_at_idx[prev_idx]
+
         # case 3: The surface is new
         else:
             debugprint('NEW', cur_idx)
