@@ -78,11 +78,14 @@ def parse_zmx_surface(surflines):
                 rotY = float(line.split()[2])
             elif line.startswith('PARM 5'):
                 rotZ = float(line.split()[2])
+            elif line.startswith('PARM 6'):
+                coord_order = int(line.split()[2]) != 0
             elif line.startswith('DISZ'):
                 CT = float(line.split()[1])
         surf_info['type'] = 'COORDBRK'
         surf_info['shift'] = np.array([shiftX, shiftY], dtype=np.float64)
         surf_info['rot'] = np.array([rotX, rotY, rotZ], dtype=np.float64)
+        surf_info['coord_order'] = coord_order
         surf_info['CT'] = CT
         return surf_info
     

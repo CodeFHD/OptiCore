@@ -24,6 +24,7 @@ import numpy as np
 from ...raytrace.lenssystem import Lenssystem
 from .surfaces import parse_zmx_surface, get_stop
 from ..utils import create_elements, get_encoding
+from ...utils.geometry import get_rotmat_x, get_rotmat_y, get_rotmat_z, get_rotmat_axis
 
 from ...utils import debugprint
 
@@ -224,8 +225,11 @@ def load_from_zmx(filename, testmode=False, logfile=None):
     # parse each surface and extract its parameters
     surf_infos = {}
     idx_offset = 0
-    shift_cumul = np.array([0, 0], dtype=np.float64)
-    rot_cumul = np.array([0, 0, 0], dtype=np.float64)
+    # some arrays to trace cumulated coordinate values
+    shift_cumul = np.array([0, 0], dtype=np.float64) # COORDBRK translation
+    rot_cumul = np.array([0, 0, 0], dtype=np.float64) # COORDBRK rotation
+    optical_axis = np.array([0, 0, 1], dtype=np.float64) # direction of the optical axis
+    pos_vertex = np.array([0, 0, 0], dtype=np.float64) # position of surface center vertices
     for idx, surface in su.items():
         surf_info = parse_zmx_surface(surface)
         if surf_info['type'] == 'COORDBRK':
@@ -233,9 +237,20 @@ def load_from_zmx(filename, testmode=False, logfile=None):
             rot_cumul += surf_info['rot']
             idx_offset += 1
             surf_infos[idx - idx_offset]['CT'] += surf_info['CT']
-            continue
-        elif surf_info['type'] == 'DUMMY':
+            # update the optical axis direction
+            if surf_info['coord_order']:
+                # 1) rot local z, 2) rot new y, 3) rot new x, 4) decenter new x, 5) decenter new y
+                pass
+            else:
+                # 1) decenter x, 2) decenter y, 3) rot local x, 4) rot new y, 5) rot new z
+                pass
+        # update the vertex position. This must happen in any case.
+        if idx > 0: # object may have infinite thickness, also not relevant
             pass
+        if surf_info['type'] == 'COORDBRK':
+            # Continue here
+            # A COORDBRK will not be added as an OptiCore surface
+            continue
         # make coating filename absolute paths
         if surf_info['coating'][0] in ['DATA']:
             surf_info['coating'][1] = os.path.join(file_path, surf_info['coating'][1])
