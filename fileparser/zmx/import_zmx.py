@@ -239,6 +239,8 @@ def load_from_zmx(filename, testmode=False, logfile=None):
         if surf_info['coating'][0] in ['DATA']:
             surf_info['coating'][1] = os.path.join(file_path, surf_info['coating'][1])
         surf_info['surf_rotation'] += rot_cumul[2]
+        surf_info['XY_rot'] = np.array(rot_cumul[:2])
+        surf_info['XY_shift'] = np.array(shift_cumul) # need a copy
         surf_infos[idx - idx_offset] = surf_info
 
     # identify elements, or groups, i.e. cemented pieces

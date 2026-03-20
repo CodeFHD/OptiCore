@@ -512,7 +512,7 @@ class OBJECT_OT_load_zmx(bpy.types.Operator, AddObjectHelper):
                         #verts_outline = verts_outline + vo
                         #for _ in range(len(vo)):
                         #    dz_outline.append(dz_this)
-                        bpy.ops.transform.translate(value=(-dz_this, 0, 0))
+                        bpy.ops.transform.translate(value=(-dz_this, *ele.XY_shift))
                         obj_name = bpy.context.selected_objects[0].name # assuming only one is selected
                         created_lenses.append(obj_name)
 

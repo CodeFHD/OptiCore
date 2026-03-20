@@ -43,6 +43,10 @@ def create_elements(surf_infos, idx_elements, CT_cumulative):
         if len(idx_list) == 1:
             if surf_infos[idx_list[0]]['glass'] == 'MIRROR':
                 ele.ismirror = True
+            else:
+                # TODO: Is this an error case to take care of elsewhere?
+                # Needs a test-case, e.g. zmx-file
+                pass
         # Fill the element data
         for j, idx in enumerate(idx_list):
             ismirror = surf_infos[idx]['glass'] == 'MIRROR'
@@ -56,6 +60,13 @@ def create_elements(surf_infos, idx_elements, CT_cumulative):
             asph1 = surf_infos[idx]['asph']
             asph2 = surf_infos[idx]['asph2']
             surf_rotation = surf_infos[idx]['surf_rotation']
+            XY_rot = surf_infos[idx]['XY_rot']
+            XY_shift = surf_infos[idx]['XY_shift']
+            if j == 0:
+                ele.XY_rot = np.array(XY_rot)
+                ele.XY_shift = np.array(XY_shift)
+            else:
+                pass
 
             surftype = surf_infos[idx]['type']
             lenstype = surf_infos[idx]['ltype']
